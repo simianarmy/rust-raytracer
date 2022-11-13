@@ -1,3 +1,7 @@
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+
 use crate::canvas::Canvas;
 use crate::color::Color;
 use crate::math::F3D;
@@ -51,6 +55,16 @@ pub fn canvas_to_string(c: &Canvas) -> String {
         body_lines.push(line);
     }
     format!("{}\n{}\n", header, body_lines.join("\n"))
+}
+
+pub fn create_file_from_data(filename: &str, data: &String) -> std::io::Result<()> {
+    let path = Path::new(filename);
+
+    // Open a file in write-only mode, returns `io::Result<File>`
+    let mut file = File::create(&path)?;
+    // Write the ppm string to `file`, returns `io::Result<()>`
+    file.write_all(data.as_bytes())?;
+    Ok(())
 }
 
 #[cfg(test)]

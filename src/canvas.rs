@@ -17,17 +17,30 @@ impl Canvas {
         }
     }
 
+    fn index_from_xy(&self, x: usize, y: usize) -> usize {
+        x + self.width * y
+    }
+
     pub fn dimensions(&self) -> (usize, usize) {
         (self.width, self.height)
     }
 
     pub fn write_pixel(&mut self, x: usize, y: usize, c: Color) {
-        let i = x + self.width * y;
+        let i = self.index_from_xy(x, y);
+        self.pixels[i] = c;
+    }
+
+    pub fn safe_write_pixel(&mut self, x: usize, y: usize, c: Color) {
+        if (x >= self.width || y >= self.height) {
+            return;
+        }
+        let i = self.index_from_xy(x, y);
         self.pixels[i] = c;
     }
 
     pub fn pixel_at(&self, x: usize, y: usize) -> &Color {
-        &self.pixels[x + self.width * y]
+        let i = self.index_from_xy(x, y);
+        &self.pixels[i]
     }
 
     pub fn to_ppm(&self) -> String {
