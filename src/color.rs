@@ -1,0 +1,68 @@
+use crate::math::F3D;
+use crate::tuple::{tuple, Tuple};
+
+#[derive(Clone, Debug)]
+pub struct Color {
+    rgb: Tuple,
+}
+
+impl Color {
+    pub fn new(r: F3D, g: F3D, b: F3D) -> Color {
+        Color {
+            rgb: tuple(r, g, b, 0.0),
+        }
+    }
+
+    pub fn white() -> Color {
+        Color::new(0.0, 0.0, 0.0)
+    }
+
+    pub fn red(&self) -> F3D {
+        self.rgb.x
+    }
+
+    pub fn green(&self) -> F3D {
+        self.rgb.y
+    }
+
+    pub fn blue(&self) -> F3D {
+        self.rgb.z
+    }
+
+    pub fn tuple(&self) -> &Tuple {
+        &self.rgb // immutable ref, readonly
+    }
+}
+
+impl PartialEq for Color {
+    fn eq(&self, other: &Self) -> bool {
+        self.rgb == other.rgb
+    }
+}
+
+// constructor utility
+pub fn color(r: F3D, g: F3D, b: F3D) -> Color {
+    Color::new(r, g, b)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn color_component_accessors() {
+        let c = color(4.3, -2.1, 0.0);
+        assert_eq!(c.red(), 4.3);
+        assert_eq!(c.green(), -2.1);
+        assert_eq!(c.blue(), 0.0);
+    }
+
+    #[test]
+    fn color_data_accessor() {
+        let c = color(4.3, -2.1, 0.0);
+        let d = c.tuple();
+        assert_eq!(d.x, 4.3);
+        assert_eq!(d.y, -2.1);
+        assert_eq!(d.z, 0.0);
+    }
+}
