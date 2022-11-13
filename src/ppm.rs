@@ -94,6 +94,7 @@ mod tests {
         let c = Canvas::new(10, 2, Some(c1));
         let ppm = c.to_ppm();
         let lines = ppm.split("\n").collect::<Vec<&str>>();
+        assert!(lines.iter().all(|l| l.len() < 70));
         assert_eq!(
             lines[3],
             "255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204"

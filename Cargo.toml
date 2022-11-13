@@ -1,5 +1,5 @@
 [package]
-name = "raytracer"
+name = "rust_raytracer"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,11 @@ edition = "2021"
 
 [dependencies]
 nalgebra-glm = "0.17.0"
+
+[[bin]]
+name = "raytracer_bin"
+path = "src/bin/main.rs"
+
+[lib]
+name = "raytracer"
+path = "src/lib.rs"

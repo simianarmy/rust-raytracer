@@ -151,11 +151,11 @@ pub fn tuple(x: F3D, y: F3D, z: F3D, w: F3D) -> Tuple {
 }
 
 pub fn point(x: F3D, y: F3D, z: F3D) -> Tuple {
-    vec4(x, y, z, 1.0)
+    tuple(x, y, z, 1.0)
 }
 
 pub fn vector(x: F3D, y: F3D, z: F3D) -> Tuple {
-    vec4(x, y, z, 0.0)
+    tuple(x, y, z, 0.0)
 }
 
 pub fn is_point(t: Tuple) -> bool {
@@ -228,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn tuple_is_equal_when_diff() {
+    fn tuple_not_equal_when_diff() {
         let t1 = tuple(0.0, 1.1, 2.0, 0.0);
         let t2 = tuple(0.0, 1.0, 2.0, 0.0);
         assert!(t1 != t2);
