@@ -48,7 +48,7 @@ fn main() {
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
-            Ok(n) => {
+            Ok(_) => {
                 println!("input: {}", input);
 
                 match input.trim() {

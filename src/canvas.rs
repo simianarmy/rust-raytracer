@@ -31,7 +31,7 @@ impl Canvas {
     }
 
     pub fn safe_write_pixel(&mut self, x: usize, y: usize, c: Color) {
-        if (x >= self.width || y >= self.height) {
+        if x >= self.width || y >= self.height {
             return;
         }
         let i = self.index_from_xy(x, y);

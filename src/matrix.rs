@@ -1,4 +1,8 @@
-use glm::{Mat4, Vec4};
+use glm::*;
+
+use crate::math::F3D;
+
+pub type Matrix4 = TMat4<F3D>;
 
 #[cfg(test)]
 mod tests {

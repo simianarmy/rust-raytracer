@@ -2,8 +2,8 @@
  * Point|Vector data type
  * Maybe use an Enum here?
  */
-use crate::math::{f_equals, F3D};
-use glm::{equal_eps, vec4, Vec4};
+use crate::math::F3D;
+use glm::{vec4, Vec4};
 
 pub type Tuple = Vec4;
 
@@ -166,9 +166,23 @@ pub fn is_vector(t: Tuple) -> bool {
     t.w == 0.0
 }
 
+pub fn point_x() -> Tuple {
+    point(1.0, 0.0, 0.0)
+}
+
+pub fn point_y() -> Tuple {
+    point(0.0, 1.0, 0.0)
+}
+
+pub fn point_z() -> Tuple {
+    point(0.0, 0.0, 1.0)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::math::f_equals;
+    use glm::equal_eps;
 
     #[test]
     fn tuple_constructor() {

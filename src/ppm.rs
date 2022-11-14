@@ -3,7 +3,6 @@ use std::io::prelude::*;
 use std::path::Path;
 
 use crate::canvas::Canvas;
-use crate::color::Color;
 use crate::math::F3D;
 
 const PPM_MAX_COLOR: u32 = 255;
@@ -70,6 +69,7 @@ pub fn create_file_from_data(filename: &str, data: &String) -> std::io::Result<(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::color::Color;
 
     #[test]
     fn scale_color_when_over_255() {
