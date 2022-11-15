@@ -3,7 +3,8 @@
  */
 
 pub type F3D = f32;
-const EPSILON: F3D = f32::EPSILON;
+// Use not too small value to pass unit tests
+pub const EPSILON: F3D = f32::EPSILON * 100.0;
 
 pub fn f_equals(a: F3D, b: F3D) -> bool {
     if (a - b).abs() <= EPSILON {

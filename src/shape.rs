@@ -1,5 +1,6 @@
 use crate::intersection::Intersection;
 use crate::math::F3D;
+use crate::matrix::Matrix4;
 use crate::ray::Ray;
 
 pub trait Intersectable {

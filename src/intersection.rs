@@ -9,6 +9,7 @@ pub struct Intersection<'a, T: Intersectable + ?Sized> {
 }
 
 // Intersection list builder
+#[macro_export]
 macro_rules! intersections {
     ( $( $x:expr ),* ) => {
         {
