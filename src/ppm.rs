@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn generating_ppm_string() {
-        let mut c = Canvas::new(5, 3, None);
+        let mut c = Canvas::new(5, 3, Some(Color::black()));
         let c1 = Color::new(1.5, 0.0, 0.0);
         let c2 = Color::new(0.0, 0.5, 0.0);
         let c3 = Color::new(-0.5, 0.0, 1.0);

@@ -1,15 +1,14 @@
-use crate::tuple::Tuple;
-
 use crate::math::F3D;
 use crate::matrix::Matrix4;
+use crate::tuple::*;
 
 pub struct Ray {
-    pub origin: Tuple,
-    pub direction: Tuple,
+    pub origin: Point,
+    pub direction: Vector,
 }
 
 impl Ray {
-    pub fn new(origin: Tuple, direction: Tuple) -> Ray {
+    pub fn new(origin: Point, direction: Vector) -> Ray {
         Ray { origin, direction }
     }
 

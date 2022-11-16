@@ -2,10 +2,12 @@
  * Point|Vector data type
  * Maybe use an Enum here?
  */
-use crate::math::F3D;
-use glm::{vec4, Vec4};
+use crate::math::{EPSILON, F3D};
+use glm::{equal_eps, vec4, Vec4};
 
 pub type Tuple = Vec4;
+pub type Point = Tuple;
+pub type Vector = Tuple;
 
 /*
  * Legacy Tuple implementation superceded by glm types
@@ -150,11 +152,11 @@ pub fn tuple(x: F3D, y: F3D, z: F3D, w: F3D) -> Tuple {
     vec4(x, y, z, w)
 }
 
-pub fn point(x: F3D, y: F3D, z: F3D) -> Tuple {
+pub fn point(x: F3D, y: F3D, z: F3D) -> Point {
     tuple(x, y, z, 1.0)
 }
 
-pub fn vector(x: F3D, y: F3D, z: F3D) -> Tuple {
+pub fn vector(x: F3D, y: F3D, z: F3D) -> Vector {
     tuple(x, y, z, 0.0)
 }
 
@@ -166,22 +168,57 @@ pub fn is_vector(t: Tuple) -> bool {
     t.w == 0.0
 }
 
-pub fn point_x() -> Tuple {
+pub fn point_x() -> Point {
     point(1.0, 0.0, 0.0)
 }
 
-pub fn point_y() -> Tuple {
+pub fn point_y() -> Point {
     point(0.0, 1.0, 0.0)
 }
 
-pub fn point_z() -> Tuple {
+pub fn point_z() -> Point {
     point(0.0, 0.0, 1.0)
+}
+
+pub fn point_zero() -> Point {
+    point(0.0, 0.0, 0.0)
+}
+
+pub fn vector_x() -> Vector {
+    vector(1.0, 0.0, 0.0)
+}
+
+pub fn vector_y() -> Vector {
+    vector(0.0, 1.0, 0.0)
+}
+
+pub fn vector_z() -> Vector {
+    vector(0.0, 0.0, 1.0)
+}
+
+pub fn reflect(in_v: Vector, normal: Vector) -> Vector {
+    glm::reflect_vec(&in_v, &normal)
+}
+
+// test assertion for comparing tuples with epsilon
+#[macro_export]
+macro_rules! assert_eq_eps {
+    ($cond:expr, $expected:expr) => {
+        assert_eq!(
+            glm::vec4(true, true, true, true),
+            glm::equal_eps(&$cond, &$expected, crate::math::EPSILON * 100.0),
+            "left {} != right {}",
+            $cond,
+            $expected
+        );
+    };
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::math::f_equals;
+    pub(crate) use assert_eq_eps;
     use glm::equal_eps;
 
     #[test]
@@ -239,6 +276,13 @@ mod tests {
         assert!(t1 != t2);
         let teq = equal_eps(&t1, &t2, f32::EPSILON);
         assert!(teq.x, "equal_eps: {}", teq);
+    }
+
+    #[test]
+    fn assert_eq_eps_macro() {
+        let t1 = tuple(0.0, 1.0, -2.0, 0.3);
+        let t2 = tuple(f32::EPSILON * 0.5, 1.0, -2.0, 0.3);
+        assert_eq_eps!(t1, t2);
     }
 
     #[test]
@@ -385,5 +429,13 @@ mod tests {
         let t2 = vector(2.0, 3.0, 4.0).xyz();
         assert_eq!(t1.cross(&t2), vector(-1.0, 2.0, -1.0).xyz());
         assert_eq!(t2.cross(&t1), vector(1.0, -2.0, 1.0).xyz());
+    }
+
+    #[test]
+    fn reflect_vector_approaching_45() {
+        let v = vector(1.0, -1.0, 0.0);
+        let n = vector_y();
+        let r = reflect(v, n);
+        assert_eq!(r, vector(1.0, 1.0, 0.0));
     }
 }

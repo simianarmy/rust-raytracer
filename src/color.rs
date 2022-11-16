@@ -1,7 +1,8 @@
 use crate::math::F3D;
 use crate::tuple::{tuple, Tuple};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Color {
     rgb: Tuple,
 }
@@ -13,7 +14,15 @@ impl Color {
         }
     }
 
+    pub fn from_tuple(t: Tuple) -> Color {
+        Color::new(t.x, t.y, t.z)
+    }
+
     pub fn white() -> Color {
+        Color::new(1.0, 1.0, 1.0)
+    }
+
+    pub fn black() -> Color {
         Color::new(0.0, 0.0, 0.0)
     }
 
@@ -37,6 +46,36 @@ impl Color {
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
         self.rgb == other.rgb
+    }
+}
+
+impl Add for Color {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        //Self::new(self.x + other.x, self.y + other.y, self.z + other.z)
+        Self::from_tuple(self.tuple() + other.tuple())
+    }
+}
+
+impl Mul<F3D> for Color {
+    type Output = Self;
+
+    fn mul(self, scalar: F3D) -> Self::Output {
+        let rgb = self.tuple() * scalar;
+        Color::from_tuple(rgb)
+    }
+}
+
+impl Mul for Color {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self::Output {
+        let rgb1 = self.tuple();
+        let rgb2 = other.tuple();
+        // doesn't work :(
+        //Color::from_tuple(rgb1 * rgb2);
+        Color::new(rgb1.x * rgb2.x, rgb1.y * rgb2.y, rgb1.z * rgb2.z)
     }
 }
 
