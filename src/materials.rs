@@ -29,6 +29,7 @@ impl Material {
     }
 }
 
+// Phong lighting
 pub fn lighting(
     material: &Material,
     light: &PointLight,
@@ -37,38 +38,34 @@ pub fn lighting(
     normalv: Vector,
 ) -> Color {
     // combine surface color with lights color/intensity
-    let effective_color = material.color * light.intensity;
+    let effective_color: Color = material.color * light.intensity;
 
     // find direction to light source
-    let lightv = normalize(&(light.position - point));
+    let lightv: Vector = normalize(&(light.position - point));
 
     // compute ambient contribution
-    let ambient = effective_color * material.ambient;
-
-    let mut diffuse = Color::black();
-    let mut specular = Color::black();
+    let ambient: Color = effective_color * material.ambient;
 
     // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the​​   ​# light is on the other side of the surface.
-    let light_dot_normal = lightv.dot(&normalv);
+    let light_dot_normal: F3D = lightv.dot(&normalv);
     if light_dot_normal >= 0.0 {
         // compute the diffuse contribution
-        diffuse = effective_color * material.diffuse * light_dot_normal;
+        let diffuse: Color = effective_color * material.diffuse * light_dot_normal;
         // reflect_dot_eye represents the cosine of the angle between the​​     ​# reflection vector and the eye vector. A negative number means the​​     ​# light reflects away from the eye.
-        let reflectv = crate::tuple::reflect(-lightv, normalv);
-        let reflect_dot_eye = reflectv.dot(&eyev);
-        if reflect_dot_eye < 0.0 {
-            specular = Color::black();
-        } else {
+        let reflectv: Vector = crate::tuple::reflect(-lightv, normalv);
+        let reflect_dot_eye: F3D = reflectv.dot(&eyev);
+        let mut specular = Color::black();
+
+        if reflect_dot_eye >= 0.0 {
             // compute the specular contribution
-            let factor = reflect_dot_eye.powf(material.shininess);
+            let factor: F3D = reflect_dot_eye.powf(material.shininess);
             specular = light.intensity * material.specular * factor;
         }
+        ambient + diffuse + specular
     } else {
-        println!("light behind surface!");
+        // no light contribution, diffuse and specular are zero
+        ambient
     }
-    println!("diffuse: {:?}, specular: {:?}", diffuse, specular);
-    // add the 3 contributions to get final shading
-    ambient + diffuse + specular
 }
 
 #[cfg(test)]

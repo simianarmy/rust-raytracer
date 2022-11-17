@@ -8,7 +8,7 @@ use glm::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Sphere {
-    props: Shape3D,
+    pub props: Shape3D,
 }
 
 // constructor utilities
@@ -33,7 +33,7 @@ impl NormalAt for Sphere {
 }
 
 impl Intersectable for Sphere {
-    fn intersect(&self, ray: Ray) -> Vec<Intersection<Sphere>> {
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection<Sphere>> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
         let sphere_to_ray = t_ray.origin - point(0.0, 0.0, 0.0);
         let a = t_ray.direction.dot(&t_ray.direction);
@@ -76,7 +76,7 @@ mod tests {
     fn ray_intersects_at_tangent() {
         let r = Ray::new(point(0.0, 1.0, -5.0), vector(0.0, 0.0, 1.0));
         let s = sphere();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, 5.0);
         assert_eq!(xs[1].t, 5.0);
@@ -86,7 +86,7 @@ mod tests {
     fn ray_misses_sphere() {
         let r = Ray::new(point(0.0, 2.0, -5.0), vector(0.0, 0.0, 1.0));
         let s = sphere();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs.len(), 0);
     }
 
@@ -94,7 +94,7 @@ mod tests {
     fn ray_originates_inside() {
         let r = Ray::new(point(0.0, 0.0, 0.0), vector(0.0, 0.0, 1.0));
         let s = sphere();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, -1.0);
         assert_eq!(xs[1].t, 1.0);
@@ -104,7 +104,7 @@ mod tests {
     fn ray_in_front() {
         let r = Ray::new(point(0.0, 0.0, 5.0), vector(0.0, 0.0, 1.0));
         let s = sphere();
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, -6.0);
         assert_eq!(xs[1].t, -4.0);
@@ -115,7 +115,7 @@ mod tests {
         let sid = String::from("itme");
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
         let s = sphere_with_id(Some(sid));
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs[0].object.props.id, String::from("itme"));
         assert_eq!(xs[1].object.props.id, String::from("itme"));
     }
@@ -140,7 +140,7 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
         let mut s = sphere();
         s.props.transform = make_scaling(2.0, 2.0, 2.0);
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, 3.0);
         assert_eq!(xs[1].t, 7.0);
@@ -151,7 +151,7 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
         let mut s = sphere();
         s.props.transform = make_translation(5.0, 0.0, 0.0);
-        let xs = s.intersect(r);
+        let xs = s.intersect(&r);
         assert_eq!(xs.len(), 0);
     }
 

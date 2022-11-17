@@ -14,7 +14,7 @@ pub struct Shape3D {
 }
 
 pub trait Intersectable {
-    fn intersect(&self, r: Ray) -> Vec<Intersection<Self>>
+    fn intersect(&self, r: &Ray) -> Vec<Intersection<Self>>
     where
         Self: Sized;
 
