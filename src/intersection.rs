@@ -1,19 +1,33 @@
 use crate::math::F3D;
-use crate::shape::Intersectable;
+use crate::shape::Shape;
 use std::clone::Clone;
+use std::fmt;
 
-#[derive(Debug, PartialEq)]
-pub struct Intersection<'a, T: Intersectable + ?Sized> {
+#[derive(Clone)]
+pub struct Intersection {
     pub t: F3D,
-    pub object: &'a T,
+    pub object: Box<dyn Shape>,
 }
 
-impl<'a, T: Intersectable> Clone for Intersection<'a, T> {
-    fn clone(&self) -> Intersection<'a, T> {
-        Intersection {
-            t: self.t,
-            object: self.object.clone(),
-        }
+impl PartialEq for Intersection {
+    fn eq(&self, other: &Self) -> bool {
+        self.t == other.t // todo: object comparison
+    }
+}
+
+impl fmt::Debug for Intersection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "intersection t = {}", self.t)
+    }
+}
+
+impl fmt::Display for Intersection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Intersection: t = {}, object = {:p}",
+            self.t, self.object
+        )
     }
 }
 
@@ -35,10 +49,7 @@ macro_rules! intersections {
 /**
  * "Closest" intersection in a collection
  */
-pub fn hit<'a, T>(is: &'a Vec<Intersection<'a, T>>) -> Option<&Intersection<'a, T>>
-where
-    T: Intersectable,
-{
+pub fn hit(is: &Vec<Intersection>) -> Option<&Intersection> {
     // filter out negative t values here
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
 }

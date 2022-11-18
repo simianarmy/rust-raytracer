@@ -2,8 +2,8 @@
  * Point|Vector data type
  * Maybe use an Enum here?
  */
-use crate::math::{EPSILON, F3D};
-use glm::{equal_eps, vec4, Vec4};
+use crate::math::F3D;
+use glm::{vec4, Vec4};
 
 pub type Tuple = Vec4;
 pub type Point = Tuple;
@@ -217,7 +217,7 @@ macro_rules! assert_eq_eps {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::math::f_equals;
+    use crate::math::{f_equals, EPSILON};
     pub(crate) use assert_eq_eps;
     use glm::equal_eps;
 
@@ -272,16 +272,16 @@ mod tests {
     #[test]
     fn tuple_is_equal_using_equal_epsilon_fn() {
         let t1 = tuple(0.0, 1.0, -2.0, 0.3);
-        let t2 = tuple(f32::EPSILON * 0.5, 1.0, -2.0, 0.3);
+        let t2 = tuple(EPSILON * 0.5, 1.0, -2.0, 0.3);
         assert!(t1 != t2);
-        let teq = equal_eps(&t1, &t2, f32::EPSILON);
+        let teq = equal_eps(&t1, &t2, EPSILON);
         assert!(teq.x, "equal_eps: {}", teq);
     }
 
     #[test]
     fn assert_eq_eps_macro() {
         let t1 = tuple(0.0, 1.0, -2.0, 0.3);
-        let t2 = tuple(f32::EPSILON * 0.5, 1.0, -2.0, 0.3);
+        let t2 = tuple(EPSILON * 0.5, 1.0, -2.0, 0.3);
         assert_eq_eps!(t1, t2);
     }
 

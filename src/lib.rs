@@ -16,3 +16,4 @@ pub mod sphere;
 pub mod transformation;
 #[macro_use]
 pub mod tuple;
+pub mod world;

@@ -6,7 +6,7 @@ use crate::shape::*;
 use crate::tuple::*;
 use glm::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sphere {
     pub props: Shape3D,
 }
@@ -15,7 +15,7 @@ pub struct Sphere {
 pub fn sphere_with_id(id: Option<String>) -> Sphere {
     Sphere {
         props: Shape3D {
-            id: id.unwrap_or("sphere_1".to_string()),
+            id: id.unwrap_or("1".to_string()),
             transform: glm::identity(),
             material: Material::new(),
         },
@@ -26,14 +26,24 @@ pub fn sphere() -> Sphere {
     sphere_with_id(None)
 }
 
-impl NormalAt for Sphere {
+impl Shape for Sphere {
+    fn get_id(&self) -> String {
+        format!("sphere_{}", self.props.id)
+    }
     fn get_transform(&self) -> &Matrix4 {
         &self.props.transform
     }
-}
+    fn set_transform(&mut self, t: &Matrix4) {
+        self.props.transform = *t;
+    }
+    fn get_material(&self) -> &Material {
+        &self.props.material
+    }
+    fn set_material(&mut self, m: &Material) {
+        self.props.material = *m;
+    }
 
-impl Intersectable for Sphere {
-    fn intersect(&self, ray: &Ray) -> Vec<Intersection<Sphere>> {
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
         let sphere_to_ray = t_ray.origin - point(0.0, 0.0, 0.0);
         let a = t_ray.direction.dot(&t_ray.direction);
@@ -50,11 +60,11 @@ impl Intersectable for Sphere {
             crate::intersections!(
                 Intersection {
                     t: t1,
-                    object: self,
+                    object: Box::new(self.clone()),
                 },
                 Intersection {
                     t: t2,
-                    object: self,
+                    object: Box::new(self.clone()),
                 }
             )
         }
@@ -116,8 +126,8 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
         let s = sphere_with_id(Some(sid));
         let xs = s.intersect(&r);
-        assert_eq!(xs[0].object.props.id, String::from("itme"));
-        assert_eq!(xs[1].object.props.id, String::from("itme"));
+        assert_eq!(xs[0].object.get_id(), String::from("sphere_itme"));
+        assert_eq!(xs[1].object.get_id(), String::from("sphere_itme"));
     }
 
     #[test]

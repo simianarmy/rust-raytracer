@@ -25,7 +25,7 @@ fn main() {
     let eye = point(0.0, 0.0, -5.0);
     let wall = point(0.0, 0.0, 10.0);
     let wall_size = 7.0;
-    let canvas_size = 100;
+    let canvas_size = 500;
     let pixel_size: F3D = wall_size / canvas_size as F3D;
     let half = wall_size / 2.0;
     let mut canvas = Canvas::new(canvas_size, canvas_size, None);
@@ -47,7 +47,7 @@ fn main() {
                     let p = ray.position(is.t);
                     let normal = is.object.normal_at(p);
                     let eye = -ray.direction;
-                    let color = lighting(&is.object.props.material, &light, p, eye, normal);
+                    let color = lighting(&is.object.get_material(), &light, p, eye, normal);
                     canvas.write_pixel(x, y, color);
                 }
                 _ => canvas.write_pixel(x, y, Color::black()),

@@ -4,7 +4,7 @@ use crate::math::F3D;
 use crate::tuple::*;
 use glm::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Material {
     pub color: Color,
     pub ambient: F3D,
