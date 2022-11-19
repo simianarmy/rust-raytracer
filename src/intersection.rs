@@ -1,12 +1,14 @@
 use crate::math::F3D;
-use crate::shape::Shape;
+use crate::ray::Ray;
+use crate::shape::*;
+use crate::tuple::*;
 use std::clone::Clone;
 use std::fmt;
 
 #[derive(Clone)]
 pub struct Intersection {
     pub t: F3D,
-    pub object: Box<dyn Shape>,
+    pub object: ShapeBox,
 }
 
 impl PartialEq for Intersection {
@@ -17,7 +19,7 @@ impl PartialEq for Intersection {
 
 impl fmt::Debug for Intersection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "intersection t = {}", self.t)
+        write!(f, "intersection t = {}, object = {:p}", self.t, self.object)
     }
 }
 
@@ -52,6 +54,31 @@ macro_rules! intersections {
 pub fn hit(is: &Vec<Intersection>) -> Option<&Intersection> {
     // filter out negative t values here
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
+}
+
+pub struct Computations {
+    pub t: F3D,
+    pub object: ShapeBox,
+    pub point: Point,
+    pub eyev: Vector,
+    pub normalv: Vector,
+    pub inside: bool,
+}
+
+pub fn prepare_computations(i: &Intersection, ray: &Ray) -> Computations {
+    let p = ray.position(i.t);
+    let normal = i.object.normal_at(p);
+    let eyev = -ray.direction;
+    let inside = normal.dot(&eyev) < 0.0;
+
+    Computations {
+        t: i.t,
+        object: i.object.clone(),
+        point: p,
+        eyev,
+        normalv: if inside { -normal } else { normal },
+        inside,
+    }
 }
 
 #[cfg(test)]
@@ -110,5 +137,39 @@ mod tests {
         let xs = intersections!(i1, i2, i3, i4);
         let i = hit(&xs);
         assert_eq!(*i.unwrap(), i4);
+    }
+
+    #[test]
+    fn precomputing_state_of_intersection() {
+        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
+        let shape = sphere();
+        let i = shape.intersection(4.0);
+        let comps = prepare_computations(&i, &r);
+        assert_eq!(comps.t, i.t);
+        assert_eq!(&comps.object, &i.object);
+        assert_eq!(comps.point, point(0.0, 0.0, -1.0));
+        assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
+        assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn precomputing_intersection_on_outside() {
+        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
+        let shape = sphere();
+        let i = shape.intersection(4.0);
+        let comps = prepare_computations(&i, &r);
+        assert!(!comps.inside);
+    }
+
+    #[test]
+    fn precomputing_intersection_on_inside() {
+        let r = Ray::new(point_zero(), vector_z());
+        let shape = sphere();
+        let i = shape.intersection(1.0);
+        let comps = prepare_computations(&i, &r);
+        assert_eq!(comps.point, point_z());
+        assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
+        assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
+        assert!(comps.inside);
     }
 }

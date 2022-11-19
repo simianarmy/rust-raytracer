@@ -42,6 +42,12 @@ impl Shape for Sphere {
     fn set_material(&mut self, m: &Material) {
         self.props.material = *m;
     }
+    fn mut_get_transform(&mut self) -> &Matrix4 {
+        &self.props.transform
+    }
+    fn mut_get_material(&mut self) -> &Material {
+        &self.props.material
+    }
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
