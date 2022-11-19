@@ -22,16 +22,16 @@ impl World {
         }
     }
 
-    pub fn add_shape(&mut self, s: &dyn Shape) {
-        self.shapes.push(Box::new(*s));
+    pub fn add_shape(&mut self, s: Box<dyn Shape>) {
+        self.shapes.push(s);
     }
 
-    pub fn get_shape(&self, i: usize) -> &dyn Shape {
-        self.shapes[i].as_ref()
+    pub fn get_shape(&self, i: usize) -> &Box<dyn Shape> {
+        &self.shapes[i]
     }
 
-    pub fn set_shape(&mut self, shape: &dyn Shape, i: usize) {
-        self.shapes[i] = Box::new(shape);
+    pub fn set_shape(&mut self, shape: Box<dyn Shape>, i: usize) {
+        self.shapes[i] = shape;
     }
 
     // returns all ray/shape intersections sorted by t
@@ -82,8 +82,8 @@ impl Default for World {
         let mut s2 = sphere_with_id(Some("s2".to_string()));
         s2.set_transform(&make_scaling(0.5, 0.5, 0.5));
         let mut world = World::new(light);
-        world.add_shape(&s1);
-        world.add_shape(&s2);
+        world.add_shape(Box::new(s1)); // move operation
+        world.add_shape(Box::new(s2));
         world
     }
 }
@@ -112,7 +112,7 @@ mod tests {
     fn set_shape() {
         let mut world = World::default();
         let s = sphere_with_id(Some("hi".to_string()));
-        world.set_shape(&s, 1);
+        world.set_shape(Box::new(s), 1);
         let bs = world.get_shape(1);
         assert_eq!(bs.get_id(), String::from("sphere_hi"));
     }
@@ -177,21 +177,23 @@ mod tests {
             ambient: 1.0,
             ..*om
         };
-        let mut o2: &dyn Shape = outer.clone();
+        let mut o2 = outer.clone();
         o2.set_material(&om2);
-        world.set_shape(o2.as_ref(), 0);
+        world.set_shape(o2, 0);
 
-        /*
         let inner = world.get_shape(1);
-        let im = inner.mut_get_material();
+        let im = inner.get_material();
         let im2 = Material {
             ambient: 1.0,
             ..*im
         };
-        inner.set_material(&im2);
-        */
+        let mut i2 = inner.clone();
+        i2.set_material(&im2);
+        world.set_shape(i2, 1);
+
         let ray = Ray::new(point(0.0, 0.0, 0.75), vector(0.0, 0.0, -1.0));
         let c = world.color_at(&ray);
-        assert_eq!(c.tuple(), om.color.tuple());
+        let i3 = world.get_shape(1);
+        assert_eq!(c.tuple(), i3.get_material().color.tuple());
     }
 }

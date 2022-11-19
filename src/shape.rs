@@ -70,14 +70,19 @@ impl Clone for ShapeBox {
     }
 }
 
-impl PartialEq for ShapeBox {
+impl<'a> PartialEq for dyn Shape + 'a {
     fn eq(&self, other: &Self) -> bool {
-        self.get_id() == other.get_id()
+        self.get_material() == other.get_material() && self.get_transform() == other.get_transform()
     }
 }
 
 impl fmt::Debug for ShapeBox {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "object id: {:?}", self.get_id())
+        write!(
+            f,
+            "object id: {:?}\nmaterial: {:?}",
+            self.get_id(),
+            self.get_material()
+        )
     }
 }
