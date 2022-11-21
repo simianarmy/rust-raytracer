@@ -2,6 +2,7 @@ use glm::*;
 
 use crate::math::F3D;
 use crate::matrix::Matrix4;
+use crate::tuple::*;
 
 // wrap calls to glm transformation functions
 pub fn make_translation(x: F3D, y: F3D, z: F3D) -> Matrix4 {
@@ -29,6 +30,10 @@ pub fn make_shearing(xy: F3D, xz: F3D, yx: F3D, yz: F3D, zx: F3D, zy: F3D) -> Ma
     Mat4::new(
         1.0, xy, xz, 0.0, yx, 1.0, yz, 0.0, zx, zy, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     )
+}
+
+pub fn view_transform(from: &Point, to: &Point, up: &Vector) -> Matrix4 {
+    look_at(&from.xyz(), &to.xyz(), &up.xyz())
 }
 
 #[cfg(test)]
@@ -92,5 +97,14 @@ mod tests {
         let t = c * b * a;
         let tp = t * p;
         assert_eq!(tp, point(15.0, 0.0, 7.0));
+    }
+
+    #[test]
+    fn view_transformation_matrix_looking_in_pos_z() {
+        let from = point_zero();
+        let to = point_z();
+        let up = vector_y();
+        let t = view_transform(&from, &to, &up);
+        assert_eq!(t, make_scaling(-1.0, 1.0, -1.0));
     }
 }
