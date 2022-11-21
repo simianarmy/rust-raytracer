@@ -196,6 +196,10 @@ pub fn vector_z() -> Vector {
     vector(0.0, 0.0, 1.0)
 }
 
+pub fn vector_zero() -> Vector {
+    vector(0.0, 0.0, 0.0)
+}
+
 pub fn reflect(in_v: Vector, normal: Vector) -> Vector {
     glm::reflect_vec(&in_v, &normal)
 }

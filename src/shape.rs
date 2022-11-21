@@ -6,8 +6,14 @@ use crate::ray::Ray;
 use crate::tuple::*;
 use glm::*;
 use std::fmt;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub type ShapeBox = Box<dyn Shape>;
+
+pub fn get_unique_id() -> usize {
+    static COUNTER: AtomicUsize = AtomicUsize::new(1);
+    COUNTER.fetch_add(1, Ordering::Relaxed)
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Shape3D {
@@ -16,26 +22,50 @@ pub struct Shape3D {
     pub material: Material,
 }
 
+impl Shape3D {
+    pub fn new(id: Option<String>) -> Shape3D {
+        Shape3D {
+            id: id.unwrap_or(get_unique_id().to_string()),
+            transform: glm::identity(),
+            material: Material::default(),
+        }
+    }
+}
+
+impl Default for Shape3D {
+    fn default() -> Self {
+        Shape3D::new(None)
+    }
+}
+
 pub trait Shape: ShapeClone {
     fn get_id(&self) -> String;
+
     fn get_transform(&self) -> &Matrix4;
-    fn get_material(&self) -> &Material;
-    fn mut_get_transform(&mut self) -> &Matrix4;
-    fn mut_get_material(&mut self) -> &Material;
     fn set_transform(&mut self, t: &Matrix4);
+
+    fn get_material(&self) -> &Material;
     fn set_material(&mut self, t: &Material);
-    fn intersect(&self, ray: &Ray) -> Vec<Intersection>;
+
+    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection>;
+    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let t_ray = ray.transform(inverse(&self.get_transform()));
+        self.local_intersect(&t_ray)
+    }
     fn intersection(&self, t: F3D) -> Intersection {
         Intersection {
             t,
             object: self.clone_box(),
         }
     }
+
+    fn local_normal_at(&self, world_point: Point) -> Vector;
     fn normal_at(&self, world_point: Point) -> Vector {
         let t = self.get_transform();
-        let object_point = inverse(t) * world_point;
-        let object_normal = object_point - point(0.0, 0.0, 0.0);
-        let mut world_normal = transpose(&inverse(t)) * object_normal;
+        let local_point = inverse(t) * world_point;
+        let local_normal = self.local_normal_at(local_point);
+
+        let mut world_normal = transpose(&inverse(t)) * local_normal;
         world_normal.w = 0.0;
         world_normal.normalize()
     }
@@ -56,13 +86,6 @@ where
     }
 }
 
-//impl<T> Sized for T where T: Shape {}
-//impl<T> AsRef<T> for dyn Shape {
-//fn as_ref(&self) -> &T {
-//&self as dyn Shape
-//}
-//}
-
 // We can now implement Clone manually by forwarding to clone_box.
 impl Clone for ShapeBox {
     fn clone(&self) -> ShapeBox {
@@ -72,17 +95,93 @@ impl Clone for ShapeBox {
 
 impl<'a> PartialEq for dyn Shape + 'a {
     fn eq(&self, other: &Self) -> bool {
-        self.get_material() == other.get_material() && self.get_transform() == other.get_transform()
+        self.get_id() == other.get_id()
     }
 }
 
-impl fmt::Debug for ShapeBox {
+impl fmt::Debug for dyn Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "object id: {:?}\nmaterial: {:?}",
-            self.get_id(),
-            self.get_material()
-        )
+        write!(f, "shape: {}", self.get_id())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::transformation::*;
+
+    #[derive(Clone, Debug, PartialEq)]
+    struct TestShape {
+        props: Shape3D,
+    }
+    impl Shape for TestShape {
+        fn get_id(&self) -> String {
+            format!("testshape_{}", self.props.id)
+        }
+        fn get_transform(&self) -> &Matrix4 {
+            &self.props.transform
+        }
+        fn set_transform(&mut self, t: &Matrix4) {
+            self.props.transform = *t;
+        }
+        fn get_material(&self) -> &Material {
+            &self.props.material
+        }
+        fn set_material(&mut self, m: &Material) {
+            self.props.material = *m;
+        }
+        fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+            //self.saved_ray = ray;
+            vec![]
+        }
+        fn local_normal_at(&self, point: Point) -> Vector {
+            point_zero()
+        }
+    }
+
+    fn test_shape() -> TestShape {
+        TestShape {
+            props: Shape3D::default(),
+        }
+    }
+
+    #[test]
+    fn shape_instances_have_unique_ids() {
+        let s1 = test_shape();
+        let s2 = test_shape();
+        assert_ne!(s1.get_id(), s2.get_id());
+    }
+
+    #[test]
+    fn test_default_transform_is_identity() {
+        let s = test_shape();
+        let ident: Matrix4 = identity();
+        assert_eq!(*s.get_transform(), ident);
+    }
+
+    #[test]
+    fn test_changing_transform() {
+        let mut s = test_shape();
+        let t = make_translation(2.0, 3.0, 4.0);
+        s.set_transform(&t);
+        assert_eq!(*s.get_transform(), t);
+    }
+
+    #[test]
+    fn intersect_scaled_shape_with_ray() {
+        let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
+        let mut s = test_shape();
+        s.set_transform(&make_scaling(2.0, 2.0, 2.0));
+        let xs = s.intersect(&r);
+        //assert_eq!(s.saved_ray.origin, point(0.0, 0.0, -2.5));
+    }
+
+    #[test]
+    fn intersect_translated_shape_with_ray() {
+        let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
+        let mut s = test_shape();
+        s.set_transform(&make_translation(5.0, 0.0, 0.0));
+        let xs = s.intersect(&r);
+        assert_eq!(xs.len(), 0);
     }
 }

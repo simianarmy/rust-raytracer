@@ -17,4 +17,5 @@ pub mod transformation;
 #[macro_use]
 pub mod tuple;
 pub mod camera;
+pub mod plane;
 pub mod world;
