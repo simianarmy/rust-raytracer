@@ -47,7 +47,7 @@ fn main() {
                     let p = ray.position(is.t);
                     let normal = is.object.normal_at(p);
                     let eye = -ray.direction;
-                    let color = lighting(&is.object.get_material(), &light, p, eye, normal);
+                    let color = lighting(&is.object.get_material(), &light, p, eye, normal, false);
                     canvas.write_pixel(x, y, color);
                 }
                 _ => canvas.write_pixel(x, y, Color::black()),

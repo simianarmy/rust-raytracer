@@ -13,19 +13,21 @@ pub struct Material {
     pub shininess: F3D,
 }
 
-pub fn material(ambient: F3D, diffuse: F3D, specular: F3D, shininess: F3D) -> Material {
-    Material {
-        color: Color::white(),
-        ambient,
-        diffuse,
-        specular,
-        shininess,
+impl Material {
+    pub fn new(ambient: F3D, diffuse: F3D, specular: F3D, shininess: F3D) -> Material {
+        Material {
+            color: Color::white(),
+            ambient,
+            diffuse,
+            specular,
+            shininess,
+        }
     }
 }
 
-impl Material {
-    pub fn new() -> Material {
-        material(0.1, 0.9, 0.9, 200.0)
+impl Default for Material {
+    fn default() -> Self {
+        Self::new(0.1, 0.9, 0.9, 200.0)
     }
 }
 
@@ -36,6 +38,7 @@ pub fn lighting(
     point: Point,
     eyev: Vector,
     normalv: Vector,
+    in_shadow: bool,
 ) -> Color {
     // combine surface color with lights color/intensity
     let effective_color: Color = material.color * light.intensity;
@@ -48,7 +51,10 @@ pub fn lighting(
 
     // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the​​   ​# light is on the other side of the surface.
     let light_dot_normal: F3D = lightv.dot(&normalv);
-    if light_dot_normal >= 0.0 {
+    if in_shadow || light_dot_normal < 0.0 {
+        // no light contribution, diffuse and specular are zero
+        ambient
+    } else {
         // compute the diffuse contribution
         let diffuse: Color = effective_color * material.diffuse * light_dot_normal;
         // reflect_dot_eye represents the cosine of the angle between the​​     ​# reflection vector and the eye vector. A negative number means the​​     ​# light reflects away from the eye.
@@ -62,9 +68,6 @@ pub fn lighting(
             specular = light.intensity * material.specular * factor;
         }
         ambient + diffuse + specular
-    } else {
-        // no light contribution, diffuse and specular are zero
-        ambient
     }
 }
 
@@ -74,12 +77,12 @@ mod tests {
     use crate::assert_eq_eps;
 
     fn setup() -> (Material, Point) {
-        (Material::new(), point_zero())
+        (Material::default(), point_zero())
     }
 
     #[test]
     fn default_material() {
-        let m = Material::new();
+        let (m, _) = setup();
         assert_eq!(m.ambient, 0.1);
         assert_eq!(m.diffuse, 0.9);
         assert_eq!(m.specular, 0.9);
@@ -92,7 +95,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv);
+        let result = lighting(&m, &light, position, eyev, normalv, false);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
     }
 
@@ -102,7 +105,7 @@ mod tests {
         let eyev = vector(0.0, 2_f32.sqrt() / 2.0, -2_f32.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv);
+        let result = lighting(&m, &light, position, eyev, normalv, false);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
     }
 
@@ -112,7 +115,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv);
+        let result = lighting(&m, &light, position, eyev, normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.7364, 0.7364, 0.7364).tuple());
     }
 
@@ -122,7 +125,7 @@ mod tests {
         let eyev = vector(0.0, -2_f32.sqrt() / 2.0, -2_f32.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv);
+        let result = lighting(&m, &light, position, eyev, normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(1.6364, 1.6364, 1.6364).tuple());
     }
 
@@ -132,7 +135,17 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, 10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv);
+        let result = lighting(&m, &light, position, eyev, normalv, false);
+        assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
+    }
+
+    #[test]
+    fn lighting_with_surface_in_shadow() {
+        let (m, position) = setup();
+        let eyev = vector(0.0, 0.0, -1.0);
+        let normalv = vector(0.0, 0.0, -1.0);
+        let light = point_light(point(0.0, 0.0, -10.0), Color::white());
+        let result = lighting(&m, &light, position, eyev, normalv, true);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 }

@@ -1,4 +1,4 @@
-use crate::math::F3D;
+use crate::math::*;
 use crate::ray::Ray;
 use crate::shape::*;
 use crate::tuple::*;
@@ -60,6 +60,7 @@ pub struct Computations {
     pub t: F3D,
     pub object: ShapeBox,
     pub point: Point,
+    pub over_point: Point,
     pub eyev: Vector,
     pub normalv: Vector,
     pub inside: bool,
@@ -70,13 +71,15 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray) -> Computations {
     let normal = i.object.normal_at(p);
     let eyev = -ray.direction;
     let inside = normal.dot(&eyev) < 0.0;
+    let normalv = if inside { -normal } else { normal };
 
     Computations {
         t: i.t,
         object: i.object.clone(),
         point: p,
+        over_point: p + normalv * EPSILON,
         eyev,
-        normalv: if inside { -normal } else { normal },
+        normalv,
         inside,
     }
 }
@@ -84,8 +87,8 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray) -> Computations {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use crate::sphere::*;
+    use crate::transformation::*;
 
     #[test]
     fn intersections_macro_builds_list_from_args() {
@@ -171,5 +174,16 @@ mod tests {
         assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
         assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
         assert!(comps.inside);
+    }
+
+    #[test]
+    fn hit_should_offset_point() {
+        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
+        let mut s = sphere();
+        s.set_transform(&make_translation(0.0, 0.0, 1.0));
+        let i = s.intersection(5.0);
+        let comps = prepare_computations(&i, &r);
+        assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
+        assert!(comps.point.z > comps.over_point.z);
     }
 }

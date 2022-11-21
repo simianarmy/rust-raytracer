@@ -7,14 +7,14 @@ use crate::world::World;
 use glm;
 
 #[derive(Debug)]
-struct Camera {
+pub struct Camera {
     hsize: usize,
     vsize: usize,
     half_width: F3D,
     half_height: F3D,
     fov: F3D,
     pixel_size: F3D,
-    transform: Matrix4,
+    pub transform: Matrix4,
 }
 
 impl Camera {
@@ -62,7 +62,7 @@ impl Camera {
         let mut image = Canvas::new(self.hsize, self.vsize, None);
 
         for y in 0..self.vsize {
-            for x in 0..self.vsize {
+            for x in 0..self.hsize {
                 let r = self.ray_for_pixel(x, y);
                 let c = world.color_at(&r);
                 image.write_pixel(x, y, c);
@@ -101,6 +101,14 @@ mod tests {
         let r = c.ray_for_pixel(100, 50);
         assert_eq!(r.origin, point_zero());
         assert_eq_eps!(r.direction, vector(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn construct_ray_through_corner_of_canvas() {
+        let c = Camera::new(201, 101, glm::half_pi());
+        let r = c.ray_for_pixel(0, 0);
+        assert_eq!(r.origin, point_zero());
+        assert_eq_eps!(r.direction, vector(0.66519, 0.33259, -0.66851));
     }
 
     #[test]

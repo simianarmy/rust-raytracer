@@ -17,7 +17,7 @@ pub fn sphere_with_id(id: Option<String>) -> Sphere {
         props: Shape3D {
             id: id.unwrap_or("1".to_string()),
             transform: glm::identity(),
-            material: Material::new(),
+            material: Material::default(),
         },
     }
 }
