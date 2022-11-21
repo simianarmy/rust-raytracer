@@ -27,7 +27,7 @@ pub fn make_rotation_z(angle: F3D) -> Matrix4 {
 
 // glm implementation takes a 4x4matrix - this works
 pub fn make_shearing(xy: F3D, xz: F3D, yx: F3D, yz: F3D, zx: F3D, zy: F3D) -> Matrix4 {
-    Mat4::new(
+    Matrix4::new(
         1.0, xy, xz, 0.0, yx, 1.0, yz, 0.0, zx, zy, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     )
 }
@@ -39,7 +39,7 @@ pub fn view_transform(from: &Point, to: &Point, up: &Vector) -> Matrix4 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tuple::*;
+    use crate::assert_eq_eps;
 
     #[test]
     fn translate_point() {
@@ -70,8 +70,8 @@ mod tests {
         let p = point_y();
         let half_quarter = make_rotation_x(quarter_pi());
         let p2 = half_quarter * p;
-        let expected = point(0.0, 2_f32.sqrt() / 2.0, 2_f32.sqrt() / 2.0);
-        assert_eq!(p2, expected);
+        let expected = point(0.0, 2_f64.sqrt() / 2.0, 2_f64.sqrt() / 2.0);
+        assert_eq_eps!(p2, expected);
     }
 
     #[test]

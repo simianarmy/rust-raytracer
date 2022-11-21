@@ -13,7 +13,7 @@ pub struct Intersection {
 
 impl PartialEq for Intersection {
     fn eq(&self, other: &Self) -> bool {
-        self.t == other.t // todo: object comparison
+        f_equals(self.t, other.t) // todo: object comparison
     }
 }
 
@@ -56,6 +56,7 @@ pub fn hit(is: &Vec<Intersection>) -> Option<&Intersection> {
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
 }
 
+#[derive(Debug)]
 pub struct Computations {
     pub t: F3D,
     pub object: ShapeBox,
@@ -183,6 +184,7 @@ mod tests {
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = s.intersection(5.0);
         let comps = prepare_computations(&i, &r);
+        println!("comps {:?}", comps);
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
     }

@@ -102,7 +102,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_between_light_and_surface_eye_offset_45() {
         let (m, position) = setup();
-        let eyev = vector(0.0, 2_f32.sqrt() / 2.0, -2_f32.sqrt() / 2.0);
+        let eyev = vector(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
         let result = lighting(&m, &light, position, eyev, normalv, false);
@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_in_path_of_reflection_vec() {
         let (m, position) = setup();
-        let eyev = vector(0.0, -2_f32.sqrt() / 2.0, -2_f32.sqrt() / 2.0);
+        let eyev = vector(0.0, -2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
         let result = lighting(&m, &light, position, eyev, normalv, false);

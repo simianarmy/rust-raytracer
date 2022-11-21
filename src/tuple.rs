@@ -3,9 +3,9 @@
  * Maybe use an Enum here?
  */
 use crate::math::F3D;
-use glm::{vec4, Vec4};
+use glm::{vec4, TVec4};
 
-pub type Tuple = Vec4;
+pub type Tuple = TVec4<F3D>;
 pub type Point = Tuple;
 pub type Vector = Tuple;
 
@@ -149,7 +149,7 @@ enum GFX {
 // common constructors
 
 pub fn tuple(x: F3D, y: F3D, z: F3D, w: F3D) -> Tuple {
-    vec4(x, y, z, w)
+    vec4::<f64>(x, y, z, w)
 }
 
 pub fn point(x: F3D, y: F3D, z: F3D) -> Point {
@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn magnitude() {
         let t1 = vector(1.0, 2.0, 3.0);
-        assert_eq!(t1.magnitude(), (14.0_f32).sqrt());
+        assert_eq!(t1.magnitude(), (14_f64).sqrt());
     }
 
     #[test]
@@ -394,7 +394,7 @@ mod tests {
     #[test]
     fn normalize_2() {
         let t1 = vector(1.0, 2.0, 3.0);
-        let sqrt14 = (14_f32).sqrt();
+        let sqrt14 = (14_f64).sqrt();
         assert_eq!(
             t1.normalize(),
             vector(1.0 / sqrt14, 2.0 / sqrt14, 3.0 / sqrt14)

@@ -91,8 +91,7 @@ mod tests {
     #[test]
     fn pixel_size_for_horizontal_canvas() {
         let c = Camera::new(200, 125, glm::half_pi());
-        println!("{:?}", c);
-        assert_eq!(c.pixel_size, 0.01);
+        assert!(f_equals(c.pixel_size, 0.01));
     }
 
     #[test]
@@ -119,7 +118,7 @@ mod tests {
         assert_eq_eps!(r.origin, point(0.0, 2.0, -5.0));
         assert_eq_eps!(
             r.direction,
-            vector(2_f32.sqrt() / 2.0, 0.0, -2_f32.sqrt() / 2.0)
+            vector((2_f64).sqrt() / 2.0, 0.0, -(2_f64).sqrt() / 2.0)
         );
     }
 

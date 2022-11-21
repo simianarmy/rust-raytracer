@@ -5,13 +5,13 @@ use std::path::Path;
 use crate::canvas::Canvas;
 use crate::math::F3D;
 
-const PPM_MAX_COLOR: u32 = 255;
+const PPM_MAX_COLOR: usize = 255;
 
 /**
  * Scale rgb color from 0 -> 255
  */
 fn scale_color(val: F3D) -> u16 {
-    let scaled = (val * PPM_MAX_COLOR as f32).round();
+    let scaled = (val * PPM_MAX_COLOR as f64).round();
     // clamp() is too annoying with types
     if scaled > 255.0 {
         255

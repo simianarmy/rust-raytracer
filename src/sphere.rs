@@ -51,13 +51,13 @@ impl Shape for Sphere {
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
-        let sphere_to_ray = t_ray.origin - point(0.0, 0.0, 0.0);
+        let sphere_to_ray = t_ray.origin - point_zero();
         let a = t_ray.direction.dot(&t_ray.direction);
         let b = 2.0 * t_ray.direction.dot(&sphere_to_ray);
         let c = sphere_to_ray.dot(&sphere_to_ray) - 1.0;
         let discriminant = b * b - 4.0 * a * c;
 
-        if discriminant < 0_f32 {
+        if discriminant < 0.0 {
             vec![]
         } else {
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn normal_at_nonaxial_point() {
         let s = sphere();
-        let val = 3_f32.sqrt() / 3.0;
+        let val = 3_f64.sqrt() / 3.0;
         let n = s.normal_at(point(val, val, val));
         assert_eq_eps!(&n, &vector(val, val, val));
     }
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn normal_at_is_normalized() {
         let s = sphere();
-        let val = 3_f32.sqrt() / 3.0;
+        let val = 3_f64.sqrt() / 3.0;
         let n = s.normal_at(point(val, val, val));
         assert_eq_eps!(&n, &normalize(&n));
     }
@@ -205,9 +205,9 @@ mod tests {
     #[test]
     fn computing_normal_on_transformed_sphere() {
         let mut s = sphere();
-        let m = make_scaling(1.0, 0.5, 1.0) * make_rotation_z(pi::<f32>() / 5.0);
+        let m = make_scaling(1.0, 0.5, 1.0) * make_rotation_z(pi::<f64>() / 5.0);
         s.props.transform = m;
-        let n = s.normal_at(point(0.0, 2_f32.sqrt() / 2.0, -2_f32.sqrt() / 2.0));
+        let n = s.normal_at(point(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0));
         assert_eq_eps!(&n, &vector(0.0, 0.97014, -0.24254));
     }
 }
