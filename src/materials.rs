@@ -1,47 +1,57 @@
 use crate::color::*;
 use crate::lights::*;
 use crate::math::F3D;
+use crate::pattern::*;
+use crate::shape::*;
 use crate::tuple::*;
 use glm::*;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Material {
+#[derive(Clone, Debug, PartialEq)]
+pub struct Material<T> {
     pub color: Color,
     pub ambient: F3D,
     pub diffuse: F3D,
     pub specular: F3D,
     pub shininess: F3D,
+    pub pattern: Option<T>,
 }
 
-impl Material {
-    pub fn new(ambient: F3D, diffuse: F3D, specular: F3D, shininess: F3D) -> Material {
+impl<T> Material<T> {
+    pub fn new(ambient: F3D, diffuse: F3D, specular: F3D, shininess: F3D) -> Material<T> {
         Material {
             color: Color::white(),
             ambient,
             diffuse,
             specular,
             shininess,
+            pattern: None,
         }
     }
 }
 
-impl Default for Material {
+impl<T> Default for Material<T> {
     fn default() -> Self {
         Self::new(0.1, 0.9, 0.9, 200.0)
     }
 }
 
 // Phong lighting
-pub fn lighting(
-    material: &Material,
+pub fn lighting<T>(
+    material: &Material<T>,
+    object: ShapeBox,
     light: &PointLight,
     point: Point,
     eyev: Vector,
     normalv: Vector,
     in_shadow: bool,
 ) -> Color {
+    // use material pattern for color if it exists
+    let mut color = material.color;
+    if let Some(pattern) = material.pattern {
+        color = pattern.pattern_at_shape(object, &point);
+    }
     // combine surface color with lights color/intensity
-    let effective_color: Color = material.color * light.intensity;
+    let effective_color: Color = color * light.intensity;
 
     // find direction to light source
     let lightv: Vector = normalize(&(light.position - point));
@@ -75,14 +85,16 @@ pub fn lighting(
 mod tests {
     use super::*;
     use crate::assert_eq_eps;
+    use crate::pattern::stripe::stripe_pattern;
+    use crate::sphere::*;
 
-    fn setup() -> (Material, Point) {
-        (Material::default(), point_zero())
+    fn setup() -> (Material, Point, ShapeBox) {
+        (Material::default(), point_zero(), Box::new(sphere()))
     }
 
     #[test]
     fn default_material() {
-        let (m, _) = setup();
+        let (m, _, _) = setup();
         assert_eq!(m.ambient, 0.1);
         assert_eq!(m.diffuse, 0.9);
         assert_eq!(m.specular, 0.9);
@@ -91,61 +103,94 @@ mod tests {
 
     #[test]
     fn lighting_with_eye_between_light_and_surface() {
-        let (m, position) = setup();
+        let (m, position, object) = setup();
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv, false);
+        let result = lighting(&m, object, &light, position, eyev, normalv, false);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
     }
 
     #[test]
     fn lighting_with_eye_between_light_and_surface_eye_offset_45() {
-        let (m, position) = setup();
+        let (m, position, object) = setup();
         let eyev = vector(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv, false);
+        let result = lighting(&m, object, &light, position, eyev, normalv, false);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
     }
 
     #[test]
     fn lighting_with_eye_opposite_surface_light_offset_45() {
-        let (m, position) = setup();
+        let (m, position, object) = setup();
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv, false);
+        let result = lighting(&m, object, &light, position, eyev, normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.7364, 0.7364, 0.7364).tuple());
     }
 
     #[test]
     fn lighting_with_eye_in_path_of_reflection_vec() {
-        let (m, position) = setup();
+        let (m, position, object) = setup();
         let eyev = vector(0.0, -2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv, false);
+        let result = lighting(&m, object, &light, position, eyev, normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(1.6364, 1.6364, 1.6364).tuple());
     }
 
     #[test]
     fn lighting_with_light_behind_surface() {
-        let (m, position) = setup();
+        let (m, position, object) = setup();
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, 10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv, false);
+        let result = lighting(&m, object, &light, position, eyev, normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
     #[test]
     fn lighting_with_surface_in_shadow() {
-        let (m, position) = setup();
+        let (m, position, object) = setup();
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &light, position, eyev, normalv, true);
+        let result = lighting(&m, object, &light, position, eyev, normalv, true);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
+    }
+
+    #[test]
+    fn lighting_with_a_pattern_applied() {
+        let mut m = Material::default();
+        m.pattern = Some(stripe_pattern(Color::white(), Color::black()));
+        m.ambient = 1.0;
+        m.diffuse = 0.0;
+        m.specular = 0.0;
+        let (_, _, object) = setup();
+        let eyev = vector(0.0, 0.0, -1.0);
+        let normalv = vector(0.0, 0.0, -1.0);
+        let light = point_light(point(0.0, 0.0, -10.0), Color::white());
+        let c1 = lighting(
+            &m,
+            object.clone(),
+            &light,
+            point(0.9, 0.0, 0.0),
+            eyev,
+            normalv,
+            false,
+        );
+        let c2 = lighting(
+            &m,
+            object.clone(),
+            &light,
+            point(1.1, 0.0, 0.0),
+            eyev,
+            normalv,
+            false,
+        );
+        assert_eq!(c1, Color::white());
+        assert_eq!(c2, Color::black());
     }
 }

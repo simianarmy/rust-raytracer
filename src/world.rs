@@ -11,7 +11,7 @@ use crate::tuple::*;
 
 pub struct World {
     light: PointLight,
-    shapes: Vec<Box<dyn Shape>>,
+    shapes: Vec<ShapeBox>,
 }
 
 impl World {
@@ -22,15 +22,15 @@ impl World {
         }
     }
 
-    pub fn add_shape(&mut self, s: Box<dyn Shape>) {
+    pub fn add_shape(&mut self, s: ShapeBox) {
         self.shapes.push(s);
     }
 
-    pub fn get_shape(&self, i: usize) -> &Box<dyn Shape> {
+    pub fn get_shape(&self, i: usize) -> &ShapeBox {
         &self.shapes[i]
     }
 
-    pub fn set_shape(&mut self, shape: Box<dyn Shape>, i: usize) {
+    pub fn set_shape(&mut self, shape: ShapeBox, i: usize) {
         self.shapes[i] = shape;
     }
 
@@ -52,6 +52,7 @@ impl World {
 
         lighting(
             comps.object.get_material(),
+            comps.object.clone(),
             &self.light,
             comps.over_point,
             comps.eyev,

@@ -60,8 +60,6 @@ fn main() {
     lsphere.props.material.diffuse = 0.7;
     lsphere.props.material.specular = 0.3;
 
-    //println!("lwall material: {}", lwall.props.transform);
-    //println!("rwall material: {}", rwall.props.transform);
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
     world.add_shape(Box::new(floor));
     world.add_shape(Box::new(lwall));

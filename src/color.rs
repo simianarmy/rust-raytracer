@@ -1,8 +1,9 @@
 use crate::math::F3D;
 use crate::tuple::{tuple, Tuple};
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::fmt;
+use std::ops::{Add, Mul};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 pub struct Color {
     rgb: Tuple,
 }
@@ -76,6 +77,12 @@ impl Mul for Color {
         // doesn't work :(
         //Color::from_tuple(rgb1 * rgb2);
         Color::new(rgb1.x * rgb2.x, rgb1.y * rgb2.y, rgb1.z * rgb2.z)
+    }
+}
+
+impl fmt::Debug for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "r: {}, g: {}, b: {}", self.rgb.x, self.rgb.y, self.rgb.z)
     }
 }
 
