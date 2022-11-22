@@ -188,6 +188,8 @@ mod tests {
     #[test]
     fn color_with_intersection_behind_ray() {
         let mut world = World::default();
+
+        // all this to change the material ambient value :(
         let outer = world.get_shape(0);
         let om = outer.get_material().clone();
         let om2 = Material { ambient: 1.0, ..om };
@@ -214,24 +216,28 @@ mod tests {
         let p = point(0.0, 10.0, 0.0);
         assert!(!world.is_shadowed(&p));
     }
+
     #[test]
     fn shadow_when_object_between_point_and_light() {
         let world = World::default();
         let p = point(10.0, -10.0, 10.0);
         assert!(world.is_shadowed(&p));
     }
+
     #[test]
     fn no_shadow_when_object_behind_light() {
         let world = World::default();
         let p = point(-20.0, 20.0, -20.0);
         assert!(!world.is_shadowed(&p));
     }
+
     #[test]
     fn no_shadow_when_object_behind_point() {
         let world = World::default();
         let p = point(-2.0, 2.0, -2.0);
         assert!(!world.is_shadowed(&p));
     }
+
     #[test]
     fn shade_hit_given_intersection_in_shadow() {
         let mut world = World::new(point_light(point(0.0, 0.0, -10.0), Color::white()));

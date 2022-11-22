@@ -22,7 +22,9 @@ pub fn default_transform() -> Matrix4 {
     glm::identity()
 }
 
+pub mod checkers;
 pub mod gradient;
+pub mod ring;
 pub mod stripe;
 
 pub type PatternBox = Box<dyn Pattern>;
