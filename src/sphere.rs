@@ -34,8 +34,8 @@ impl Shape for Sphere {
     fn get_material(&self) -> &Material {
         &self.props.material
     }
-    fn set_material(&mut self, m: &Material) {
-        self.props.material = *m;
+    fn set_material(&mut self, m: Material) {
+        self.props.material = m;
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {

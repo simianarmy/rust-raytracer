@@ -1,7 +1,7 @@
 use crate::color::Color;
 use crate::math::f_equals;
 use crate::matrix::Matrix4;
-use crate::pattern::Pattern;
+use crate::pattern::{default_transform, Pattern};
 use crate::tuple::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -15,11 +15,19 @@ pub fn stripe_pattern(a: Color, b: Color) -> StripePattern {
     StripePattern {
         a,
         b,
-        transform: glm::identity(),
+        transform: default_transform(),
     }
 }
 
 impl Pattern for StripePattern {
+    fn get_transform(&self) -> Matrix4 {
+        self.transform
+    }
+
+    fn set_transform(&mut self, m: Matrix4) {
+        self.transform = m;
+    }
+
     fn pattern_at(&self, point: &Point) -> Color {
         if f_equals(point.x.floor() % 2.0, 0.0) {
             self.a
@@ -32,9 +40,6 @@ impl Pattern for StripePattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::*;
-    use crate::sphere::sphere;
-    use crate::transformation::*;
 
     fn setup() -> StripePattern {
         stripe_pattern(Color::white(), Color::black())
@@ -70,34 +75,5 @@ mod tests {
         assert_eq!(p.pattern_at(&point(-0.1, 0.0, 0.0)), Color::black());
         assert_eq!(p.pattern_at(&point(-1.0, 0.0, 0.0)), Color::black());
         assert_eq!(p.pattern_at(&point(-1.1, 0.0, 0.0)), Color::white());
-    }
-
-    #[test]
-    fn stripes_with_object_transform() {
-        let pattern = setup();
-        let mut object = sphere();
-        object.set_transform(&make_scaling(2.0, 2.0, 2.0));
-        let sb = Box::new(object);
-        let c = pattern.pattern_at_shape(sb, &point(1.5, 0.0, 0.0));
-        assert_eq!(c, Color::white());
-    }
-
-    #[test]
-    fn stripes_with_pattern_transform() {
-        let mut pattern = setup();
-        let object = sphere();
-        pattern.transform = make_scaling(2.0, 2.0, 2.0);
-        let c = pattern.pattern_at_shape(Box::new(object), &point(1.5, 0.0, 0.0));
-        assert_eq!(c, Color::white());
-    }
-
-    #[test]
-    fn stripes_with_object_and_pattern_transform() {
-        let mut pattern = setup();
-        let mut object = sphere();
-        object.set_transform(&make_scaling(2.0, 2.0, 2.0));
-        pattern.transform = make_translation(0.5, 0.0, 0.0);
-        let c = pattern.pattern_at_shape(Box::new(object), &point(2.5, 0.0, 0.0));
-        assert_eq!(c, Color::white());
     }
 }

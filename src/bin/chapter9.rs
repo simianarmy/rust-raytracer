@@ -31,7 +31,7 @@ fn main() {
     m.color = Color::new(0.1, 1.0, 0.5);
     m.diffuse = 0.7;
     m.specular = 0.3;
-    msphere.set_material(&m);
+    msphere.set_material(m);
 
     let mut rsphere = sphere();
     let rt = make_translation(1.5, 0.5, -0.5) * make_scaling(0.5, 0.5, 0.5);

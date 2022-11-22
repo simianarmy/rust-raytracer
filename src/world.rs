@@ -94,7 +94,7 @@ impl Default for World {
         m.color = Color::new(0.8, 1.0, 0.6);
         m.diffuse = 0.7;
         m.specular = 0.2;
-        s1.set_material(&m);
+        s1.set_material(m);
         let mut s2 = sphere_with_id(Some("s2".to_string()));
         s2.set_transform(&make_scaling(0.5, 0.5, 0.5));
         let mut world = World::new(light);
@@ -189,23 +189,17 @@ mod tests {
     fn color_with_intersection_behind_ray() {
         let mut world = World::default();
         let outer = world.get_shape(0);
-        let om = outer.get_material();
-        let om2 = Material {
-            ambient: 1.0,
-            ..*om
-        };
+        let om = outer.get_material().clone();
+        let om2 = Material { ambient: 1.0, ..om };
         let mut o2 = outer.clone();
-        o2.set_material(&om2);
+        o2.set_material(om2);
         world.set_shape(o2, 0);
 
         let inner = world.get_shape(1);
-        let im = inner.get_material();
-        let im2 = Material {
-            ambient: 1.0,
-            ..*im
-        };
+        let im = inner.get_material().clone();
+        let im2 = Material { ambient: 1.0, ..im };
         let mut i2 = inner.clone();
-        i2.set_material(&im2);
+        i2.set_material(im2);
         world.set_shape(i2, 1);
 
         let ray = Ray::new(point(0.0, 0.0, 0.75), vector(0.0, 0.0, -1.0));

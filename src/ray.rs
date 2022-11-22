@@ -26,7 +26,6 @@ impl Ray {
 mod tests {
     use super::*;
     use crate::transformation::*;
-    use crate::tuple::*;
 
     #[test]
     fn constructor_assigns_args() {

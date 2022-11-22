@@ -35,8 +35,8 @@ impl Shape for Plane {
     fn get_material(&self) -> &Material {
         &self.props.material
     }
-    fn set_material(&mut self, m: &Material) {
-        self.props.material = *m;
+    fn set_material(&mut self, m: Material) {
+        self.props.material = m;
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -48,7 +48,7 @@ impl Shape for Plane {
         }
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    fn local_normal_at(&self, _point: Point) -> Vector {
         point_y()
     }
 }

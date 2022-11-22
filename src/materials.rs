@@ -7,17 +7,17 @@ use crate::tuple::*;
 use glm::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Material<T> {
+pub struct Material {
     pub color: Color,
     pub ambient: F3D,
     pub diffuse: F3D,
     pub specular: F3D,
     pub shininess: F3D,
-    pub pattern: Option<T>,
+    pub pattern: Option<Box<dyn Pattern>>,
 }
 
-impl<T> Material<T> {
-    pub fn new(ambient: F3D, diffuse: F3D, specular: F3D, shininess: F3D) -> Material<T> {
+impl Material {
+    pub fn new(ambient: F3D, diffuse: F3D, specular: F3D, shininess: F3D) -> Material {
         Material {
             color: Color::white(),
             ambient,
@@ -27,17 +27,21 @@ impl<T> Material<T> {
             pattern: None,
         }
     }
+
+    pub fn set_pattern(&mut self, pattern: Option<Box<dyn Pattern>>) {
+        self.pattern = pattern;
+    }
 }
 
-impl<T> Default for Material<T> {
+impl Default for Material {
     fn default() -> Self {
         Self::new(0.1, 0.9, 0.9, 200.0)
     }
 }
 
 // Phong lighting
-pub fn lighting<T>(
-    material: &Material<T>,
+pub fn lighting(
+    material: &Material,
     object: ShapeBox,
     light: &PointLight,
     point: Point,
@@ -47,7 +51,7 @@ pub fn lighting<T>(
 ) -> Color {
     // use material pattern for color if it exists
     let mut color = material.color;
-    if let Some(pattern) = material.pattern {
+    if let Some(pattern) = &material.pattern {
         color = pattern.pattern_at_shape(object, &point);
     }
     // combine surface color with lights color/intensity
@@ -164,7 +168,8 @@ mod tests {
     #[test]
     fn lighting_with_a_pattern_applied() {
         let mut m = Material::default();
-        m.pattern = Some(stripe_pattern(Color::white(), Color::black()));
+        // TODO: implement set_pattern()
+        m.pattern = Some(Box::new(stripe_pattern(Color::white(), Color::black())));
         m.ambient = 1.0;
         m.diffuse = 0.0;
         m.specular = 0.0;

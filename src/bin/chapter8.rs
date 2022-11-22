@@ -28,7 +28,7 @@ fn main() {
         * make_rotation_x(glm::half_pi())
         * make_scaling(10.0, 0.01, 10.0);
     lwall.set_transform(&lwall_transform);
-    lwall.set_material(&floor.get_material());
+    lwall.set_material(floor.get_material().clone());
 
     let mut rwall = sphere();
     let rwall_transform = make_translation(0.0, 0.0, 5.0)
@@ -36,7 +36,7 @@ fn main() {
         * make_rotation_x(glm::half_pi())
         * make_scaling(10.0, 0.01, 10.0);
     rwall.set_transform(&rwall_transform);
-    rwall.set_material(&floor.get_material());
+    rwall.set_material(floor.get_material().clone());
 
     let mut msphere = sphere();
     msphere.set_transform(&make_translation(-0.5, 1.0, 0.5));
@@ -44,7 +44,7 @@ fn main() {
     m.color = Color::new(0.1, 1.0, 0.5);
     m.diffuse = 0.7;
     m.specular = 0.3;
-    msphere.set_material(&m);
+    msphere.set_material(m);
 
     let mut rsphere = sphere();
     let rt = make_translation(1.5, 0.5, -0.5) * make_scaling(0.5, 0.5, 0.5);

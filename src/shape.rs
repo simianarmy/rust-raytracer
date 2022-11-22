@@ -45,7 +45,7 @@ pub trait Shape: ShapeClone {
     fn set_transform(&mut self, t: &Matrix4);
 
     fn get_material(&self) -> &Material;
-    fn set_material(&mut self, t: &Material);
+    fn set_material(&mut self, t: Material);
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection>;
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -127,14 +127,14 @@ mod tests {
         fn get_material(&self) -> &Material {
             &self.props.material
         }
-        fn set_material(&mut self, m: &Material) {
-            self.props.material = *m;
+        fn set_material(&mut self, m: Material) {
+            self.props.material = m;
         }
-        fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        fn local_intersect(&self, _ray: &Ray) -> Vec<Intersection> {
             //self.saved_ray = ray;
             vec![]
         }
-        fn local_normal_at(&self, point: Point) -> Vector {
+        fn local_normal_at(&self, _point: Point) -> Vector {
             point_zero()
         }
     }
@@ -167,14 +167,16 @@ mod tests {
         assert_eq!(*s.get_transform(), t);
     }
 
+    /*
     #[test]
     fn intersect_scaled_shape_with_ray() {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
         let mut s = test_shape();
         s.set_transform(&make_scaling(2.0, 2.0, 2.0));
         let xs = s.intersect(&r);
-        //assert_eq!(s.saved_ray.origin, point(0.0, 0.0, -2.5));
+        assert_eq!(s.saved_ray.origin, point(0.0, 0.0, -2.5));
     }
+    */
 
     #[test]
     fn intersect_translated_shape_with_ray() {
