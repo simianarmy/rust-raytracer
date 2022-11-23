@@ -86,6 +86,12 @@ impl fmt::Debug for Color {
     }
 }
 
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "r: {}, g: {}, b: {}", self.rgb.x, self.rgb.y, self.rgb.z)
+    }
+}
+
 // constructor utility
 pub fn color(r: F3D, g: F3D, b: F3D) -> Color {
     Color::new(r, g, b)

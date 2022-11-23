@@ -13,6 +13,7 @@ pub struct Material {
     pub diffuse: F3D,
     pub specular: F3D,
     pub shininess: F3D,
+    pub reflective: F3D,
     pub pattern: Option<Box<dyn Pattern>>,
 }
 
@@ -24,6 +25,7 @@ impl Material {
             diffuse,
             specular,
             shininess,
+            reflective: 0.0,
             pattern: None,
         }
     }
@@ -197,5 +199,11 @@ mod tests {
         );
         assert_eq!(c1, Color::white());
         assert_eq!(c2, Color::black());
+    }
+
+    #[test]
+    fn default_reflective_value() {
+        let m = Material::default();
+        assert_eq!(m.reflective, 0.0);
     }
 }

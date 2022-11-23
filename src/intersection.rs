@@ -64,6 +64,7 @@ pub struct Computations {
     pub over_point: Point,
     pub eyev: Vector,
     pub normalv: Vector,
+    pub reflectv: Vector,
     pub inside: bool,
 }
 
@@ -73,6 +74,7 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray) -> Computations {
     let eyev = -ray.direction;
     let inside = normal.dot(&eyev) < 0.0;
     let normalv = if inside { -normal } else { normal };
+    let reflectv = reflect(ray.direction, normalv);
 
     Computations {
         t: i.t,
@@ -81,13 +83,17 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray) -> Computations {
         over_point: p + normalv * EPSILON,
         eyev,
         normalv,
+        reflectv,
         inside,
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::SQRT_2;
+
     use super::*;
+    use crate::plane::plane;
     use crate::sphere::*;
     use crate::transformation::*;
 
@@ -187,5 +193,17 @@ mod tests {
         println!("comps {:?}", comps);
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
+    }
+
+    #[test]
+    fn precomputing_reflection_vector() {
+        let shape = plane();
+        let r = Ray::new(
+            point(0.0, 1.0, -1.0),
+            vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
+        );
+        let i = shape.intersection(SQRT_2);
+        let comps = prepare_computations(&i, &r);
+        assert_eq!(comps.reflectv, vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0));
     }
 }

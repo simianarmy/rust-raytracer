@@ -64,7 +64,7 @@ impl Camera {
         for y in 0..self.vsize {
             for x in 0..self.hsize {
                 let r = self.ray_for_pixel(x, y);
-                let c = world.color_at(&r);
+                let c = world.color_at(&r, crate::world::MAX_RAY_DEPTH);
                 image.write_pixel(x, y, c);
             }
         }
