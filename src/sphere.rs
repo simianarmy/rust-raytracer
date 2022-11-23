@@ -69,6 +69,14 @@ impl Shape for Sphere {
     }
 }
 
+// test helper
+pub fn glass_sphere() -> Sphere {
+    let mut s = sphere();
+    s.props.material.transparency = 1.0;
+    s.props.material.refractive_index = 1.5;
+    s
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

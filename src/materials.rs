@@ -14,6 +14,8 @@ pub struct Material {
     pub specular: F3D,
     pub shininess: F3D,
     pub reflective: F3D,
+    pub transparency: F3D,
+    pub refractive_index: F3D,
     pub pattern: Option<Box<dyn Pattern>>,
 }
 
@@ -26,6 +28,8 @@ impl Material {
             specular,
             shininess,
             reflective: 0.0,
+            transparency: 0.0,
+            refractive_index: 1.0,
             pattern: None,
         }
     }

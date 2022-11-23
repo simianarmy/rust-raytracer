@@ -1,7 +1,5 @@
 use crate::math::*;
-use crate::ray::Ray;
 use crate::shape::*;
-use crate::tuple::*;
 use std::clone::Clone;
 use std::fmt;
 
@@ -19,7 +17,12 @@ impl PartialEq for Intersection {
 
 impl fmt::Debug for Intersection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "intersection t = {}, object = {:p}", self.t, self.object)
+        write!(
+            f,
+            "intersection t = {}, object = {}",
+            self.t,
+            self.object.get_id()
+        )
     }
 }
 
@@ -27,8 +30,9 @@ impl fmt::Display for Intersection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Intersection: t = {}, object = {:p}",
-            self.t, self.object
+            "Intersection: t = {}, object = {}",
+            self.t,
+            self.object.get_id()
         )
     }
 }
@@ -56,46 +60,15 @@ pub fn hit(is: &Vec<Intersection>) -> Option<&Intersection> {
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
 }
 
-#[derive(Debug)]
-pub struct Computations {
-    pub t: F3D,
-    pub object: ShapeBox,
-    pub point: Point,
-    pub over_point: Point,
-    pub eyev: Vector,
-    pub normalv: Vector,
-    pub reflectv: Vector,
-    pub inside: bool,
-}
-
-pub fn prepare_computations(i: &Intersection, ray: &Ray) -> Computations {
-    let p = ray.position(i.t);
-    let normal = i.object.normal_at(p);
-    let eyev = -ray.direction;
-    let inside = normal.dot(&eyev) < 0.0;
-    let normalv = if inside { -normal } else { normal };
-    let reflectv = reflect(ray.direction, normalv);
-
-    Computations {
-        t: i.t,
-        object: i.object.clone(),
-        point: p,
-        over_point: p + normalv * EPSILON,
-        eyev,
-        normalv,
-        reflectv,
-        inside,
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::SQRT_2;
-
     use super::*;
-    use crate::plane::plane;
+    use crate::computations::prepare_computations;
+    use crate::ray::Ray;
     use crate::sphere::*;
     use crate::transformation::*;
+    use crate::tuple::*;
+    use std::clone::Clone;
 
     #[test]
     fn intersections_macro_builds_list_from_args() {
@@ -150,60 +123,14 @@ mod tests {
     }
 
     #[test]
-    fn precomputing_state_of_intersection() {
-        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let shape = sphere();
-        let i = shape.intersection(4.0);
-        let comps = prepare_computations(&i, &r);
-        assert_eq!(comps.t, i.t);
-        assert_eq!(&comps.object, &i.object);
-        assert_eq!(comps.point, point(0.0, 0.0, -1.0));
-        assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
-        assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
-    }
-
-    #[test]
-    fn precomputing_intersection_on_outside() {
-        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let shape = sphere();
-        let i = shape.intersection(4.0);
-        let comps = prepare_computations(&i, &r);
-        assert!(!comps.inside);
-    }
-
-    #[test]
-    fn precomputing_intersection_on_inside() {
-        let r = Ray::new(point_zero(), vector_z());
-        let shape = sphere();
-        let i = shape.intersection(1.0);
-        let comps = prepare_computations(&i, &r);
-        assert_eq!(comps.point, point_z());
-        assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
-        assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
-        assert!(comps.inside);
-    }
-
-    #[test]
     fn hit_should_offset_point() {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let mut s = sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = s.intersection(5.0);
-        let comps = prepare_computations(&i, &r);
+        let comps = prepare_computations(&i, &r, &intersections!(i));
         println!("comps {:?}", comps);
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
-    }
-
-    #[test]
-    fn precomputing_reflection_vector() {
-        let shape = plane();
-        let r = Ray::new(
-            point(0.0, 1.0, -1.0),
-            vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
-        );
-        let i = shape.intersection(SQRT_2);
-        let comps = prepare_computations(&i, &r);
-        assert_eq!(comps.reflectv, vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0));
     }
 }
