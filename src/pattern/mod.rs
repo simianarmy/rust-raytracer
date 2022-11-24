@@ -63,37 +63,37 @@ impl fmt::Debug for dyn Pattern {
     }
 }
 
+#[derive(Clone)]
+pub struct TestPattern {
+    transform: Matrix4,
+}
+
+impl Pattern for TestPattern {
+    fn get_transform(&self) -> Matrix4 {
+        self.transform
+    }
+
+    fn set_transform(&mut self, m: Matrix4) {
+        self.transform = m;
+    }
+
+    fn pattern_at(&self, point: &Point) -> Color {
+        Color::from_tuple(point)
+    }
+}
+
+pub fn test_pattern() -> TestPattern {
+    TestPattern {
+        transform: default_transform(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::sphere::sphere;
     use crate::transformation::*;
     use crate::tuple::*;
-
-    #[derive(Clone)]
-    struct TestPattern {
-        transform: Matrix4,
-    }
-
-    impl Pattern for TestPattern {
-        fn get_transform(&self) -> Matrix4 {
-            self.transform
-        }
-
-        fn set_transform(&mut self, m: Matrix4) {
-            self.transform = m;
-        }
-
-        fn pattern_at(&self, point: &Point) -> Color {
-            Color::new(point.x, point.y, point.z)
-        }
-    }
-
-    fn test_pattern() -> TestPattern {
-        TestPattern {
-            transform: default_transform(),
-        }
-    }
 
     fn setup() -> TestPattern {
         test_pattern()

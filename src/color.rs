@@ -15,7 +15,7 @@ impl Color {
         }
     }
 
-    pub fn from_tuple(t: Tuple) -> Color {
+    pub fn from_tuple(t: &Tuple) -> Color {
         Color::new(t.x, t.y, t.z)
     }
 
@@ -55,7 +55,8 @@ impl Add for Color {
 
     fn add(self, other: Self) -> Self {
         //Self::new(self.x + other.x, self.y + other.y, self.z + other.z)
-        Self::from_tuple(self.tuple() + other.tuple())
+        let added = self.tuple() + other.tuple();
+        Self::from_tuple(&added)
     }
 }
 
@@ -64,7 +65,7 @@ impl Mul<F3D> for Color {
 
     fn mul(self, scalar: F3D) -> Self::Output {
         let rgb = self.tuple() * scalar;
-        Color::from_tuple(rgb)
+        Color::from_tuple(&rgb)
     }
 }
 

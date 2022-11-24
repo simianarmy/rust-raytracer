@@ -1,10 +1,12 @@
 /**
  * Low level math routines
  */
+use std::f64::consts::SQRT_2;
 
 pub type F3D = f64;
 // Use suggested raytracer book value to pass unit tests
 pub const EPSILON: F3D = 0.0001; // f64::EPSILON; //  * 100.0;
+pub const SQRT_2_DIV_2: F3D = -SQRT_2 / 2.0;
 
 pub fn f_equals(a: F3D, b: F3D) -> bool {
     (a - b).abs() <= EPSILON

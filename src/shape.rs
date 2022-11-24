@@ -101,7 +101,12 @@ impl<'a> PartialEq for dyn Shape + 'a {
 
 impl fmt::Debug for dyn Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "shape: {}", self.get_id())
+        write!(
+            f,
+            "shape: {}\nmaterial: {:?}",
+            self.get_id(),
+            self.get_material()
+        )
     }
 }
 

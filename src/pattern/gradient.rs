@@ -29,7 +29,7 @@ impl Pattern for GradientPattern {
 
     fn pattern_at(&self, point: &Point) -> Color {
         let lerp = self.a.tuple() + (self.b.tuple() - self.a.tuple()) * point.x.fract();
-        Color::from_tuple(lerp)
+        Color::from_tuple(&lerp)
     }
 }
 
