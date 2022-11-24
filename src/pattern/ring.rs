@@ -11,7 +11,7 @@ pub struct RingPattern {
     transform: Matrix4,
 }
 
-pub fn gradient_pattern(a: Color, b: Color) -> RingPattern {
+pub fn ring_pattern(a: Color, b: Color) -> RingPattern {
     RingPattern {
         a,
         b,

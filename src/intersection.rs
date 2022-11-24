@@ -1,3 +1,4 @@
+use crate::computations::Computations;
 use crate::math::*;
 use crate::shape::*;
 use std::clone::Clone;
@@ -60,9 +61,28 @@ pub fn hit(is: &Vec<Intersection>) -> Option<&Intersection> {
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
 }
 
+// Approximate Fresnel effect
+pub fn schlick(comps: &Computations) -> F3D {
+    let mut cos = comps.eyev.dot(&comps.normalv);
+
+    if comps.n1 > comps.n2 {
+        let n = comps.n1 / comps.n2;
+        let sin2_t = n * n * (1.0 - cos.powi(2));
+
+        if sin2_t > 1.0 {
+            return 1.0;
+        }
+        let cos_t = (1.0 - sin2_t).sqrt();
+        cos = cos_t;
+    }
+    let r0 = ((comps.n1 - comps.n2) / (comps.n1 + comps.n2)).powi(2);
+    r0 + (1.0 - r0) * (1.0 - cos).powi(5)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::assert_eq_feps;
     use crate::computations::prepare_computations;
     use crate::ray::Ray;
     use crate::sphere::*;
@@ -132,5 +152,56 @@ mod tests {
         println!("comps {:?}", comps);
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
+    }
+
+    #[test]
+    fn schlick_under_total_internal_reflection() {
+        let sphere = glass_sphere();
+        let ray = Ray::new(point(0.0, 0.0, -SQRT_2_DIV_2), vector_y());
+        let xs = intersections!(
+            Intersection {
+                t: -SQRT_2_DIV_2,
+                object: Box::new(sphere.clone())
+            },
+            Intersection {
+                t: SQRT_2_DIV_2,
+                object: Box::new(sphere.clone())
+            }
+        );
+        let comps = prepare_computations(&xs[1], &ray, &xs);
+        let reflectance = schlick(&comps);
+        assert_eq!(reflectance, 1.0);
+    }
+
+    #[test]
+    fn schlick_with_perpendicular_viewing_angle() {
+        let sphere = glass_sphere();
+        let ray = Ray::new(point_zero(), vector_y());
+        let xs = intersections!(
+            Intersection {
+                t: -1.0,
+                object: Box::new(sphere.clone())
+            },
+            Intersection {
+                t: 1.0,
+                object: Box::new(sphere.clone())
+            }
+        );
+        let comps = prepare_computations(&xs[1], &ray, &xs);
+        let reflectance = schlick(&comps);
+        assert_eq_feps!(reflectance, 0.04);
+    }
+
+    #[test]
+    fn schlick_with_small_angle() {
+        let sphere = glass_sphere();
+        let ray = Ray::new(point(0.0, 0.99, -2.0), vector_z());
+        let xs = intersections!(Intersection {
+            t: 1.8589,
+            object: Box::new(sphere.clone())
+        });
+        let comps = prepare_computations(&xs[0], &ray, &xs);
+        let reflectance = schlick(&comps);
+        assert_eq_feps!(reflectance, 0.48873);
     }
 }
