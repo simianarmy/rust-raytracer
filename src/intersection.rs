@@ -149,7 +149,6 @@ mod tests {
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = s.intersection(5.0);
         let comps = prepare_computations(&i, &r, &intersections!(i));
-        println!("comps {:?}", comps);
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
     }

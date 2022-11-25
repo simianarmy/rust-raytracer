@@ -18,6 +18,9 @@ pub mod transformation;
 pub mod tuple;
 pub mod camera;
 pub mod computations;
+#[macro_use]
+pub mod cube;
+pub mod cylinder;
 pub mod pattern;
 pub mod plane;
 pub mod world;
