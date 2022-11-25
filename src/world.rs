@@ -484,7 +484,7 @@ mod tests {
             ambient: 1.0,
             ..Material::default()
         };
-        material.set_pattern(Some(Box::new(pattern::test_pattern())));
+        material.set_pattern(Some(pattern::TPattern::Test(pattern::test_pattern())));
         shape1.set_material(material);
         world.set_shape(shape1.clone(), 0);
 

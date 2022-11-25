@@ -3,10 +3,15 @@ use crate::matrix::Matrix4;
 use crate::shape::*;
 use crate::tuple::Point;
 use glm;
-use std::fmt;
 
-pub trait Pattern: PatternClone {
+pub mod checkers;
+pub mod gradient;
+pub mod ring;
+pub mod stripe;
+
+pub trait Pattern {
     fn get_transform(&self) -> Matrix4;
+
     fn set_transform(&mut self, m: Matrix4);
 
     fn pattern_at(&self, point: &Point) -> Color;
@@ -18,52 +23,32 @@ pub trait Pattern: PatternClone {
     }
 }
 
-pub fn default_transform() -> Matrix4 {
-    glm::identity()
+#[derive(Clone, Debug, PartialEq)]
+pub enum TPattern {
+    Test(TestPattern),
+    Checkers(checkers::CheckersPattern),
+    Gradient(gradient::GradientPattern),
+    Ring(ring::RingPattern),
+    Stripe(stripe::StripePattern),
 }
 
-pub mod checkers;
-pub mod gradient;
-pub mod ring;
-pub mod stripe;
-
-pub type PatternBox = Box<dyn Pattern>;
-
-// Allow cloning boxed traits
-// https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object/30353928#30353928
-pub trait PatternClone {
-    fn clone_box(&self) -> PatternBox;
-}
-
-impl<T> PatternClone for T
-where
-    T: 'static + Pattern + Clone,
-{
-    fn clone_box(&self) -> PatternBox {
-        Box::new(self.clone())
+impl TPattern {
+    pub fn default_transform() -> Matrix4 {
+        glm::identity()
+    }
+    // Used to get the trait object from the enum variant
+    pub fn into_pattern(&self) -> Box<dyn Pattern> {
+        match *self {
+            TPattern::Test(tp) => Box::new(tp),
+            TPattern::Checkers(cp) => Box::new(cp),
+            TPattern::Gradient(gp) => Box::new(gp),
+            TPattern::Ring(rp) => Box::new(rp),
+            TPattern::Stripe(sp) => Box::new(sp),
+        }
     }
 }
 
-// We can now implement Clone manually by forwarding to clone_box.
-impl Clone for PatternBox {
-    fn clone(&self) -> PatternBox {
-        self.clone_box()
-    }
-}
-
-impl<'a> PartialEq for dyn Pattern + 'a {
-    fn eq(&self, other: &Self) -> bool {
-        self.get_transform() == other.get_transform()
-    }
-}
-
-impl fmt::Debug for dyn Pattern {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "pattern: {}", self.get_transform())
-    }
-}
-
-#[derive(Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct TestPattern {
     transform: Matrix4,
 }
@@ -84,7 +69,7 @@ impl Pattern for TestPattern {
 
 pub fn test_pattern() -> TestPattern {
     TestPattern {
-        transform: default_transform(),
+        transform: TPattern::default_transform(),
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::color::Color;
 use crate::matrix::Matrix4;
-use crate::pattern::{default_transform, Pattern};
+use crate::pattern::{Pattern, TPattern};
 use crate::tuple::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -14,7 +14,7 @@ pub fn gradient_pattern(a: Color, b: Color) -> GradientPattern {
     GradientPattern {
         a,
         b,
-        transform: default_transform(),
+        transform: TPattern::default_transform(),
     }
 }
 
@@ -41,7 +41,7 @@ mod tests {
         GradientPattern {
             a: Color::white(),
             b: Color::black(),
-            transform: default_transform(),
+            transform: TPattern::default_transform(),
         }
     }
 

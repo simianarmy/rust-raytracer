@@ -16,7 +16,7 @@ pub struct Material {
     pub reflective: F3D,
     pub transparency: F3D,
     pub refractive_index: F3D,
-    pub pattern: Option<Box<dyn Pattern>>,
+    pub pattern: Option<TPattern>,
 }
 
 impl Material {
@@ -34,7 +34,7 @@ impl Material {
         }
     }
 
-    pub fn set_pattern(&mut self, pattern: Option<Box<dyn Pattern>>) {
+    pub fn set_pattern(&mut self, pattern: Option<TPattern>) {
         self.pattern = pattern;
     }
 }
@@ -57,8 +57,10 @@ pub fn lighting(
 ) -> Color {
     // use material pattern for color if it exists
     let mut color = material.color;
-    if let Some(pattern) = &material.pattern {
-        color = pattern.pattern_at_shape(object, &point);
+    if let Some(tpattern) = &material.pattern {
+        // I want the concrete pattern from the enum variant...
+        let p = tpattern.into_pattern();
+        color = p.pattern_at_shape(object, &point);
     }
     // combine surface color with lights color/intensity
     let effective_color: Color = color * light.intensity;
@@ -175,7 +177,10 @@ mod tests {
     fn lighting_with_a_pattern_applied() {
         let mut m = Material::default();
         // TODO: implement set_pattern()
-        m.pattern = Some(Box::new(stripe_pattern(Color::white(), Color::black())));
+        m.pattern = Some(TPattern::Stripe(stripe_pattern(
+            Color::white(),
+            Color::black(),
+        )));
         m.ambient = 1.0;
         m.diffuse = 0.0;
         m.specular = 0.0;

@@ -57,10 +57,9 @@ fn main() {
     rsphere
         .props
         .material
-        .set_pattern(Some(Box::new(pattern::checkers::checkers_pattern(
-            Color::white(),
-            Color::new(0.5, 0.8, 0.3),
-        ))));
+        .set_pattern(Some(pattern::TPattern::Checkers(
+            pattern::checkers::checkers_pattern(Color::white(), Color::new(0.5, 0.8, 0.3)),
+        )));
 
     let mut lsphere = sphere();
     let st = make_translation(-1.5, 0.33, -0.75) * make_scaling(0.33, 0.33, 0.33);

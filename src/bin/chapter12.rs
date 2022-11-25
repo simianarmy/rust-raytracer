@@ -37,9 +37,9 @@ fn main() {
     //Color::new(0.5, 0.3, 0.4),
     //))));
 
-    let mut shape1 = sphere();
+    let mut glass_ball = sphere();
     let transform = make_translation(-0.5, 1.2, 0.5) * make_rotation_y(glm::pi());
-    shape1.set_transform(&transform);
+    glass_ball.set_transform(&transform);
     let mut m = Material::default();
     m.color = Color::new(0.5, 0.0, 0.0);
     m.diffuse = 0.1;
@@ -48,21 +48,20 @@ fn main() {
     m.shininess = 300.0;
     m.reflective = 0.9;
     m.transparency = 0.8;
-    shape1.set_material(m);
+    glass_ball.set_material(m);
 
-    let mut shape = sphere();
-    let rt = make_translation(0.5, 1.0, 1.0) * make_scaling(0.5, 0.5, 0.5);
-    shape.set_transform(&rt);
-    shape.props.material.color = Color::new(0.5, 1.0, 0.1);
-    //shape.props.material.diffuse = 0.4;
-    //shape.props.material.specular = 0.3;
-    shape
+    let mut checker_ball = sphere();
+    let rt = make_translation(0.0, 1.0, 1.0) * make_scaling(0.5, 0.5, 0.5);
+    checker_ball.set_transform(&rt);
+    checker_ball.props.material.color = Color::new(0.5, 1.0, 0.1);
+    //checker_ball.props.material.diffuse = 0.4;
+    //checker_ball.props.material.specular = 0.3;
+    checker_ball
         .props
         .material
-        .set_pattern(Some(Box::new(pattern::checkers::checkers_pattern(
-            Color::white(),
-            Color::new(0.5, 0.8, 0.3),
-        ))));
+        .set_pattern(Some(pattern::TPattern::Checkers(
+            pattern::checkers::checkers_pattern(Color::white(), Color::new(0.5, 0.8, 0.3)),
+        )));
 
     let mut lcube = cube();
     let st = make_translation(-1.5, 0.8, -0.75)
@@ -75,19 +74,30 @@ fn main() {
     lcube.props.material.shininess = 300.0;
 
     let mut cyl1 = cylinder();
-    let st = make_translation(0.5, 0.3, 1.75)
-        * make_rotation_y(glm::quarter_pi())
-        * make_scaling(0.13, 0.13, 0.13);
+    cyl1.set_bounds(0.0, 2.0);
+    cyl1.closed = true;
+    cyl1.props.material.color = Color::new(0.4, 0.4, 1.0);
+    cyl1.props.material.diffuse = 0.1;
+    cyl1.props.material.ambient = 0.1;
+    cyl1.props.material.specular = 0.9;
+    cyl1.props.material.shininess = 300.0;
+    cyl1.props.material.reflective = 0.9;
+    cyl1.props.material.transparency = 0.5;
+    let st = make_translation(0.5, 0.8, -1.75)
+        * make_rotation_x(glm::quarter_pi())
+        * make_rotation_y(glm::half_pi())
+        * make_scaling(0.5, 0.5, 0.5);
     cyl1.set_transform(&st);
 
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
     world.add_shape(Box::new(floor));
-    world.add_shape(Box::new(shape1));
-    world.add_shape(Box::new(shape));
+    world.add_shape(Box::new(glass_ball));
+    world.add_shape(Box::new(checker_ball));
     world.add_shape(Box::new(lcube));
     world.add_shape(Box::new(cyl1));
 
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
+    //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 1.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);

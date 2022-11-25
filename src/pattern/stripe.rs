@@ -1,7 +1,7 @@
 use crate::color::Color;
 use crate::math::f_equals;
 use crate::matrix::Matrix4;
-use crate::pattern::{default_transform, Pattern};
+use crate::pattern::{Pattern, TPattern};
 use crate::tuple::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -15,7 +15,7 @@ pub fn stripe_pattern(a: Color, b: Color) -> StripePattern {
     StripePattern {
         a,
         b,
-        transform: default_transform(),
+        transform: TPattern::default_transform(),
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::color::Color;
 use crate::math::f_equals;
 use crate::matrix::Matrix4;
-use crate::pattern::{default_transform, Pattern};
+use crate::pattern::{Pattern, TPattern};
 use crate::tuple::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -15,7 +15,7 @@ pub fn ring_pattern(a: Color, b: Color) -> RingPattern {
     RingPattern {
         a,
         b,
-        transform: default_transform(),
+        transform: TPattern::default_transform(),
     }
 }
 
@@ -45,7 +45,7 @@ mod tests {
         RingPattern {
             a: Color::white(),
             b: Color::black(),
-            transform: default_transform(),
+            transform: TPattern::default_transform(),
         }
     }
 
