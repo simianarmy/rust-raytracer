@@ -7,6 +7,7 @@ extern crate raytracer;
 use raytracer::camera::Camera;
 use raytracer::color::Color;
 use raytracer::cube::*;
+use raytracer::cylinder::*;
 use raytracer::lights::*;
 use raytracer::materials::Material;
 use raytracer::math::F3D;
@@ -73,11 +74,18 @@ fn main() {
     lcube.props.material.transparency = 0.7;
     lcube.props.material.shininess = 300.0;
 
+    let mut cyl1 = cylinder();
+    let st = make_translation(0.5, 0.3, 1.75)
+        * make_rotation_y(glm::quarter_pi())
+        * make_scaling(0.13, 0.13, 0.13);
+    cyl1.set_transform(&st);
+
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
     world.add_shape(Box::new(floor));
     world.add_shape(Box::new(shape1));
     world.add_shape(Box::new(shape));
     world.add_shape(Box::new(lcube));
+    world.add_shape(Box::new(cyl1));
 
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 1.5, -5.0), &point_y(), &vector_y());

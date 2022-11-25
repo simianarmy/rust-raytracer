@@ -18,7 +18,7 @@ pub fn f_equals(a: F3D, b: F3D) -> bool {
 macro_rules! assert_eq_feps {
     ($cond:expr, $expected:expr) => {
         assert!(
-            f_equals($cond, $expected),
+            crate::math::f_equals($cond, $expected),
             "left {} != right {}",
             $cond,
             $expected
