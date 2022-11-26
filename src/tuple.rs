@@ -184,6 +184,10 @@ pub fn point_zero() -> Point {
     point(0.0, 0.0, 0.0)
 }
 
+pub fn point_unit() -> Point {
+    point(1.0, 1.0, 1.0)
+}
+
 pub fn vector_x() -> Vector {
     vector(1.0, 0.0, 0.0)
 }
@@ -198,6 +202,10 @@ pub fn vector_z() -> Vector {
 
 pub fn vector_zero() -> Vector {
     vector(0.0, 0.0, 0.0)
+}
+
+pub fn vector_unit() -> Vector {
+    vector(1.0, 1.0, 1.0)
 }
 
 pub fn reflect(in_v: Vector, normal: Vector) -> Vector {

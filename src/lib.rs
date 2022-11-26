@@ -20,6 +20,7 @@ pub mod camera;
 pub mod computations;
 #[macro_use]
 pub mod cube;
+pub mod cone;
 pub mod cylinder;
 pub mod pattern;
 pub mod plane;
