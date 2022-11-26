@@ -57,7 +57,7 @@ impl World {
 
         let surface = lighting(
             comps.object.get_material(),
-            comps.object.clone(), // booooo
+            &comps.object,
             &self.light,
             comps.over_point,
             comps.eyev,
@@ -340,12 +340,12 @@ mod tests {
             ..Material::default()
         });
         shape.set_transform(&make_translation(0.0, -1.0, 0.0));
-        world.add_shape(Box::new(shape.clone()));
+        let i = shape.intersection(SQRT_2);
+        world.add_shape(Box::new(shape));
         let r = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
         );
-        let i = shape.intersection(SQRT_2);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         let color = world.reflected_color(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(color.tuple(), Color::new(0.19032, 0.2379, 0.14274).tuple());
@@ -360,12 +360,13 @@ mod tests {
             ..Material::default()
         });
         shape.set_transform(&make_translation(0.0, -1.0, 0.0));
-        world.add_shape(Box::new(shape.clone()));
+        let i = shape.intersection(SQRT_2);
+        world.add_shape(Box::new(shape));
+
         let r = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
         );
-        let i = shape.intersection(SQRT_2);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         let color = world.shade_hit(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(
@@ -400,12 +401,12 @@ mod tests {
             ..Material::default()
         });
         shape.set_transform(&make_translation(0.0, -1.0, 0.0));
-        world.add_shape(Box::new(shape.clone()));
+        let i = shape.intersection(SQRT_2);
+        world.add_shape(Box::new(shape));
         let r = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
         );
-        let i = shape.intersection(SQRT_2);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         let color = world.reflected_color(&comps, 0);
         assert_eq!(color, Color::black());

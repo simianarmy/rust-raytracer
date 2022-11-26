@@ -49,7 +49,7 @@ fn main() {
                     let eye = -ray.direction;
                     let color = lighting(
                         &is.object.get_material(),
-                        is.object.clone_box(),
+                        &is.object,
                         &light,
                         p,
                         eye,
