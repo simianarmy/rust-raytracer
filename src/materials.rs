@@ -50,9 +50,9 @@ pub fn lighting(
     material: &Material,
     object: &ShapeBox,
     light: &PointLight,
-    point: Point,
-    eyev: Vector,
-    normalv: Vector,
+    point: &Point,
+    eyev: &Vector,
+    normalv: &Vector,
     in_shadow: bool,
 ) -> Color {
     // use material pattern for color if it exists
@@ -80,7 +80,7 @@ pub fn lighting(
         // compute the diffuse contribution
         let diffuse: Color = effective_color * material.diffuse * light_dot_normal;
         // reflect_dot_eye represents the cosine of the angle between the​​     ​# reflection vector and the eye vector. A negative number means the​​     ​# light reflects away from the eye.
-        let reflectv: Vector = crate::tuple::reflect(-lightv, normalv);
+        let reflectv: Vector = crate::tuple::reflect(-lightv, *normalv);
         let reflect_dot_eye: F3D = reflectv.dot(&eyev);
         let mut specular = Color::black();
 
@@ -119,7 +119,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, position, eyev, normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
     }
 
@@ -129,7 +129,7 @@ mod tests {
         let eyev = vector(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, position, eyev, normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
     }
 
@@ -139,7 +139,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, position, eyev, normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.7364, 0.7364, 0.7364).tuple());
     }
 
@@ -149,7 +149,7 @@ mod tests {
         let eyev = vector(0.0, -2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, position, eyev, normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(1.6364, 1.6364, 1.6364).tuple());
     }
 
@@ -159,7 +159,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, 10.0), Color::white());
-        let result = lighting(&m, &object, &light, position, eyev, normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -169,7 +169,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, position, eyev, normalv, true);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, true);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -192,18 +192,18 @@ mod tests {
             &m,
             &object,
             &light,
-            point(0.9, 0.0, 0.0),
-            eyev,
-            normalv,
+            &point(0.9, 0.0, 0.0),
+            &eyev,
+            &normalv,
             false,
         );
         let c2 = lighting(
             &m,
             &object,
             &light,
-            point(1.1, 0.0, 0.0),
-            eyev,
-            normalv,
+            &point(1.1, 0.0, 0.0),
+            &eyev,
+            &normalv,
             false,
         );
         assert_eq!(c1, Color::white());

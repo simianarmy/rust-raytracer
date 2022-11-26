@@ -59,9 +59,9 @@ impl World {
             comps.object.get_material(),
             &comps.object,
             &self.light,
-            comps.over_point,
-            comps.eyev,
-            comps.normalv,
+            &comps.over_point,
+            &comps.eyev,
+            &comps.normalv,
             shadowed,
         );
         let reflected = self.reflected_color(comps, remaining);

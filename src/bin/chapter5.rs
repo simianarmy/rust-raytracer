@@ -51,9 +51,9 @@ fn main() {
                         &is.object.get_material(),
                         &is.object,
                         &light,
-                        p,
-                        eye,
-                        normal,
+                        &p,
+                        &eye,
+                        &normal,
                         false,
                     );
                     canvas.write_pixel(x, y, color);
