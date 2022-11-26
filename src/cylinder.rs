@@ -86,6 +86,7 @@ impl Shape for Cylinder {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let mut xs = vec![];
         let a = ray.direction.x.powi(2) + ray.direction.z.powi(2);
 
         if math::f_equals(a, 0.0) {
@@ -95,17 +96,13 @@ impl Shape for Cylinder {
         let c = ray.origin.x.powi(2) + ray.origin.z.powi(2) - 1.0;
         let disc = b * b - 4.0 * a * c;
 
-        if disc < 0.0 {
-            vec![]
-        } else {
+        if disc >= 0.0 {
             let mut t0 = (-b - disc.sqrt()) / (2.0 * a);
             let mut t1 = (-b + disc.sqrt()) / (2.0 * a);
 
             if t0 > t1 {
                 mem::swap(&mut t0, &mut t1);
             }
-            let mut xs = vec![];
-
             let y0 = ray.origin.y + t0 * ray.direction.y;
             if self.minimum < y0 && y0 < self.maximum {
                 xs.push(Intersection {
@@ -121,8 +118,8 @@ impl Shape for Cylinder {
                 });
             }
             xs.extend(self.intersect_caps(ray));
-            xs
         }
+        xs
     }
 
     fn local_normal_at(&self, point: Point) -> Vector {

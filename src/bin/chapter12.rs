@@ -6,6 +6,7 @@ extern crate raytracer;
 
 use raytracer::camera::Camera;
 use raytracer::color::Color;
+use raytracer::cone::*;
 use raytracer::cube::*;
 use raytracer::cylinder::*;
 use raytracer::lights::*;
@@ -73,28 +74,27 @@ fn main() {
     lcube.props.material.transparency = 0.7;
     lcube.props.material.shininess = 300.0;
 
-    let mut cyl1 = cylinder();
-    cyl1.set_bounds(0.0, 2.0);
-    cyl1.closed = true;
-    cyl1.props.material.color = Color::new(0.4, 0.4, 1.0);
-    cyl1.props.material.diffuse = 0.1;
-    cyl1.props.material.ambient = 0.1;
-    cyl1.props.material.specular = 0.9;
-    cyl1.props.material.shininess = 300.0;
-    cyl1.props.material.reflective = 0.9;
-    cyl1.props.material.transparency = 0.5;
+    let mut cone1 = cone();
+    cone1.set_bounds(0.0, 2.0);
+    cone1.closed = true;
+    cone1.props.material.color = Color::new(0.4, 0.4, 1.0);
+    cone1.props.material.diffuse = 0.1;
+    cone1.props.material.ambient = 0.1;
+    cone1.props.material.specular = 0.9;
+    cone1.props.material.shininess = 300.0;
+    cone1.props.material.reflective = 0.9;
     let st = make_translation(0.5, 0.8, -1.75)
         * make_rotation_x(glm::quarter_pi())
         * make_rotation_y(glm::half_pi())
-        * make_scaling(0.5, 0.5, 0.5);
-    cyl1.set_transform(&st);
+        * make_scaling(0.3, 0.3, 0.3);
+    cone1.set_transform(&st);
 
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
     world.add_shape(Box::new(floor));
     world.add_shape(Box::new(glass_ball));
     world.add_shape(Box::new(checker_ball));
     world.add_shape(Box::new(lcube));
-    world.add_shape(Box::new(cyl1));
+    world.add_shape(Box::new(cone1));
 
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);

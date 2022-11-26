@@ -44,7 +44,6 @@ impl Cone {
                 object: Box::new(self.clone()),
             });
         }
-        println!("cap xs = {:?}", xs);
         xs
     }
 }
@@ -87,37 +86,32 @@ impl Shape for Cone {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let mut xs = vec![];
         let ro = ray.origin;
         let rd = ray.direction;
         let a = rd.x.powi(2) - rd.y.powi(2) + rd.z.powi(2);
         let c = ro.x.powi(2) - ro.y.powi(2) + ro.z.powi(2);
         let b = 2.0 * ro.x * rd.x - 2.0 * ro.y * rd.y + 2.0 * ro.z * rd.z;
-        //println!("dir = {}", rd);
-        //println!("a = {}\nb = {}\nc = {}", a, b, c);
 
         if math::f_equals(a, 0.0) {
             if math::f_equals(b, 0.0) {
                 return vec![];
             }
             let t = -c / (2.0 * b);
-            return intersections!(Intersection {
+            xs.push(Intersection {
                 t,
-                object: Box::new(self.clone())
+                object: Box::new(self.clone()),
             });
         }
         let disc = b * b - 4.0 * a * c;
 
-        if disc < 0.0 {
-            vec![]
-        } else {
+        if disc >= 0.0 {
             let mut t0 = (-b - disc.sqrt()) / (2.0 * a);
             let mut t1 = (-b + disc.sqrt()) / (2.0 * a);
 
             if t0 > t1 {
                 mem::swap(&mut t0, &mut t1);
             }
-            let mut xs = vec![];
-
             let y0 = ray.origin.y + t0 * ray.direction.y;
             if self.minimum < y0 && y0 < self.maximum {
                 xs.push(Intersection {
@@ -133,8 +127,8 @@ impl Shape for Cone {
                 });
             }
             xs.extend(self.intersect_caps(ray));
-            xs
         }
+        xs
     }
 
     fn local_normal_at(&self, point: Point) -> Vector {
@@ -203,8 +197,7 @@ mod tests {
         c.closed = true;
         let tests = vec![
             (point(0.0, 0.0, -5.0), vector_y(), 0),
-            // TODO: Fails b/c a = 0.
-            //(point(0.0, 0.0, -0.25), vector(0.0, 1.0, 1.0), 2),
+            (point(0.0, 0.0, -0.25), vector(0.0, 1.0, 1.0), 2),
             (point(0.0, 0.0, -0.25), vector_y(), 4),
         ];
         for t in tests {
