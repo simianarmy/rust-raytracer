@@ -1,3 +1,4 @@
+use crate::group::Group;
 use crate::intersection::*;
 use crate::materials::Material;
 use crate::math;
@@ -50,6 +51,10 @@ impl Shape for Plane {
 
     fn local_normal_at(&self, _point: Point) -> Vector {
         point_y()
+    }
+
+    fn get_parent(&self) -> Option<Box<Group>> {
+        self.props.parent
     }
 }
 

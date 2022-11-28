@@ -1,3 +1,4 @@
+use crate::group::Group;
 use crate::intersection::*;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
@@ -51,21 +52,16 @@ impl Shape for Sphere {
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
 
-            crate::intersections!(
-                Intersection {
-                    t: t1,
-                    object: Box::new(self.clone()),
-                },
-                Intersection {
-                    t: t2,
-                    object: Box::new(self.clone()),
-                }
-            )
+            crate::intersections!(self.intersection(t1), self.intersection(t2))
         }
     }
 
     fn local_normal_at(&self, point: Point) -> Vector {
         point - point_zero()
+    }
+
+    fn get_parent(&self) -> Option<Box<Group>> {
+        self.props.parent
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::intersections;
 use crate::materials::Material;
@@ -92,6 +93,10 @@ impl Shape for Cube {
             y if y == point.y.abs() => vector(0.0, point.y, 0.0),
             _ => vector(0.0, 0.0, point.z),
         }
+    }
+
+    fn get_parent(&self) -> Option<Box<Group>> {
+        self.props.parent
     }
 }
 

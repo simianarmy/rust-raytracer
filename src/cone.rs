@@ -1,5 +1,5 @@
+use crate::group::Group;
 use crate::intersection::Intersection;
-use crate::intersections;
 use crate::materials::Material;
 use crate::math;
 use crate::matrix::Matrix4;
@@ -145,6 +145,10 @@ impl Shape for Cone {
                 vector(point.x, y, point.z)
             }
         }
+    }
+
+    fn get_parent(&self) -> Option<Box<Group>> {
+        self.props.parent
     }
 }
 

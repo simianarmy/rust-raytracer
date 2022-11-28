@@ -1,3 +1,4 @@
+use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::materials::Material;
 use crate::math::F3D;
@@ -20,6 +21,7 @@ pub struct Shape3D {
     pub id: String,
     pub transform: Matrix4,
     pub material: Material,
+    pub parent: Option<Box<Group>>,
 }
 
 impl Shape3D {
@@ -28,6 +30,7 @@ impl Shape3D {
             id: id.unwrap_or(get_unique_id().to_string()),
             transform: glm::identity(),
             material: Material::default(),
+            parent: None,
         }
     }
 }
@@ -55,7 +58,7 @@ pub trait Shape: ShapeClone {
     fn intersection(&self, t: F3D) -> Intersection {
         Intersection {
             t,
-            object: self.clone_box(),
+            object: self.clone_box(), // perf?
         }
     }
 
@@ -69,6 +72,8 @@ pub trait Shape: ShapeClone {
         world_normal.w = 0.0;
         world_normal.normalize()
     }
+
+    fn get_parent(&self) -> Option<Box<Group>>;
 }
 
 // Allow cloning boxed traits
@@ -190,5 +195,11 @@ mod tests {
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 0);
+    }
+
+    #[test]
+    fn shape_has_optional_parent() {
+        let s = test_shape();
+        assert!(s.props.parent.is_none());
     }
 }
