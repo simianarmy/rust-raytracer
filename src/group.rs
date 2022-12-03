@@ -1,3 +1,4 @@
+use crate::intersection::sort_intersections;
 use crate::intersection::Intersection;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
@@ -6,7 +7,6 @@ use crate::shape::*;
 use crate::tuple::*;
 use std::{
     cell::RefCell,
-    rc::Rc,
     sync::{Arc, Weak},
 };
 
@@ -49,9 +49,14 @@ impl Shape for Group {
     fn set_material(&mut self, m: Material) {
         self.val.set_material(m)
     }
-    fn local_intersect(&self, _ray: &Ray) -> Vec<Intersection> {
-        //self.saved_ray = ray;
-        vec![]
+    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        let mut res = vec![];
+        for s in self.shapes.borrow().iter() {
+            let xs = s.val.intersect(ray);
+            res.extend(xs);
+        }
+        sort_intersections(&mut res);
+        res
     }
     fn local_normal_at(&self, _point: Point) -> Vector {
         point_zero()
@@ -75,11 +80,21 @@ fn add_child(parent: &GroupRef, shape: ShapeBox) {
 mod tests {
     use super::*;
     use crate::shape::test_shape;
+    use crate::sphere::*;
+    use crate::transformation::*;
 
     #[test]
     fn transform_is_identity() {
         let g = default_group();
         assert_eq!(*g.get_transform(), Matrix4::identity());
+    }
+
+    #[test]
+    fn set_transform_on_group() {
+        let mut g = default_group();
+        // eesh
+        (*Arc::get_mut(&mut g).unwrap()).set_transform(&make_translation(1.0, 0.0, 0.0));
+        assert_eq!(*g.get_transform(), make_translation(1.0, 0.0, 0.0));
     }
 
     #[test]
@@ -98,5 +113,45 @@ mod tests {
         let child = &g.shapes.borrow()[0];
         assert_eq!(s.get_id(), child.val.get_id());
         assert!(g.shapes.borrow()[0].parent.borrow().upgrade().is_some());
+    }
+
+    #[test]
+    fn intersection_ray_with_empty_group() {
+        let g = default_group();
+        let r = Ray::new(point_zero(), vector_z());
+        let xs = g.local_intersect(&r);
+        assert!(xs.is_empty());
+    }
+
+    #[test]
+    fn intersection_ray_with_nonempty_group() {
+        let g = default_group();
+        let s1 = sphere_with_id(Some(String::from("s1")));
+        let mut s2 = sphere_with_id(Some(String::from("s2")));
+        s2.set_transform(&make_translation(0.0, 0.0, -3.0));
+        let mut s3 = sphere_with_id(Some(String::from("s3")));
+        s3.set_transform(&make_translation(5.0, 0.0, 0.0));
+        add_child(&g, Box::new(s1));
+        add_child(&g, Box::new(s2));
+        add_child(&g, Box::new(s3));
+        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
+        let xs = g.local_intersect(&r);
+        assert_eq!(xs.len(), 4);
+        assert_eq!(xs[0].object.get_id(), String::from("sphere_s2"));
+        assert_eq!(xs[1].object.get_id(), String::from("sphere_s2"));
+        assert_eq!(xs[2].object.get_id(), String::from("sphere_s1"));
+        assert_eq!(xs[3].object.get_id(), String::from("sphere_s1"));
+    }
+
+    #[test]
+    fn intersecting_transformed_group() {
+        let mut g = default_group();
+        (*Arc::get_mut(&mut g).unwrap()).set_transform(&make_scaling(2.0, 2.0, 2.0));
+        let mut s = sphere();
+        s.set_transform(&make_translation(5.0, 0.0, 0.0));
+        add_child(&g, Box::new(s));
+        let r = Ray::new(point(10.0, 0.0, -10.0), vector_z());
+        let xs = g.intersect(&r);
+        assert_eq!(xs.len(), 2);
     }
 }

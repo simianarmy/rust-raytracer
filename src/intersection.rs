@@ -47,10 +47,14 @@ macro_rules! intersections {
             $(
                 temp_vec.push($x.clone());
             )*
-            temp_vec.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+            crate::intersection::sort_intersections(&mut temp_vec);
             temp_vec
         }
     };
+}
+
+pub fn sort_intersections(xs: &mut Vec<Intersection>) {
+    xs.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
 }
 
 /**
