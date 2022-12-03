@@ -59,10 +59,6 @@ impl Shape for Sphere {
     fn local_normal_at(&self, point: Point) -> Vector {
         point - point_zero()
     }
-
-    fn get_parent(&self) -> Option<Box<Group>> {
-        self.props.parent
-    }
 }
 
 // test helper

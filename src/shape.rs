@@ -16,12 +16,11 @@ pub fn get_unique_id() -> usize {
     COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Shape3D {
     pub id: String,
     pub transform: Matrix4,
     pub material: Material,
-    pub parent: Option<Box<Group>>,
 }
 
 impl Shape3D {
@@ -30,7 +29,6 @@ impl Shape3D {
             id: id.unwrap_or(get_unique_id().to_string()),
             transform: glm::identity(),
             material: Material::default(),
-            parent: None,
         }
     }
 }
@@ -38,6 +36,12 @@ impl Shape3D {
 impl Default for Shape3D {
     fn default() -> Self {
         Shape3D::new(None)
+    }
+}
+
+impl PartialEq for Shape3D {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
     }
 }
 
@@ -72,8 +76,6 @@ pub trait Shape: ShapeClone {
         world_normal.w = 0.0;
         world_normal.normalize()
     }
-
-    fn get_parent(&self) -> Option<Box<Group>>;
 }
 
 // Allow cloning boxed traits
@@ -115,45 +117,45 @@ impl fmt::Debug for dyn Shape {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct TestShape {
+    props: Shape3D,
+}
+impl Shape for TestShape {
+    fn get_id(&self) -> String {
+        format!("testshape_{}", self.props.id)
+    }
+    fn get_transform(&self) -> &Matrix4 {
+        &self.props.transform
+    }
+    fn set_transform(&mut self, t: &Matrix4) {
+        self.props.transform = *t;
+    }
+    fn get_material(&self) -> &Material {
+        &self.props.material
+    }
+    fn set_material(&mut self, m: Material) {
+        self.props.material = m;
+    }
+    fn local_intersect(&self, _ray: &Ray) -> Vec<Intersection> {
+        //self.saved_ray = ray;
+        vec![]
+    }
+    fn local_normal_at(&self, _point: Point) -> Vector {
+        point_zero()
+    }
+}
+
+pub fn test_shape() -> TestShape {
+    TestShape {
+        props: Shape3D::default(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::transformation::*;
-
-    #[derive(Clone, Debug, PartialEq)]
-    struct TestShape {
-        props: Shape3D,
-    }
-    impl Shape for TestShape {
-        fn get_id(&self) -> String {
-            format!("testshape_{}", self.props.id)
-        }
-        fn get_transform(&self) -> &Matrix4 {
-            &self.props.transform
-        }
-        fn set_transform(&mut self, t: &Matrix4) {
-            self.props.transform = *t;
-        }
-        fn get_material(&self) -> &Material {
-            &self.props.material
-        }
-        fn set_material(&mut self, m: Material) {
-            self.props.material = m;
-        }
-        fn local_intersect(&self, _ray: &Ray) -> Vec<Intersection> {
-            //self.saved_ray = ray;
-            vec![]
-        }
-        fn local_normal_at(&self, _point: Point) -> Vector {
-            point_zero()
-        }
-    }
-
-    fn test_shape() -> TestShape {
-        TestShape {
-            props: Shape3D::default(),
-        }
-    }
 
     #[test]
     fn shape_instances_have_unique_ids() {
@@ -195,11 +197,5 @@ mod tests {
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 0);
-    }
-
-    #[test]
-    fn shape_has_optional_parent() {
-        let s = test_shape();
-        assert!(s.props.parent.is_none());
     }
 }

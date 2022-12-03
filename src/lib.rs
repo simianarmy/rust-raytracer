@@ -18,11 +18,11 @@ pub mod transformation;
 pub mod tuple;
 pub mod camera;
 pub mod computations;
-#[macro_use]
-pub mod cube;
-pub mod cone;
-pub mod cylinder;
+//#[macro_use]
+//pub mod cube;
+//pub mod cone;
+//pub mod cylinder;
+//pub mod plane;
 pub mod group;
 pub mod pattern;
-pub mod plane;
 pub mod world;
