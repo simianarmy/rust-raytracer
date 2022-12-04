@@ -68,12 +68,46 @@ fn default_group() -> GroupRef {
     Group::from_shape(Box::new(test_shape()))
 }
 
-fn add_child(parent: &GroupRef, shape: ShapeBox) {
+fn set_parent(child: &GroupRef, parent: &GroupRef) {
+    // `child_node.parent` is set to weak reference to `parent_node`.
+    println!("adding {} to {}", child.get_id(), parent.get_id());
+    *child.parent.borrow_mut() = Arc::downgrade(&parent);
+}
+
+fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
     // Make a GroupRef
     let g = Group::from_shape(shape);
-    // `child_node.parent` is set to weak reference to `parent_node`.
-    *g.parent.borrow_mut() = Arc::downgrade(&parent);
+    set_parent(&g, parent);
     parent.shapes.borrow_mut().push(g.clone())
+}
+
+fn add_child_group(parent: &GroupRef, child: &GroupRef) {
+    set_parent(child, parent);
+    parent.shapes.borrow_mut().push(child.clone());
+}
+
+/**
+ * Helpers to limit syntax explosions
+ */
+
+fn set_transform(group: &mut GroupRef, transform: &Matrix4) {
+    (*Arc::get_mut(group).unwrap()).set_transform(transform);
+}
+
+fn has_parent(group: &GroupRef) -> bool {
+    group.parent.borrow().upgrade().is_some()
+}
+
+pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
+    println!("world_to_object g: {:?}", group.get_id());
+    println!("parent {:?}", group.parent.borrow().upgrade());
+    // if shape has parent
+    let mut p = point.clone();
+    if has_parent(group) {
+        // lol Rust
+        p = world_to_object(&group.parent.borrow().upgrade().unwrap(), point);
+    }
+    glm::inverse(group.val.get_transform()) * p
 }
 
 #[cfg(test)]
@@ -82,6 +116,7 @@ mod tests {
     use crate::shape::test_shape;
     use crate::sphere::*;
     use crate::transformation::*;
+    use std::f64::consts::*;
 
     #[test]
     fn transform_is_identity() {
@@ -108,7 +143,7 @@ mod tests {
     fn adding_child() {
         let g = default_group();
         let s = test_shape();
-        add_child(&g, Box::new(s.clone()));
+        add_child_shape(&g, Box::new(s.clone()));
         assert_eq!(g.shapes.borrow().len(), 1);
         let child = &g.shapes.borrow()[0];
         assert_eq!(s.get_id(), child.val.get_id());
@@ -131,9 +166,9 @@ mod tests {
         s2.set_transform(&make_translation(0.0, 0.0, -3.0));
         let mut s3 = sphere_with_id(Some(String::from("s3")));
         s3.set_transform(&make_translation(5.0, 0.0, 0.0));
-        add_child(&g, Box::new(s1));
-        add_child(&g, Box::new(s2));
-        add_child(&g, Box::new(s3));
+        add_child_shape(&g, Box::new(s1));
+        add_child_shape(&g, Box::new(s2));
+        add_child_shape(&g, Box::new(s3));
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let xs = g.local_intersect(&r);
         assert_eq!(xs.len(), 4);
@@ -149,9 +184,23 @@ mod tests {
         (*Arc::get_mut(&mut g).unwrap()).set_transform(&make_scaling(2.0, 2.0, 2.0));
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        add_child(&g, Box::new(s));
+        add_child_shape(&g, Box::new(s));
         let r = Ray::new(point(10.0, 0.0, -10.0), vector_z());
         let xs = g.intersect(&r);
         assert_eq!(xs.len(), 2);
+    }
+
+    #[test]
+    fn converting_point_from_world_to_object_space() {
+        let mut g1 = default_group();
+        set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
+        let mut g2 = default_group();
+        set_transform(&mut g2, &make_scaling(2.0, 2.0, 2.0));
+        add_child_group(&g1, &g2);
+        let mut s = sphere();
+        s.set_transform(&make_translation(5.0, 0.0, 0.0));
+        add_child_shape(&g2, Box::new(s.clone()));
+        let p = world_to_object(&Group::from_shape(Box::new(s)), &point(-2.0, 0.0, -10.0));
+        assert_eq!(p, point(0.0, 0.0, -1.0));
     }
 }
