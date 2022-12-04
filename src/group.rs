@@ -59,7 +59,7 @@ impl Shape for Group {
         res
     }
     fn local_normal_at(&self, _point: Point) -> Vector {
-        point_zero()
+        panic!("local_normal_at should never be called on a group!");
     }
 }
 
@@ -125,6 +125,12 @@ pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
         n = normal_to_world(&get_parent(group).unwrap(), &n);
     }
     n
+}
+
+pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
+    let local_point = world_to_object(group, world_point);
+    let local_normal = group.val.local_normal_at(local_point);
+    normal_to_world(group, &local_normal)
 }
 
 #[cfg(test)]
@@ -246,5 +252,26 @@ mod tests {
         let threes = 3_f64.sqrt() / 3.0;
         let n = normal_to_world(&g3, &vector(threes, threes, threes));
         assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
+    }
+
+    #[test]
+    fn find_normal_on_child() {
+        let mut g1 = default_group();
+        set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
+        let mut g2 = default_group();
+        set_transform(&mut g2, &make_scaling(1.0, 2.0, 3.0));
+        add_child_group(&g1, &g2);
+        let mut s = sphere();
+        s.set_transform(&make_translation(5.0, 0.0, 0.0));
+        let g3 = Group::from_shape(Box::new(s.clone()));
+        add_child_group(&g2, &g3);
+        let n = normal_at(&g3, &point(1.7321, 1.1547, -5.5774));
+        assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
+    }
+
+    #[test]
+    #[should_panic]
+    fn local_normal_at_illegal() {
+        default_group().local_normal_at(point_zero());
     }
 }
