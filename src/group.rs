@@ -64,7 +64,7 @@ impl Shape for Group {
 }
 
 // default constructor
-fn default_group() -> GroupRef {
+pub fn default_group() -> GroupRef {
     Group::from_shape(Box::new(test_shape()))
 }
 
@@ -81,7 +81,7 @@ fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
     parent.shapes.borrow_mut().push(g.clone())
 }
 
-fn add_child_group(parent: &GroupRef, child: &GroupRef) {
+pub fn add_child_group(parent: &GroupRef, child: &GroupRef) {
     set_parent(child, parent);
     parent.shapes.borrow_mut().push(child.clone());
 }
@@ -94,20 +94,37 @@ fn set_transform(group: &mut GroupRef, transform: &Matrix4) {
     (*Arc::get_mut(group).unwrap()).set_transform(transform);
 }
 
-fn has_parent(group: &GroupRef) -> bool {
-    group.parent.borrow().upgrade().is_some()
+fn get_parent(group: &GroupRef) -> Option<GroupRef> {
+    group.parent.borrow().upgrade()
 }
 
+fn has_parent(group: &GroupRef) -> bool {
+    get_parent(group).is_some()
+}
+
+/**
+ * Recursive functions operating up parent trees
+ */
+
 pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
-    println!("world_to_object g: {:?}", group.get_id());
-    println!("parent {:?}", group.parent.borrow().upgrade());
-    // if shape has parent
     let mut p = point.clone();
+
     if has_parent(group) {
         // lol Rust
-        p = world_to_object(&group.parent.borrow().upgrade().unwrap(), point);
+        p = world_to_object(&get_parent(group).unwrap(), point);
     }
     glm::inverse(group.val.get_transform()) * p
+}
+
+pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
+    let mut n = glm::inverse(group.get_transform()).transpose() * normal;
+    n.w = 0.0;
+    n = n.normalize();
+
+    if has_parent(group) {
+        n = normal_to_world(&get_parent(group).unwrap(), &n);
+    }
+    n
 }
 
 #[cfg(test)]
@@ -116,7 +133,6 @@ mod tests {
     use crate::shape::test_shape;
     use crate::sphere::*;
     use crate::transformation::*;
-    use std::f64::consts::*;
 
     #[test]
     fn transform_is_identity() {
@@ -140,7 +156,7 @@ mod tests {
     }
 
     #[test]
-    fn adding_child() {
+    fn adding_child_shape() {
         let g = default_group();
         let s = test_shape();
         add_child_shape(&g, Box::new(s.clone()));
@@ -148,6 +164,17 @@ mod tests {
         let child = &g.shapes.borrow()[0];
         assert_eq!(s.get_id(), child.val.get_id());
         assert!(g.shapes.borrow()[0].parent.borrow().upgrade().is_some());
+    }
+
+    #[test]
+    fn adding_child_group() {
+        let g1 = default_group();
+        let g2 = default_group();
+        add_child_group(&g1, &g2);
+        assert_eq!(g1.shapes.borrow().len(), 1);
+        let child_group = &g1.shapes.borrow()[0];
+        assert_eq!(child_group.get_id(), g2.get_id());
+        assert!(g1.shapes.borrow()[0].parent.borrow().upgrade().is_some());
     }
 
     #[test]
@@ -199,8 +226,25 @@ mod tests {
         add_child_group(&g1, &g2);
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        add_child_shape(&g2, Box::new(s.clone()));
-        let p = world_to_object(&Group::from_shape(Box::new(s)), &point(-2.0, 0.0, -10.0));
-        assert_eq!(p, point(0.0, 0.0, -1.0));
+        let g3 = Group::from_shape(Box::new(s.clone()));
+        add_child_group(&g2, &g3);
+        let p = world_to_object(&g3, &point(-2.0, 0.0, -10.0));
+        assert_eq_eps!(p, point(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn converting_normal_from_object_to_normal_space() {
+        let mut g1 = default_group();
+        set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
+        let mut g2 = default_group();
+        set_transform(&mut g2, &make_scaling(1.0, 2.0, 3.0));
+        add_child_group(&g1, &g2);
+        let mut s = sphere();
+        s.set_transform(&make_translation(5.0, 0.0, 0.0));
+        let g3 = Group::from_shape(Box::new(s.clone()));
+        add_child_group(&g2, &g3);
+        let threes = 3_f64.sqrt() / 3.0;
+        let n = normal_to_world(&g3, &vector(threes, threes, threes));
+        assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
     }
 }
