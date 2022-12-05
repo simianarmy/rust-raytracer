@@ -162,14 +162,8 @@ mod tests {
         let sphere = glass_sphere();
         let ray = Ray::new(point(0.0, 0.0, -SQRT_2_DIV_2), vector_y());
         let xs = intersections!(
-            Intersection {
-                t: -SQRT_2_DIV_2,
-                object: Box::new(sphere.clone())
-            },
-            Intersection {
-                t: SQRT_2_DIV_2,
-                object: Box::new(sphere.clone())
-            }
+            sphere.intersection(-SQRT_2_DIV_2),
+            sphere.intersection(SQRT_2_DIV_2)
         );
         let comps = prepare_computations(&xs[1], &ray, &xs);
         let reflectance = schlick(&comps);
@@ -180,16 +174,7 @@ mod tests {
     fn schlick_with_perpendicular_viewing_angle() {
         let sphere = glass_sphere();
         let ray = Ray::new(point_zero(), vector_y());
-        let xs = intersections!(
-            Intersection {
-                t: -1.0,
-                object: Box::new(sphere.clone())
-            },
-            Intersection {
-                t: 1.0,
-                object: Box::new(sphere.clone())
-            }
-        );
+        let xs = intersections!(sphere.intersection(-1.0), sphere.intersection(1.0));
         let comps = prepare_computations(&xs[1], &ray, &xs);
         let reflectance = schlick(&comps);
         assert_eq_feps!(reflectance, 0.04);
@@ -199,10 +184,7 @@ mod tests {
     fn schlick_with_small_angle() {
         let sphere = glass_sphere();
         let ray = Ray::new(point(0.0, 0.99, -2.0), vector_z());
-        let xs = intersections!(Intersection {
-            t: 1.8589,
-            object: Box::new(sphere.clone())
-        });
+        let xs = intersections!(sphere.intersection(1.8589));
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let reflectance = schlick(&comps);
         assert_eq_feps!(reflectance, 0.48873);
