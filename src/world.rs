@@ -1,5 +1,6 @@
 use crate::color::Color;
 use crate::computations::*;
+use crate::group::*;
 use crate::intersection;
 use crate::intersection::Intersection;
 use crate::intersections;
@@ -16,7 +17,7 @@ pub const MAX_RAY_DEPTH: u8 = 5;
 
 pub struct World {
     light: PointLight,
-    shapes: Vec<ShapeBox>,
+    shapes: Vec<GroupRef>,
 }
 
 impl World {
@@ -28,15 +29,27 @@ impl World {
     }
 
     pub fn add_shape(&mut self, s: ShapeBox) {
-        self.shapes.push(s);
+        self.shapes.push(Group::from_shape(s));
     }
 
     pub fn get_shape(&self, i: usize) -> &ShapeBox {
-        &self.shapes[i]
+        &self.shapes[i].val
     }
 
     pub fn set_shape(&mut self, shape: ShapeBox, i: usize) {
-        self.shapes[i] = shape;
+        self.shapes[i] = Group::from_shape(shape)
+    }
+
+    pub fn add_group(&mut self, g: &GroupRef) {
+        self.shapes.push(g.clone());
+    }
+
+    pub fn get_group(&mut self, i: usize) -> &GroupRef {
+        &self.shapes[i]
+    }
+
+    pub fn set_group(&mut self, g: &GroupRef, i: usize) {
+        self.shapes[i] = g.clone();
     }
 
     // returns all ray/shape intersections sorted by t
@@ -183,8 +196,8 @@ mod tests {
         assert_eq!(world.light, light);
         let s1 = &world.shapes[0];
         let s2 = &world.shapes[1];
-        assert_eq!(s1.get_id(), "sphere_s1");
-        assert_eq!(s2.get_id(), "sphere_s2");
+        assert_eq!(s1.get_id(), "group_sphere_s1");
+        assert_eq!(s2.get_id(), "group_sphere_s2");
     }
 
     #[test]
