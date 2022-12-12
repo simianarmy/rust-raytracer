@@ -17,6 +17,7 @@ use raytracer::sphere::sphere;
 use raytracer::tuple::*;
 
 fn main() {
+    /*
     let mut sphere = sphere(); // unit sphere
     sphere.props.material.color = Color::new(1.0, 0.2, 1.0);
     let light_pos = point(-10.0, 10.0, -10.0);
@@ -71,4 +72,5 @@ fn main() {
             println!("Error writing file! {}", err);
         }
     }
+    */
 }

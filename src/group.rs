@@ -46,6 +46,16 @@ impl Group {
     }
 }
 
+/*
+impl Deref for Group {
+    type Target = Group;
+
+    fn deref(&self) -> &Self::Target {
+        &self
+    }
+}
+*/
+
 impl Shape for Group {
     fn get_id(&self) -> String {
         format!("group_{}", self.props.id)
@@ -74,16 +84,8 @@ impl Shape for Group {
     }
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        self.intersect(ray)
+        self.val.intersect(ray)
     }
-
-    /*
-    fn normal_at(&self, world_point: Point) -> Vector {
-        let local_point = world_to_object(self, world_point);
-        let local_normal = self.val.local_normal_at(local_point);
-        normal_to_world(self, &local_normal)
-    }
-    */
 
     fn local_normal_at(&self, _point: Point) -> Vector {
         panic!("local_normal_at should never be called on a group!");
@@ -103,7 +105,7 @@ fn set_parent(child: &GroupRef, parent: &GroupRef) {
 
 fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
     // Make a GroupRef
-    let g = default_group();
+    let g = Group::from_shape(shape);
     set_parent(&g, parent);
     parent.shapes.borrow_mut().push(g.clone())
 }

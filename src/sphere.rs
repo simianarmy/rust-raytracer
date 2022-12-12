@@ -52,7 +52,10 @@ impl Shape for Sphere {
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
 
-            crate::intersections!(self.intersection(t1), self.intersection(t2))
+            crate::intersections!(
+                Intersection::new(Box::new(self.clone()), t1),
+                Intersection::new(Box::new(self.clone()), t2)
+            )
         }
     }
 

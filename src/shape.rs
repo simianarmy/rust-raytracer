@@ -59,15 +59,12 @@ pub trait Shape: ShapeClone {
         let t_ray = ray.transform(inverse(&self.get_transform()));
         self.local_intersect(&t_ray)
     }
-    fn intersection(&self, t: F3D) -> Intersection {
-        Intersection {
-            t,
-            object: self.clone_box(), // perf?
-        }
-    }
 
     fn local_normal_at(&self, world_point: Point) -> Vector;
     fn normal_at(&self, world_point: Point) -> Vector {
+        // TODO: Need to be able to call world_to_object(&GroupRef) here
+        // self must be GroupRef
+        //
         let t = self.get_transform();
         let local_point = inverse(t) * world_point;
         let local_normal = self.local_normal_at(local_point);
