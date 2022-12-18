@@ -1,10 +1,12 @@
 use crate::color::*;
+use crate::group::*;
 use crate::lights::*;
 use crate::math::F3D;
 use crate::pattern::*;
 use crate::shape::*;
 use crate::tuple::*;
 use glm::*;
+use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Material {
@@ -48,7 +50,7 @@ impl Default for Material {
 // Phong lighting
 pub fn lighting(
     material: &Material,
-    object: &ShapeBox,
+    object: GroupRef,
     light: &PointLight,
     point: &Point,
     eyev: &Vector,
@@ -58,9 +60,11 @@ pub fn lighting(
     // use material pattern for color if it exists
     let mut color = material.color;
     if let Some(tpattern) = &material.pattern {
-        // I want the concrete pattern from the enum variant...
-        let p = tpattern.into_pattern();
-        color = p.pattern_at_shape(object.clone(), &point);
+        if let Some(shapebox_rc) = object.val.as_ref() {
+            // I want the concrete pattern from the shape enum variant...
+            let p = tpattern.into_pattern();
+            color = p.pattern_at_shape(shapebox_rc.clone(), &point);
+        }
     }
     // combine surface color with lights color/intensity
     let effective_color: Color = color * light.intensity;
@@ -97,11 +101,16 @@ pub fn lighting(
 mod tests {
     use super::*;
     use crate::assert_eq_eps;
+    use crate::group::Group;
     use crate::pattern::stripe::stripe_pattern;
     use crate::sphere::*;
 
-    fn setup() -> (Material, Point, ShapeBox) {
-        (Material::default(), point_zero(), Box::new(sphere()))
+    fn setup() -> (Material, Point, GroupRef) {
+        (
+            Material::default(),
+            point_zero(),
+            Group::from_shape(Box::new(sphere())),
+        )
     }
 
     #[test]
@@ -119,7 +128,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
     }
 
@@ -129,7 +138,7 @@ mod tests {
         let eyev = vector(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
     }
 
@@ -139,7 +148,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.7364, 0.7364, 0.7364).tuple());
     }
 
@@ -149,7 +158,7 @@ mod tests {
         let eyev = vector(0.0, -2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(1.6364, 1.6364, 1.6364).tuple());
     }
 
@@ -159,7 +168,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, 10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -169,7 +178,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, true);
+        let result = lighting(&m, object, &light, &position, &eyev, &normalv, true);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -190,7 +199,7 @@ mod tests {
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
         let c1 = lighting(
             &m,
-            &object,
+            object.clone(),
             &light,
             &point(0.9, 0.0, 0.0),
             &eyev,
@@ -199,7 +208,7 @@ mod tests {
         );
         let c2 = lighting(
             &m,
-            &object,
+            object,
             &light,
             &point(1.1, 0.0, 0.0),
             &eyev,

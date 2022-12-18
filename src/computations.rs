@@ -161,30 +161,12 @@ mod tests {
         c.props.material.refractive_index = 2.5;
         let ray = Ray::new(point(0.0, 0.0, -4.0), vector_y());
         let xs = intersections!(
-            Intersection {
-                t: 2.0,
-                object: Group::from_shape(Box::new(a.clone()))
-            },
-            Intersection {
-                t: 2.75,
-                object: Group::from_shape(Box::new(b.clone()))
-            },
-            Intersection {
-                t: 3.25,
-                object: Group::from_shape(Box::new(c.clone()))
-            },
-            Intersection {
-                t: 4.75,
-                object: Group::from_shape(Box::new(b.clone()))
-            },
-            Intersection {
-                t: 5.25,
-                object: Group::from_shape(Box::new(c.clone()))
-            },
-            Intersection {
-                t: 6.0,
-                object: Group::from_shape(Box::new(a.clone()))
-            }
+            Intersection::new(Box::new(a.clone()), 2.0),
+            Intersection::new(Box::new(b.clone()), 2.75),
+            Intersection::new(Box::new(c.clone()), 3.25),
+            Intersection::new(Box::new(b.clone()), 4.75),
+            Intersection::new(Box::new(c.clone()), 5.25),
+            Intersection::new(Box::new(a.clone()), 6.0)
         );
         let cases = vec![
             (0, 1.0, 1.5),

@@ -12,6 +12,8 @@ use crate::shape::*;
 use crate::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
+use std::rc::Rc;
+use std::sync::{Arc, Weak};
 
 pub const MAX_RAY_DEPTH: u8 = 5;
 
@@ -33,7 +35,8 @@ impl World {
     }
 
     pub fn get_shape(&self, i: usize) -> &ShapeBox {
-        &self.shapes[i].val
+        let sbox = self.shapes[i].val.as_ref().unwrap();
+        &sbox
     }
 
     pub fn set_shape(&mut self, shape: ShapeBox, i: usize) {
@@ -67,10 +70,10 @@ impl World {
 
     pub fn shade_hit(&self, comps: &Computations, remaining: u8) -> Color {
         let shadowed = self.is_shadowed(&comps.over_point);
-
-        let surface = lighting(
+        let surface;
+        surface = lighting(
             comps.object.get_material(),
-            &comps.object.val,
+            Arc::clone(&comps.object),
             &self.light,
             &comps.over_point,
             &comps.eyev,

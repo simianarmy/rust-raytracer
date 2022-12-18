@@ -7,6 +7,7 @@ use crate::shape::*;
 use crate::tuple::*;
 use std::{
     cell::RefCell,
+    rc::Rc,
     sync::{Arc, Weak},
 };
 
@@ -17,7 +18,7 @@ type Children = RefCell<Vec<GroupRef>>;
 #[derive(Clone, Debug)]
 pub struct Group {
     pub props: Shape3D,
-    pub val: ShapeBox,
+    pub val: Option<ShapeBox>,
     pub parent: Parent,
     pub shapes: Children,
 }
@@ -26,7 +27,7 @@ impl Group {
     pub fn from_shape(shape: ShapeBox) -> GroupRef {
         let g = Group {
             props: Shape3D::default(),
-            val: shape.clone(),
+            val: Some(shape.clone()),
             parent: RefCell::new(Weak::new()),
             shapes: RefCell::new(Vec::new()),
         };
@@ -37,24 +38,18 @@ impl Group {
     pub fn new() -> GroupRef {
         let g = Group {
             props: Shape3D::default(),
-            val: Box::new(test_shape()),
+            val: None,
             parent: RefCell::new(Weak::new()),
             shapes: RefCell::new(Vec::new()),
         };
         let g_ref = Arc::new(g);
         g_ref
     }
-}
 
-/*
-impl Deref for Group {
-    type Target = Group;
-
-    fn deref(&self) -> &Self::Target {
-        &self
+    pub fn is_shape(&self) -> bool {
+        self.val.is_some()
     }
 }
-*/
 
 impl Shape for Group {
     fn get_id(&self) -> String {
@@ -84,7 +79,11 @@ impl Shape for Group {
     }
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        self.val.intersect(ray)
+        if let Some(shape_box) = &self.val {
+            shape_box.intersect(ray)
+        } else {
+            vec![]
+        }
     }
 
     fn local_normal_at(&self, _point: Point) -> Vector {
@@ -106,8 +105,7 @@ fn set_parent(child: &GroupRef, parent: &GroupRef) {
 fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
     // Make a GroupRef
     let g = Group::from_shape(shape);
-    set_parent(&g, parent);
-    parent.shapes.borrow_mut().push(g.clone())
+    add_child_group(parent, &g);
 }
 
 pub fn add_child_group(parent: &GroupRef, child: &GroupRef) {
@@ -139,7 +137,6 @@ pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     let mut p = point.clone();
 
     if has_parent(group) {
-        // lol Rust
         p = world_to_object(&get_parent(group).unwrap(), point);
     }
     glm::inverse(group.get_transform()) * p
@@ -156,9 +153,15 @@ pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
     n
 }
 
+/**
+ * Important function here
+ */
 pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
     let local_point = world_to_object(group, world_point);
-    let local_normal = group.local_normal_at(local_point);
+    let mut local_normal = vector_zero(); // is this the right default value?
+    if let Some(shape_box) = &group.val {
+        local_normal = shape_box.local_normal_at(local_point)
+    }
     normal_to_world(group, &local_normal)
 }
 
@@ -197,7 +200,7 @@ mod tests {
         add_child_shape(&g, Box::new(s.clone()));
         assert_eq!(g.shapes.borrow().len(), 1);
         let child = &g.shapes.borrow()[0];
-        assert_eq!(s.get_id(), child.get_id());
+        assert_eq!(s.get_id(), child.val.as_ref().unwrap().get_id());
         assert!(g.shapes.borrow()[0].parent.borrow().upgrade().is_some());
     }
 
