@@ -5,6 +5,7 @@ use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::shape::*;
 use crate::tuple::*;
+use std::fmt;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -53,16 +54,28 @@ impl Group {
 
 impl Shape for Group {
     fn get_id(&self) -> String {
-        format!("group_{}", self.props.id)
+        if let Some(sbox) = &self.val {
+            format!("g_{}", sbox.get_id())
+        } else {
+            format!("group_{}", self.props.id)
+        }
     }
     fn get_transform(&self) -> &Matrix4 {
-        &self.props.transform
+        if let Some(sbox) = &self.val {
+            sbox.get_transform()
+        } else {
+            &self.props.transform
+        }
     }
     fn set_transform(&mut self, t: &Matrix4) {
         self.props.transform = *t;
     }
     fn get_material(&self) -> &Material {
-        &self.props.material
+        if let Some(sbox) = &self.val {
+            sbox.get_material()
+        } else {
+            &self.props.material
+        }
     }
     fn set_material(&mut self, m: Material) {
         self.props.material = m;
@@ -79,15 +92,32 @@ impl Shape for Group {
     }
 
     fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        if let Some(shape_box) = &self.val {
-            shape_box.intersect(ray)
+        if let Some(sbox) = &self.val {
+            sbox.intersect(ray)
         } else {
-            vec![]
+            let t_ray = ray.transform(glm::inverse(&self.get_transform()));
+            let mut res = vec![];
+            for s in self.shapes.borrow().iter() {
+                let xs = s.intersect(&t_ray);
+                res.extend(xs);
+            }
+            sort_intersections(&mut res);
+            res
         }
     }
 
     fn local_normal_at(&self, _point: Point) -> Vector {
         panic!("local_normal_at should never be called on a group!");
+    }
+}
+
+impl fmt::Display for Group {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut sid = String::from("");
+        if let Some(sbox) = &self.val {
+            sid = sbox.get_id();
+        }
+        write!(f, "Group id {} Shape: {}", self.get_id(), sid)
     }
 }
 
@@ -135,11 +165,20 @@ fn has_parent(group: &GroupRef) -> bool {
 
 pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     let mut p = point.clone();
+    println!("world_to_object {:?}", group.get_id());
 
     if has_parent(group) {
+        println!("group has parent");
         p = world_to_object(&get_parent(group).unwrap(), point);
     }
-    glm::inverse(group.get_transform()) * p
+    println!("{} transform: {}", group.get_id(), group.get_transform());
+    println!("p: {}", p);
+    if let Some(sbox) = group.val.as_ref() {
+        println!("Shape transform {}", sbox.get_transform());
+        glm::inverse(sbox.get_transform()) * p
+    } else {
+        glm::inverse(group.get_transform()) * p
+    }
 }
 
 pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
@@ -237,10 +276,22 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let xs = g.local_intersect(&r);
         assert_eq!(xs.len(), 4);
-        assert_eq!(xs[0].object.get_id(), String::from("sphere_s2"));
-        assert_eq!(xs[1].object.get_id(), String::from("sphere_s2"));
-        assert_eq!(xs[2].object.get_id(), String::from("sphere_s1"));
-        assert_eq!(xs[3].object.get_id(), String::from("sphere_s1"));
+        assert_eq!(
+            xs[0].group.val.as_ref().unwrap().get_id(),
+            String::from("sphere_s2")
+        );
+        assert_eq!(
+            xs[1].group.val.as_ref().unwrap().get_id(),
+            String::from("sphere_s2")
+        );
+        assert_eq!(
+            xs[2].group.val.as_ref().unwrap().get_id(),
+            String::from("sphere_s1")
+        );
+        assert_eq!(
+            xs[3].group.val.as_ref().unwrap().get_id(),
+            String::from("sphere_s1")
+        );
     }
 
     #[test]
@@ -264,8 +315,10 @@ mod tests {
         add_child_group(&g1, &g2);
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        let g3 = Group::new();
-        add_child_shape(&g3, Box::new(s));
+        let g3 = Group::from_shape(Box::new(s));
+        add_child_group(&g2, &g3);
+        //let g3 = Group::new();
+        //add_child_shape(&g3, Box::new(s));
         let p = world_to_object(&g3, &point(-2.0, 0.0, -10.0));
         assert_eq_eps!(p, point(0.0, 0.0, -1.0));
     }
@@ -296,8 +349,7 @@ mod tests {
         add_child_group(&g1, &g2);
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        let g3 = Group::new();
-        add_child_shape(&g3, Box::new(s));
+        let g3 = Group::from_shape(Box::new(s));
         add_child_group(&g2, &g3);
         let n = normal_at(&g3, &point(1.7321, 1.1547, -5.5774));
         assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));

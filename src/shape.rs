@@ -107,9 +107,10 @@ impl fmt::Debug for dyn Shape {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
-            "shape: {}\nmaterial: {:?}",
+            "shape: {}\nmaterial: {:?}\ntransform: {}",
             self.get_id(),
-            self.get_material()
+            self.get_material(),
+            self.get_transform()
         )
     }
 }

@@ -45,16 +45,12 @@ impl Shape for Plane {
             vec![]
         } else {
             let t = -ray.origin.y / ray.direction.y;
-            vec![self.intersection(t)]
+            vec![Intersection::new(Box::new(self.clone()), t)]
         }
     }
 
     fn local_normal_at(&self, _point: Point) -> Vector {
         point_y()
-    }
-
-    fn get_parent(&self) -> Option<Box<Group>> {
-        self.props.parent
     }
 }
 
@@ -94,6 +90,6 @@ mod tests {
         let xs = p.local_intersect(&r);
         assert_eq!(xs.len(), 1);
         assert_eq!(xs[0].t, 1.0);
-        assert_eq!(xs[0].object.get_id(), p.get_id());
+        assert_eq!(xs[0].group.get_id(), format!("g_{}", p.get_id()));
     }
 }

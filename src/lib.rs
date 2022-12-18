@@ -22,7 +22,7 @@ pub mod computations;
 //pub mod cube;
 //pub mod cone;
 //pub mod cylinder;
-//pub mod plane;
 pub mod group;
 pub mod pattern;
+pub mod plane;
 pub mod world;
