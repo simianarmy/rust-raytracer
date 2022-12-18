@@ -75,14 +75,8 @@ impl Shape for Cube {
             vec![]
         } else {
             intersections!(
-                Intersection {
-                    t: tmin,
-                    object: Box::new(self.clone())
-                },
-                Intersection {
-                    t: tmax,
-                    object: Box::new(self.clone())
-                }
+                Intersection::new(Box::new(self.clone()), tmin),
+                Intersection::new(Box::new(self.clone()), tmax)
             )
         }
     }
@@ -93,10 +87,6 @@ impl Shape for Cube {
             y if y == point.y.abs() => vector(0.0, point.y, 0.0),
             _ => vector(0.0, 0.0, point.z),
         }
-    }
-
-    fn get_parent(&self) -> Option<Box<Group>> {
-        self.props.parent
     }
 }
 

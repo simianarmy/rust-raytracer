@@ -19,9 +19,9 @@ pub mod tuple;
 pub mod camera;
 pub mod computations;
 //#[macro_use]
-//pub mod cube;
-//pub mod cone;
-//pub mod cylinder;
+pub mod cone;
+pub mod cube;
+pub mod cylinder;
 pub mod group;
 pub mod pattern;
 pub mod plane;

@@ -12,7 +12,6 @@ use crate::shape::*;
 use crate::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
-use std::rc::Rc;
 use std::sync::{Arc, Weak};
 
 pub const MAX_RAY_DEPTH: u8 = 5;

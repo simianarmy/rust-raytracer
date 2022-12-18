@@ -31,18 +31,12 @@ impl Cone {
         let t = (self.minimum - ray.origin.y) / ray.direction.y;
 
         if check_cap(ray, t, self.minimum) {
-            xs.push(Intersection {
-                t,
-                object: Box::new(self.clone()),
-            });
+            xs.push(Intersection::new(Box::new(self.clone()), t));
         }
         let t = (self.maximum - ray.origin.y) / ray.direction.y;
 
         if check_cap(ray, t, self.maximum) {
-            xs.push(Intersection {
-                t,
-                object: Box::new(self.clone()),
-            });
+            xs.push(Intersection::new(Box::new(self.clone()), t));
         }
         xs
     }
@@ -98,10 +92,7 @@ impl Shape for Cone {
                 return vec![];
             }
             let t = -c / (2.0 * b);
-            xs.push(Intersection {
-                t,
-                object: Box::new(self.clone()),
-            });
+            xs.push(Intersection::new(Box::new(self.clone()), t));
         }
         let disc = b * b - 4.0 * a * c;
 
@@ -114,17 +105,11 @@ impl Shape for Cone {
             }
             let y0 = ray.origin.y + t0 * ray.direction.y;
             if self.minimum < y0 && y0 < self.maximum {
-                xs.push(Intersection {
-                    t: t0,
-                    object: Box::new(self.clone()),
-                });
+                xs.push(Intersection::new(Box::new(self.clone()), t0));
             }
             let y1 = ray.origin.y + t1 * ray.direction.y;
             if self.minimum < y1 && y1 < self.maximum {
-                xs.push(Intersection {
-                    t: t1,
-                    object: Box::new(self.clone()),
-                });
+                xs.push(Intersection::new(Box::new(self.clone()), t1));
             }
             xs.extend(self.intersect_caps(ray));
         }
@@ -145,10 +130,6 @@ impl Shape for Cone {
                 vector(point.x, y, point.z)
             }
         }
-    }
-
-    fn get_parent(&self) -> Option<Box<Group>> {
-        self.props.parent
     }
 }
 
