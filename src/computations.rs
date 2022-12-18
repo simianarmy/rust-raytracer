@@ -63,7 +63,6 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Vec<Intersection>)
     // TODO: Pass i.object: GroupRef to group_normal_at() ?
     //let normal = i.group.normal_at(p);
     let normal = group::normal_at(&i.group, &p);
-    println!("group normal {}", normal);
     let eyev = -ray.direction;
     let inside = normal.dot(&eyev) < 0.0;
     let normalv = if inside { -normal } else { normal };

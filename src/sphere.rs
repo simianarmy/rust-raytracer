@@ -40,13 +40,11 @@ impl Shape for Sphere {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        println!("sphere local intersect! {:?}", self);
         let sphere_to_ray = ray.origin - point_zero();
         let a = ray.direction.dot(&ray.direction);
         let b = 2.0 * ray.direction.dot(&sphere_to_ray);
         let c = sphere_to_ray.dot(&sphere_to_ray) - 1.0;
         let discriminant = b * b - 4.0 * a * c;
-        println!("discriminant: {}", discriminant);
 
         if discriminant < 0.0 {
             vec![]

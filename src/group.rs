@@ -165,16 +165,11 @@ fn has_parent(group: &GroupRef) -> bool {
 
 pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     let mut p = point.clone();
-    println!("world_to_object {:?}", group.get_id());
 
     if has_parent(group) {
-        println!("group has parent");
         p = world_to_object(&get_parent(group).unwrap(), point);
     }
-    println!("{} transform: {}", group.get_id(), group.get_transform());
-    println!("p: {}", p);
     if let Some(sbox) = group.val.as_ref() {
-        println!("Shape transform {}", sbox.get_transform());
         glm::inverse(sbox.get_transform()) * p
     } else {
         glm::inverse(group.get_transform()) * p

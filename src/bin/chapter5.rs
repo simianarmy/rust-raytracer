@@ -15,9 +15,9 @@ use raytracer::ray::Ray;
 use raytracer::shape::*;
 use raytracer::sphere::sphere;
 use raytracer::tuple::*;
+use std::sync::{Arc, Weak};
 
 fn main() {
-    /*
     let mut sphere = sphere(); // unit sphere
     sphere.props.material.color = Color::new(1.0, 0.2, 1.0);
     let light_pos = point(-10.0, 10.0, -10.0);
@@ -46,11 +46,11 @@ fn main() {
             match hit(&xs) {
                 Some(is) => {
                     let p = ray.position(is.t);
-                    let normal = is.object.normal_at(p);
+                    let normal = is.group.normal_at(p);
                     let eye = -ray.direction;
                     let color = lighting(
-                        &is.object.get_material(),
-                        &is.object,
+                        &is.group.get_material(),
+                        Arc::clone(&is.group),
                         &light,
                         &p,
                         &eye,
@@ -72,5 +72,4 @@ fn main() {
             println!("Error writing file! {}", err);
         }
     }
-    */
 }

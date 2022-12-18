@@ -8,8 +8,6 @@ use std::fmt;
 #[derive(Clone)]
 pub struct Intersection {
     pub t: F3D,
-    // TODO: object -> GroupRef
-    //pub object: ShapeBox,
     pub group: GroupRef,
 }
 
