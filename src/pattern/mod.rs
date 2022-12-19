@@ -1,4 +1,5 @@
 use crate::color::Color;
+use crate::group::*;
 use crate::matrix::Matrix4;
 use crate::shape::*;
 use crate::tuple::Point;
@@ -16,9 +17,9 @@ pub trait Pattern {
 
     fn pattern_at(&self, point: &Point) -> Color;
 
-    fn pattern_at_shape(&self, object: ShapeBox, point: &Point) -> Color {
-        let object_point = glm::inverse(object.get_transform()) * point;
-        let pattern_point = glm::inverse(&self.get_transform()) * object_point;
+    fn pattern_at_shape(&self, group: GroupRef, point: &Point) -> Color {
+        let local_point = world_to_object(&group, point);
+        let pattern_point = glm::inverse(&self.get_transform()) * local_point;
         self.pattern_at(&pattern_point)
     }
 }
@@ -98,7 +99,7 @@ mod tests {
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
         let sb = Box::new(object);
-        let c = pattern.pattern_at_shape(sb, &point(2.0, 3.0, 4.0));
+        let c = pattern.pattern_at_shape(Group::from_shape(sb), &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }
 
@@ -107,7 +108,8 @@ mod tests {
         let mut pattern = setup();
         let object = sphere();
         pattern.transform = make_scaling(2.0, 2.0, 2.0);
-        let c = pattern.pattern_at_shape(Box::new(object), &point(2.0, 3.0, 4.0));
+        let c =
+            pattern.pattern_at_shape(Group::from_shape(Box::new(object)), &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }
 
@@ -117,7 +119,8 @@ mod tests {
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
         pattern.transform = make_translation(0.5, 1.0, 1.5);
-        let c = pattern.pattern_at_shape(Box::new(object), &point(2.5, 3.0, 3.5));
+        let c =
+            pattern.pattern_at_shape(Group::from_shape(Box::new(object)), &point(2.5, 3.0, 3.5));
         assert_eq!(c, Color::new(0.75, 0.5, 0.25));
     }
 }

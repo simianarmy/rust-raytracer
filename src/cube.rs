@@ -1,3 +1,4 @@
+use crate::bounds::*;
 use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::intersections;
@@ -24,7 +25,7 @@ pub fn cube() -> Cube {
     cube_with_id(None)
 }
 
-fn check_axis(origin: math::F3D, direction: math::F3D) -> (math::F3D, math::F3D) {
+pub fn check_axis(origin: math::F3D, direction: math::F3D) -> (math::F3D, math::F3D) {
     let tmin_numerator = -1.0 - origin;
     let tmax_numerator = 1.0 - origin;
 

@@ -1,3 +1,4 @@
+use crate::bounds::*;
 use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::materials::Material;
@@ -129,6 +130,13 @@ impl Shape for Cone {
             } else {
                 vector(point.x, y, point.z)
             }
+        }
+    }
+
+    fn bounds(&self) -> Bounds {
+        Bounds {
+            min: point(-1.0, self.minimum, -1.0),
+            max: point(1.0, self.maximum, 1.0),
         }
     }
 }

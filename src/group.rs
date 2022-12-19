@@ -1,6 +1,9 @@
+use crate::bounds::*;
+use crate::cube;
 use crate::intersection::sort_intersections;
 use crate::intersection::Intersection;
 use crate::materials::Material;
+use crate::math;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::shape::*;
@@ -8,13 +11,39 @@ use crate::tuple::*;
 use std::fmt;
 use std::{
     cell::RefCell,
-    rc::Rc,
     sync::{Arc, Weak},
 };
 
 pub type GroupRef = Arc<Group>;
 type Parent = RefCell<Weak<Group>>;
 type Children = RefCell<Vec<GroupRef>>;
+
+fn check_axis(
+    origin: math::F3D,
+    direction: math::F3D,
+    min: math::F3D,
+    max: math::F3D,
+) -> (math::F3D, math::F3D) {
+    let tmin_numerator = min - origin;
+    let tmax_numerator = max - origin;
+
+    let mut tmin = 0.0;
+    let mut tmax = 0.0;
+
+    if direction.abs() >= math::EPSILON {
+        tmin = tmin_numerator / direction;
+        tmax = tmax_numerator / direction;
+    } else {
+        tmin = tmin_numerator * math::INFINITY;
+        tmax = tmax_numerator * math::INFINITY;
+    }
+    if tmin > tmax {
+        let tmp = tmin;
+        tmin = tmax;
+        tmax = tmp;
+    }
+    (tmin, tmax)
+}
 
 #[derive(Clone, Debug)]
 pub struct Group {
@@ -82,6 +111,25 @@ impl Shape for Group {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        // Test group's bounding box first
+        let bounds = self.bounds();
+        let (xmin, xmax) = check_axis(ray.origin.x, ray.direction.x, bounds.min.x, bounds.max.x);
+        let (ymin, ymax) = check_axis(ray.origin.y, ray.direction.y, bounds.min.y, bounds.max.y);
+        let (zmin, zmax) = check_axis(ray.origin.z, ray.direction.z, bounds.min.z, bounds.max.z);
+
+        let tmin = *vec![xmin, ymin, zmin]
+            .iter()
+            .min_by(|a, b| a.total_cmp(b))
+            .unwrap();
+        let tmax = *vec![xmax, ymax, zmax]
+            .iter()
+            .max_by(|a, b| a.total_cmp(b))
+            .unwrap();
+
+        if tmin > tmax {
+            println!("Bounding box optimization!");
+            return vec![];
+        }
         let mut res = vec![];
         for s in self.shapes.borrow().iter() {
             let xs = s.intersect(ray);
@@ -108,6 +156,38 @@ impl Shape for Group {
 
     fn local_normal_at(&self, _point: Point) -> Vector {
         panic!("local_normal_at should never be called on a group!");
+    }
+
+    fn bounds(&self) -> Bounds {
+        if self.shapes.borrow().is_empty() {
+            return Bounds::default();
+        }
+        let mut xs: Vec<math::F3D> = vec![];
+        let mut ys: Vec<math::F3D> = vec![];
+        let mut zs: Vec<math::F3D> = vec![];
+
+        for s in self.shapes.borrow().iter() {
+            let sb = s.bounds();
+            let group_min = s.get_transform() * sb.min;
+            let group_max = s.get_transform() * sb.max;
+            xs.push(group_min.x);
+            xs.push(group_max.x);
+            ys.push(group_min.y);
+            ys.push(group_max.y);
+            zs.push(group_min.z);
+            zs.push(group_max.z);
+        }
+        let min_x = *xs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
+        let max_x = *xs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+        let min_y = *ys.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
+        let max_y = *ys.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+        let min_z = *zs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
+        let max_z = *zs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+
+        Bounds {
+            min: point(min_x, min_y, min_z),
+            max: point(max_x, max_y, max_z),
+        }
     }
 }
 

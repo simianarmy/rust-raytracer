@@ -1,3 +1,4 @@
+use crate::bounds::*;
 use crate::group::Group;
 use crate::intersection::*;
 use crate::materials::Material;
@@ -51,6 +52,13 @@ impl Shape for Plane {
 
     fn local_normal_at(&self, _point: Point) -> Vector {
         point_y()
+    }
+
+    fn bounds(&self) -> Bounds {
+        Bounds {
+            min: point(-math::INFINITY, 0.0, -math::INFINITY),
+            max: point(math::INFINITY, 0.0, math::INFINITY),
+        }
     }
 }
 

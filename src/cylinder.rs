@@ -1,3 +1,4 @@
+use crate::bounds::*;
 use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::materials::Material;
@@ -118,6 +119,13 @@ impl Shape for Cylinder {
             vector(0.0, -1.0, 0.0)
         } else {
             vector(point.x, 0.0, point.z)
+        }
+    }
+
+    fn bounds(&self) -> Bounds {
+        Bounds {
+            min: point(-1.0, self.minimum, -1.0),
+            max: point(1.0, self.maximum, 1.0),
         }
     }
 }

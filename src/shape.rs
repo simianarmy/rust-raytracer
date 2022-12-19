@@ -1,7 +1,6 @@
-use crate::group::Group;
+use crate::bounds::*;
 use crate::intersection::Intersection;
 use crate::materials::Material;
-use crate::math::F3D;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::tuple::*;
@@ -72,6 +71,10 @@ pub trait Shape: ShapeClone {
         let mut world_normal = transpose(&inverse(t)) * local_normal;
         world_normal.w = 0.0;
         world_normal.normalize()
+    }
+
+    fn bounds(&self) -> Bounds {
+        Bounds::default()
     }
 }
 

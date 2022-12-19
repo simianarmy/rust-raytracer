@@ -19,6 +19,7 @@ pub mod tuple;
 pub mod camera;
 pub mod computations;
 //#[macro_use]
+pub mod bounds;
 pub mod cone;
 pub mod cube;
 pub mod cylinder;
