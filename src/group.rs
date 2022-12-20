@@ -1,5 +1,4 @@
 use crate::bounds::*;
-use crate::cube;
 use crate::intersection::sort_intersections;
 use crate::intersection::Intersection;
 use crate::materials::Material;
@@ -51,6 +50,7 @@ pub struct Group {
     pub val: Option<ShapeBox>,
     pub parent: Parent,
     pub shapes: Children,
+    bounds: Bounds,
 }
 
 impl Group {
@@ -60,6 +60,7 @@ impl Group {
             val: Some(shape.clone()),
             parent: RefCell::new(Weak::new()),
             shapes: RefCell::new(Vec::new()),
+            bounds: Bounds::default(),
         };
         let g_ref = Arc::new(g);
         g_ref
@@ -71,6 +72,7 @@ impl Group {
             val: None,
             parent: RefCell::new(Weak::new()),
             shapes: RefCell::new(Vec::new()),
+            bounds: Bounds::default(),
         };
         let g_ref = Arc::new(g);
         g_ref
@@ -78,6 +80,38 @@ impl Group {
 
     pub fn is_shape(&self) -> bool {
         self.val.is_some()
+    }
+
+    pub fn calculate_bounds(&self) -> Bounds {
+        if self.shapes.borrow().is_empty() {
+            return Bounds::default();
+        }
+        let mut xs: Vec<math::F3D> = vec![];
+        let mut ys: Vec<math::F3D> = vec![];
+        let mut zs: Vec<math::F3D> = vec![];
+
+        for s in self.shapes.borrow().iter() {
+            let sb = s.bounds();
+            let group_min = s.get_transform() * sb.min;
+            let group_max = s.get_transform() * sb.max;
+            xs.push(group_min.x);
+            xs.push(group_max.x);
+            ys.push(group_min.y);
+            ys.push(group_max.y);
+            zs.push(group_min.z);
+            zs.push(group_max.z);
+        }
+        let min_x = *xs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
+        let max_x = *xs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+        let min_y = *ys.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
+        let max_y = *ys.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+        let min_z = *zs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
+        let max_z = *zs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+
+        Bounds {
+            min: point(min_x, min_y, min_z),
+            max: point(max_x, max_y, max_z),
+        }
     }
 }
 
@@ -98,6 +132,7 @@ impl Shape for Group {
     }
     fn set_transform(&mut self, t: &Matrix4) {
         self.props.transform = *t;
+        self.calculate_bounds();
     }
     fn get_material(&self) -> &Material {
         if let Some(sbox) = &self.val {
@@ -144,6 +179,8 @@ impl Shape for Group {
             sbox.intersect(ray)
         } else {
             let t_ray = ray.transform(glm::inverse(&self.get_transform()));
+            self.local_intersect(&t_ray)
+            /*
             let mut res = vec![];
             for s in self.shapes.borrow().iter() {
                 let xs = s.intersect(&t_ray);
@@ -151,6 +188,7 @@ impl Shape for Group {
             }
             sort_intersections(&mut res);
             res
+            */
         }
     }
 
@@ -159,35 +197,7 @@ impl Shape for Group {
     }
 
     fn bounds(&self) -> Bounds {
-        if self.shapes.borrow().is_empty() {
-            return Bounds::default();
-        }
-        let mut xs: Vec<math::F3D> = vec![];
-        let mut ys: Vec<math::F3D> = vec![];
-        let mut zs: Vec<math::F3D> = vec![];
-
-        for s in self.shapes.borrow().iter() {
-            let sb = s.bounds();
-            let group_min = s.get_transform() * sb.min;
-            let group_max = s.get_transform() * sb.max;
-            xs.push(group_min.x);
-            xs.push(group_max.x);
-            ys.push(group_min.y);
-            ys.push(group_max.y);
-            zs.push(group_min.z);
-            zs.push(group_max.z);
-        }
-        let min_x = *xs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
-        let max_x = *xs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
-        let min_y = *ys.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
-        let max_y = *ys.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
-        let min_z = *zs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
-        let max_z = *zs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
-
-        Bounds {
-            min: point(min_x, min_y, min_z),
-            max: point(max_x, max_y, max_z),
-        }
+        self.calculate_bounds()
     }
 }
 
@@ -208,11 +218,11 @@ pub fn default_group() -> GroupRef {
 
 fn set_parent(child: &GroupRef, parent: &GroupRef) {
     // `child_node.parent` is set to weak reference to `parent_node`.
-    println!("adding {} to {}", child.get_id(), parent.get_id());
+    //println!("adding {} to {}", child.get_id(), parent.get_id());
     *child.parent.borrow_mut() = Arc::downgrade(&parent);
 }
 
-fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
+pub fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
     // Make a GroupRef
     let g = Group::from_shape(shape);
     add_child_group(parent, &g);
@@ -227,7 +237,7 @@ pub fn add_child_group(parent: &GroupRef, child: &GroupRef) {
  * Helpers to limit syntax explosions
  */
 
-fn set_transform(group: &mut GroupRef, transform: &Matrix4) {
+pub fn set_transform(group: &mut GroupRef, transform: &Matrix4) {
     (*Arc::get_mut(group).unwrap()).set_transform(transform);
 }
 

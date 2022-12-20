@@ -6,6 +6,7 @@ extern crate raytracer;
 
 use raytracer::canvas::Canvas;
 use raytracer::color::Color;
+use raytracer::group;
 use raytracer::intersection::hit;
 use raytracer::lights::*;
 use raytracer::materials::lighting;
@@ -15,7 +16,7 @@ use raytracer::ray::Ray;
 use raytracer::shape::*;
 use raytracer::sphere::sphere;
 use raytracer::tuple::*;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 fn main() {
     let mut sphere = sphere(); // unit sphere
@@ -46,7 +47,7 @@ fn main() {
             match hit(&xs) {
                 Some(is) => {
                     let p = ray.position(is.t);
-                    let normal = is.group.normal_at(p);
+                    let normal = group::normal_at(&is.group, &p);
                     let eye = -ray.direction;
                     let color = lighting(
                         &is.group.get_material(),

@@ -3,6 +3,7 @@
  */
 use crate::tuple::*;
 
+#[derive(Clone, Debug)]
 pub struct Bounds {
     pub min: Point,
     pub max: Point,

@@ -1,5 +1,4 @@
 use crate::bounds::*;
-use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::materials::Material;
 use crate::math;

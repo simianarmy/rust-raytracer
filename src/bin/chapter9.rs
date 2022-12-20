@@ -1,5 +1,6 @@
 /**
  * Simple scene
+ */
 extern crate nalgebra_glm as glm;
 extern crate raytracer;
 
@@ -67,4 +68,3 @@ fn main() {
         }
     }
 }
- */

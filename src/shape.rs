@@ -61,9 +61,6 @@ pub trait Shape: ShapeClone {
 
     fn local_normal_at(&self, world_point: Point) -> Vector;
     fn normal_at(&self, world_point: Point) -> Vector {
-        // TODO: Need to be able to call world_to_object(&GroupRef) here
-        // self must be GroupRef
-        //
         let t = self.get_transform();
         let local_point = inverse(t) * world_point;
         let local_normal = self.local_normal_at(local_point);
