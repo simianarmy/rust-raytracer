@@ -134,9 +134,20 @@ impl Shape for Cone {
     }
 
     fn bounds(&self) -> Bounds {
-        Bounds {
-            min: point(-1.0, self.minimum, -1.0),
-            max: point(1.0, self.maximum, 1.0),
+        if self.minimum == -math::INFINITY && self.maximum == math::INFINITY {
+            Bounds {
+                min: point(-math::INFINITY, -math::INFINITY, -math::INFINITY),
+                max: point(math::INFINITY, math::INFINITY, math::INFINITY),
+            }
+        } else {
+            let a = self.minimum.abs();
+            let b = self.maximum.abs();
+            let limit = a.max(b);
+
+            Bounds {
+                min: point(-limit, self.minimum, -limit),
+                max: point(limit, self.maximum, limit),
+            }
         }
     }
 }

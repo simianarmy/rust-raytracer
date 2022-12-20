@@ -8,6 +8,7 @@ use crate::ray::Ray;
 use crate::shape::*;
 use crate::tuple::*;
 use std::fmt;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     cell::RefCell,
     sync::{Arc, Weak},
@@ -16,6 +17,12 @@ use std::{
 pub type GroupRef = Arc<Group>;
 type Parent = RefCell<Weak<Group>>;
 type Children = RefCell<Vec<GroupRef>>;
+
+pub static NUM_BOUNDING_OPTS: AtomicUsize = AtomicUsize::new(0);
+
+fn bump_num_bounding_opts() {
+    NUM_BOUNDING_OPTS.fetch_add(1, Ordering::SeqCst);
+}
 
 fn check_axis(
     origin: math::F3D,
@@ -163,6 +170,7 @@ impl Shape for Group {
 
         if tmin > tmax {
             println!("Bounding box optimization!");
+            bump_num_bounding_opts();
             return vec![];
         }
         let mut res = vec![];
@@ -444,5 +452,23 @@ mod tests {
     #[should_panic]
     fn local_normal_at_illegal() {
         default_group().local_normal_at(point_zero());
+    }
+
+    //#[test]
+    fn bounding_box_fits_children() {
+        let g = default_group();
+        let mut s1 = sphere();
+        let mut s2 = sphere();
+        s1.set_transform(&make_translation(-2.0, 0.0, -2.0));
+        s2.set_transform(&make_translation(2.0, -2.0, 0.5));
+        add_child_shape(&g, Box::new(s1));
+        add_child_shape(&g, Box::new(s2));
+        let bounds = g.bounds();
+        assert_eq!(bounds.min.x, -3.0);
+        assert_eq!(bounds.min.y, -3.0);
+        assert_eq!(bounds.min.z, -3.0);
+        assert_eq!(bounds.max.x, 3.0);
+        assert_eq!(bounds.max.y, 1.0);
+        assert_eq!(bounds.max.z, 1.5);
     }
 }

@@ -73,6 +73,9 @@ pub trait Shape: ShapeClone {
     fn bounds(&self) -> Bounds {
         Bounds::default()
     }
+    fn parent_space_bounds(&self) -> Bounds {
+        self.bounds().transform(self.get_transform())
+    }
 }
 
 // Allow cloning boxed traits
@@ -141,6 +144,9 @@ impl Shape for TestShape {
     }
     fn local_normal_at(&self, _point: Point) -> Vector {
         point_zero()
+    }
+    fn bounds(&self) -> Bounds {
+        Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
 }
 

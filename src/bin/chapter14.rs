@@ -24,6 +24,7 @@ use raytracer::sphere::*;
 use raytracer::transformation::*;
 use raytracer::tuple::*;
 use raytracer::world::World;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 const CHAPTER: u8 = 14;
@@ -98,8 +99,8 @@ fn main() {
     world.add_group(&groups[2]);
     world.add_group(&groups[3]);
 
-    let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
-    //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
+    //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
+    let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
@@ -113,4 +114,8 @@ fn main() {
             println!("Error writing file! {}", err);
         }
     }
+    println!(
+        "bounding box opts: {}",
+        NUM_BOUNDING_OPTS.load(Ordering::SeqCst)
+    );
 }

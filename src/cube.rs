@@ -89,6 +89,10 @@ impl Shape for Cube {
             _ => vector(0.0, 0.0, point.z),
         }
     }
+
+    fn bounds(&self) -> Bounds {
+        Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
+    }
 }
 
 #[cfg(test)]

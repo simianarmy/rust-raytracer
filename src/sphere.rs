@@ -1,3 +1,4 @@
+use crate::bounds::Bounds;
 use crate::group::Group;
 use crate::intersection::*;
 use crate::materials::Material;
@@ -61,6 +62,10 @@ impl Shape for Sphere {
 
     fn local_normal_at(&self, point: Point) -> Vector {
         point - point_zero()
+    }
+
+    fn bounds(&self) -> Bounds {
+        Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
 }
 
@@ -164,5 +169,14 @@ mod tests {
         s.props.transform = m;
         let n = s.normal_at(point(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0));
         assert_eq_eps!(&n, &vector(0.0, 0.97014, -0.24254));
+    }
+
+    #[test]
+    fn querying_shapes_bounding_box_in_its_parents_space() {
+        let mut s = sphere();
+        s.set_transform(&(make_translation(1.0, -3.0, 5.0) * make_scaling(0.5, 2.0, 4.0)));
+        let b = s.parent_space_bounds();
+        assert_eq!(b.min, point(0.5, -5.0, 1.0));
+        assert_eq!(b.max, point(1.5, -1.0, 9.0));
     }
 }
