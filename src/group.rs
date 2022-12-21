@@ -115,7 +115,6 @@ impl Shape for Group {
             }
             sort_intersections(&mut res);
         } else {
-            println!("Bounding box optimization!");
             bump_num_bounding_opts();
         }
         res
@@ -407,5 +406,25 @@ mod tests {
         let bounds = g.bounds();
         assert_eq!(bounds.min, point(-4.5, -3.0, -5.0));
         assert_eq!(bounds.max, point(4.0, 7.0, 4.5));
+    }
+
+    #[test]
+    fn intersecting_ray_group_skips_tests_if_box_missed() {
+        let child = test_shape();
+        let group = default_group();
+        add_child_shape(&group, Box::new(child));
+        let ray = Ray::new(point(0.0, 0.0, -5.0), vector_y());
+        group.intersect(&ray);
+        assert_eq!(NUM_BOUNDING_OPTS.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn intersecting_ray_group_tests_children_if_box_hit() {
+        let child = test_shape();
+        let group = default_group();
+        add_child_shape(&group, Box::new(child));
+        let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
+        group.intersect(&ray);
+        assert_eq!(NUM_BOUNDING_OPTS.load(Ordering::Relaxed), 0);
     }
 }

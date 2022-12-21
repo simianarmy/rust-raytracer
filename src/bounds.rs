@@ -93,6 +93,28 @@ impl Bounds {
 
         tmin <= tmax
     }
+
+    pub fn split(&self) -> (Bounds, Bounds) {
+        let d = self.max - self.min;
+        let greatest = d.max();
+        let mut p0 = self.min.clone();
+        let mut p1 = self.max.clone();
+
+        if greatest == d.x {
+            p0.x = p0.x + d.x / 2.0;
+            p1.x = self.min.x + d.x / 2.0;
+        } else if greatest == d.y {
+            p0.y = p0.y + d.y / 2.0;
+            p1.y = self.min.y + d.y / 2.0;
+        } else {
+            p0.z = p0.z + d.z / 2.0;
+            p1.z = self.min.z + d.z / 2.0;
+        }
+        let mid_min = p0;
+        let mid_max = p1;
+
+        (Bounds::new(self.min, mid_max), Bounds::new(mid_min, self.max))
+    }
 }
 
 impl Default for Bounds {
@@ -229,5 +251,45 @@ mod tests {
             let ray = Ray::new(c.0, c.1.normalize());
             assert_eq!(b.intersects(&ray), c.2);
         }
+    }
+
+    #[test]
+    fn splitting_a_perfect_cube() {
+        let b = Bounds::new(point(-1.0, -4.0, -5.0), point(9.0, 6.0, 5.0));
+        let (left, right) = b.split();
+        assert_eq!(left.min, point(-1.0, -4.0, -5.0));
+        assert_eq!(left.max, point(4.0, 6.0, 5.0));
+        assert_eq!(right.min, point(4.0, -4.0, -5.0));
+        assert_eq!(right.max, point(9.0, 6.0, 5.0));
+    }
+
+    #[test]
+    fn splitting_x_wide_box() {
+        let b = Bounds::new(point(-1.0, -2.0, -3.0), point(9.0, 5.5, 3.0));
+        let (left, right) = b.split();
+        assert_eq!(left.min, point(-1.0, -2.0, -3.0));
+        assert_eq!(left.max, point(4.0, 5.5, 3.0));
+        assert_eq!(right.min, point(4.0, -2.0, -3.0));
+        assert_eq!(right.max, point(9.0, 5.5, 3.0));
+    }
+
+    #[test]
+    fn splitting_y_wide_box() {
+        let b = Bounds::new(point(-1.0, -2.0, -3.0), point(5.0, 8.0, 3.0));
+        let (left, right) = b.split();
+        assert_eq!(left.min, point(-1.0, -2.0, -3.0));
+        assert_eq!(left.max, point(5.0, 3.0, 3.0));
+        assert_eq!(right.min, point(-1.0, 3.0, -3.0));
+        assert_eq!(right.max, point(5.0, 8.0, 3.0));
+    }
+
+    #[test]
+    fn splitting_z_wide_box() {
+        let b = Bounds::new(point(-1.0, -2.0, -3.0), point(5.0, 3.0, 7.0));
+        let (left, right) = b.split();
+        assert_eq!(left.min, point(-1.0, -2.0, -3.0));
+        assert_eq!(left.max, point(5.0, 3.0, 2.0));
+        assert_eq!(right.min, point(-1.0, -2.0, 2.0));
+        assert_eq!(right.max, point(5.0, 3.0, 7.0));
     }
 }

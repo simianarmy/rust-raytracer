@@ -33,7 +33,7 @@ const CHAPTER: u8 = 14;
 // 1: bottom right
 // 2: top left
 // 3: top right
-fn get_quadrant(x: i32, y: i32, z: i32) -> usize {
+fn get_quadrant(x: i32, y: i32, _z: i32) -> usize {
     if x < 0 {
         // left
         if y < 0 {
@@ -70,7 +70,7 @@ fn main() {
     groups.push(default_group());
 
     let mut rng = rand::thread_rng();
-    for i in 0..280 {
+    for _i in 0..280 {
         let mut glass_ball = sphere();
         let xmod = if rng.gen::<i32>() % 2 == 0 { 1 } else { -1 };
         let ymod = if rng.gen::<i32>() % 2 == 0 { 1 } else { -1 };
@@ -99,8 +99,8 @@ fn main() {
     world.add_group(&groups[2]);
     world.add_group(&groups[3]);
 
-    //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
-    let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
+    let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
+    //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
