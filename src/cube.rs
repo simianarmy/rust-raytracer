@@ -25,9 +25,14 @@ pub fn cube() -> Cube {
     cube_with_id(None)
 }
 
-pub fn check_axis(origin: math::F3D, direction: math::F3D) -> (math::F3D, math::F3D) {
-    let tmin_numerator = -1.0 - origin;
-    let tmax_numerator = 1.0 - origin;
+pub fn check_axis(
+    origin: math::F3D,
+    direction: math::F3D,
+    min: math::F3D,
+    max: math::F3D,
+) -> (math::F3D, math::F3D) {
+    let tmin_numerator = min - origin;
+    let tmax_numerator = max - origin;
 
     let mut tmin = 0.0;
     let mut tmax = 0.0;
@@ -65,9 +70,9 @@ impl Shape for Cube {
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let (xtmin, xtmax) = check_axis(ray.origin.x, ray.direction.x);
-        let (ytmin, ytmax) = check_axis(ray.origin.y, ray.direction.y);
-        let (ztmin, ztmax) = check_axis(ray.origin.z, ray.direction.z);
+        let (xtmin, xtmax) = check_axis(ray.origin.x, ray.direction.x, -1.0, 1.0);
+        let (ytmin, ytmax) = check_axis(ray.origin.y, ray.direction.y, -1.0, 1.0);
+        let (ztmin, ztmax) = check_axis(ray.origin.z, ray.direction.z, -1.0, 1.0);
 
         let tmin = glm::max3_scalar(xtmin, ytmin, ztmin);
         let tmax = glm::min3_scalar(xtmax, ytmax, ztmax);

@@ -159,6 +159,7 @@ pub fn test_shape() -> TestShape {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sphere::*;
     use crate::transformation::*;
 
     #[test]
@@ -201,5 +202,14 @@ mod tests {
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
         let xs = s.intersect(&r);
         assert_eq!(xs.len(), 0);
+    }
+
+    #[test]
+    fn querying_shapes_bounding_box_in_its_parents_space() {
+        let mut s = sphere();
+        s.set_transform(&(make_translation(1.0, -3.0, 5.0) * make_scaling(0.5, 2.0, 4.0)));
+        let b = s.parent_space_bounds();
+        assert_eq!(b.min, point(0.5, -5.0, 1.0));
+        assert_eq!(b.max, point(1.5, -1.0, 9.0));
     }
 }

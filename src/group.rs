@@ -24,33 +24,6 @@ fn bump_num_bounding_opts() {
     NUM_BOUNDING_OPTS.fetch_add(1, Ordering::SeqCst);
 }
 
-fn check_axis(
-    origin: math::F3D,
-    direction: math::F3D,
-    min: math::F3D,
-    max: math::F3D,
-) -> (math::F3D, math::F3D) {
-    let tmin_numerator = min - origin;
-    let tmax_numerator = max - origin;
-
-    let mut tmin = 0.0;
-    let mut tmax = 0.0;
-
-    if direction.abs() >= math::EPSILON {
-        tmin = tmin_numerator / direction;
-        tmax = tmax_numerator / direction;
-    } else {
-        tmin = tmin_numerator * math::INFINITY;
-        tmax = tmax_numerator * math::INFINITY;
-    }
-    if tmin > tmax {
-        let tmp = tmin;
-        tmin = tmax;
-        tmax = tmp;
-    }
-    (tmin, tmax)
-}
-
 #[derive(Clone, Debug)]
 pub struct Group {
     pub props: Shape3D,
@@ -90,34 +63,14 @@ impl Group {
     }
 
     pub fn calculate_bounds(&self) -> Bounds {
-        if self.shapes.borrow().is_empty() {
-            return Bounds::default();
-        }
-        let mut xs: Vec<math::F3D> = vec![];
-        let mut ys: Vec<math::F3D> = vec![];
-        let mut zs: Vec<math::F3D> = vec![];
-
-        for s in self.shapes.borrow().iter() {
-            let sb = s.bounds();
-            let group_min = s.get_transform() * sb.min;
-            let group_max = s.get_transform() * sb.max;
-            xs.push(group_min.x);
-            xs.push(group_max.x);
-            ys.push(group_min.y);
-            ys.push(group_max.y);
-            zs.push(group_min.z);
-            zs.push(group_max.z);
-        }
-        let min_x = *xs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
-        let max_x = *xs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
-        let min_y = *ys.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
-        let max_y = *ys.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
-        let min_z = *zs.iter().min_by(|a, b| a.total_cmp(b)).unwrap();
-        let max_z = *zs.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
-
-        Bounds {
-            min: point(min_x, min_y, min_z),
-            max: point(max_x, max_y, max_z),
+        if let Some(sbox) = &self.val {
+            sbox.parent_space_bounds()
+        } else {
+            let mut bounds = Bounds::default();
+            for s in self.shapes.borrow().iter() {
+                bounds.add_bounds(&s.bounds());
+            }
+            bounds
         }
     }
 }
@@ -154,31 +107,17 @@ impl Shape for Group {
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         // Test group's bounding box first
-        let bounds = self.bounds();
-        let (xmin, xmax) = check_axis(ray.origin.x, ray.direction.x, bounds.min.x, bounds.max.x);
-        let (ymin, ymax) = check_axis(ray.origin.y, ray.direction.y, bounds.min.y, bounds.max.y);
-        let (zmin, zmax) = check_axis(ray.origin.z, ray.direction.z, bounds.min.z, bounds.max.z);
-
-        let tmin = *vec![xmin, ymin, zmin]
-            .iter()
-            .min_by(|a, b| a.total_cmp(b))
-            .unwrap();
-        let tmax = *vec![xmax, ymax, zmax]
-            .iter()
-            .max_by(|a, b| a.total_cmp(b))
-            .unwrap();
-
-        if tmin > tmax {
+        let mut res = vec![];
+        if self.bounds().intersects(ray) {
+            for s in self.shapes.borrow().iter() {
+                let xs = s.intersect(ray);
+                res.extend(xs);
+            }
+            sort_intersections(&mut res);
+        } else {
             println!("Bounding box optimization!");
             bump_num_bounding_opts();
-            return vec![];
         }
-        let mut res = vec![];
-        for s in self.shapes.borrow().iter() {
-            let xs = s.intersect(ray);
-            res.extend(xs);
-        }
-        sort_intersections(&mut res);
         res
     }
 
@@ -300,6 +239,7 @@ pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cylinder::*;
     use crate::shape::test_shape;
     use crate::sphere::*;
     use crate::transformation::*;
@@ -454,21 +394,18 @@ mod tests {
         default_group().local_normal_at(point_zero());
     }
 
-    //#[test]
+    #[test]
     fn bounding_box_fits_children() {
+        let mut s = sphere();
+        s.set_transform(&(make_translation(2.0, 5.0, -3.0) * make_scaling(2.0, 2.0, 2.0)));
+        let mut c = cylinder();
+        c.set_bounds(-2.0, 2.0);
+        c.set_transform(&(make_translation(-4.0, -1.0, 4.0) * make_scaling(0.5, 1.0, 0.5)));
         let g = default_group();
-        let mut s1 = sphere();
-        let mut s2 = sphere();
-        s1.set_transform(&make_translation(-2.0, 0.0, -2.0));
-        s2.set_transform(&make_translation(2.0, -2.0, 0.5));
-        add_child_shape(&g, Box::new(s1));
-        add_child_shape(&g, Box::new(s2));
+        add_child_shape(&g, Box::new(s));
+        add_child_shape(&g, Box::new(c));
         let bounds = g.bounds();
-        assert_eq!(bounds.min.x, -3.0);
-        assert_eq!(bounds.min.y, -3.0);
-        assert_eq!(bounds.min.z, -3.0);
-        assert_eq!(bounds.max.x, 3.0);
-        assert_eq!(bounds.max.y, 1.0);
-        assert_eq!(bounds.max.z, 1.5);
+        assert_eq!(bounds.min, point(-4.5, -3.0, -5.0));
+        assert_eq!(bounds.max, point(4.0, 7.0, 4.5));
     }
 }

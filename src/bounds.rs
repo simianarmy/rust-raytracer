@@ -1,8 +1,10 @@
+use crate::cube;
 /**
  * Bounding box / groups
  */
 use crate::math;
 use crate::matrix::*;
+use crate::ray::*;
 use crate::tuple::*;
 
 #[derive(Clone, Debug)]
@@ -77,6 +79,20 @@ impl Bounds {
         }
         bb
     }
+
+    pub fn intersects(&self, ray: &Ray) -> bool {
+        let (xtmin, xtmax) =
+            cube::check_axis(ray.origin.x, ray.direction.x, self.min.x, self.max.x);
+        let (ytmin, ytmax) =
+            cube::check_axis(ray.origin.y, ray.direction.y, self.min.y, self.max.y);
+        let (ztmin, ztmax) =
+            cube::check_axis(ray.origin.z, ray.direction.z, self.min.z, self.max.z);
+
+        let tmin = glm::max3_scalar(xtmin, ytmin, ztmin);
+        let tmax = glm::min3_scalar(xtmax, ytmax, ztmax);
+
+        tmin <= tmax
+    }
 }
 
 impl Default for Bounds {
@@ -92,6 +108,7 @@ impl Default for Bounds {
 mod tests {
     use super::*;
     use crate::math;
+    use crate::ray::*;
     use crate::shape::test_shape;
     use crate::sphere::*;
     use crate::transformation::*;
@@ -177,5 +194,40 @@ mod tests {
         let bb = b.transform(&m);
         assert_eq_eps!(bb.min, point(-1.4142, -1.7071, -1.7071));
         assert_eq_eps!(bb.max, point(1.4142, 1.7071, 1.7071));
+    }
+
+    #[test]
+    fn intersecting_ray_with_bounding_box() {
+        let b = Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0));
+        for c in [
+            (point(5.0, 0.5, 0.0), vector(-1.0, 0.0, 0.0), true),
+            (point(-5.0, 0.5, 0.0), vector_x(), true),
+            (point(0.5, 5.0, 0.0), vector(0.0, -1.0, 0.0), true),
+            (point(0.0, 0.5, 0.0), vector_z(), true),
+            (point(-2.0, 0.0, 0.0), vector(2.0, 4.0, 6.0), false),
+            (point(2.0, 0.0, 2.0), vector(0.0, 0.0, -1.0), false),
+            (point(2.0, 2.0, 0.0), vector(-1.0, 0.0, 0.0), false),
+        ] {
+            let ray = Ray::new(c.0, c.1.normalize());
+            assert_eq!(b.intersects(&ray), c.2);
+        }
+    }
+
+    #[test]
+    fn intersecting_ray_with_non_cubic_bounding_box() {
+        let b = Bounds::new(point(5.0, -2.0, 0.0), point(11.0, 4.0, 7.0));
+        for c in [
+            (point(15.0, 1.0, 2.0), vector(-1.0, 0.0, 0.0), true),
+            (point(-5.0, -1.0, 4.0), vector_x(), true),
+            (point(7.0, 6.0, 5.0), vector(0.0, -1.0, 0.0), true),
+            (point(9.0, -5.0, 6.0), vector_y(), true),
+            (point(8.0, 2.0, 12.0), vector(0.0, 0.0, -1.0), true),
+            (point(9.0, -1.0, -8.0), vector(2.0, 4.0, 6.0), false),
+            (point(8.0, 3.0, -4.0), vector(6.0, 2.0, 4.0), false),
+            (point(12.0, 5.0, 4.0), vector(-1.0, 0.0, 0.0), false),
+        ] {
+            let ray = Ray::new(c.0, c.1.normalize());
+            assert_eq!(b.intersects(&ray), c.2);
+        }
     }
 }
