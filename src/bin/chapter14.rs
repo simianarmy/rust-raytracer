@@ -84,8 +84,8 @@ fn main() {
         // add shape to the proper quadrant
         world.add_shape(Box::new(glass_ball));
     }
-    //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
-    let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
+    let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
+    //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);

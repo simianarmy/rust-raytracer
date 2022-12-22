@@ -58,7 +58,7 @@ fn main() {
     floor.set_transform(&make_rotation_z(0.01));
 
     world.add_shape(Box::new(floor));
-    let group = Group::new();
+    let mut group = Group::new();
 
     let mut rng = rand::thread_rng();
     for _i in 0..280 {
@@ -76,10 +76,10 @@ fn main() {
         let mut m = Material::default();
         m.color = Color::new(0.5, 0.0, 0.0);
         glass_ball.set_material(m);
-        add_child_shape(&group, Box::new(glass_ball));
+        add_child_shape(&mut group, Box::new(glass_ball));
     }
     println!("group size: {}", group.num_children());
-    divide(&group, 40);
+    divide(&mut group, 40);
 
     world.add_group(&group);
 

@@ -45,8 +45,8 @@ fn hexagon_side(i: usize) -> GroupRef {
         &mut side,
         &make_rotation_y((i as F3D) * glm::pi::<F3D>() / 3.0),
     );
-    add_child_group(&side, &Group::from_shape(Box::new(hexagon_corner())));
-    add_child_group(&side, &Group::from_shape(Box::new(hexagon_edge())));
+    add_child_group(&mut side, &Group::from_shape(Box::new(hexagon_corner())));
+    add_child_group(&mut side, &Group::from_shape(Box::new(hexagon_edge())));
     println!("weak count: {}", Arc::weak_count(&side));
     println!("strong count: {}", Arc::strong_count(&side));
     side
@@ -60,7 +60,7 @@ fn hexagon() -> GroupRef {
     );
     for i in 0..6 {
         let side = hexagon_side(i);
-        add_child_group(&hex, &side);
+        add_child_group(&mut hex, &side);
     }
     hex
 }

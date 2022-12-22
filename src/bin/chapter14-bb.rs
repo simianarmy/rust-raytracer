@@ -88,7 +88,7 @@ fn main() {
 
         // add shape to the proper quadrant
         let gidx = get_quadrant(xmod, ymod, zmod);
-        add_child_shape(&groups[gidx], Box::new(glass_ball));
+        add_child_shape(&mut groups[gidx], Box::new(glass_ball));
     }
     println!("group 0 size: {}", groups[0].shapes.borrow().len());
     println!("group 1 size: {}", groups[1].shapes.borrow().len());
@@ -99,8 +99,8 @@ fn main() {
     world.add_group(&groups[2]);
     world.add_group(&groups[3]);
 
-    //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
-    let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
+    let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
+    //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
