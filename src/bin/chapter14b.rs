@@ -83,7 +83,7 @@ fn main() {
 
     let canvas = camera.render(&world);
 
-    let filename = format!("./ppms/chapter{}b.ppm", CHAPTER);
+    let filename = format!("./ppms/chapter{}-hex.ppm", CHAPTER);
     match create_file_from_data(&filename, &canvas.to_ppm()) {
         Ok(_) => {
             println!("file created ({})!", filename);

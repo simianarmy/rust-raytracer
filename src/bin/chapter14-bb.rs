@@ -63,6 +63,11 @@ fn main() {
     floor.set_transform(&make_rotation_z(0.01));
 
     world.add_shape(Box::new(floor));
+    let mut groups = Vec::new();
+    groups.push(default_group());
+    groups.push(default_group());
+    groups.push(default_group());
+    groups.push(default_group());
 
     let mut rng = rand::thread_rng();
     for _i in 0..280 {
@@ -82,15 +87,25 @@ fn main() {
         glass_ball.set_material(m);
 
         // add shape to the proper quadrant
-        world.add_shape(Box::new(glass_ball));
+        let gidx = get_quadrant(xmod, ymod, zmod);
+        add_child_shape(&groups[gidx], Box::new(glass_ball));
     }
+    println!("group 0 size: {}", groups[0].shapes.borrow().len());
+    println!("group 1 size: {}", groups[1].shapes.borrow().len());
+    println!("group 2 size: {}", groups[2].shapes.borrow().len());
+    println!("group 3 size: {}", groups[3].shapes.borrow().len());
+    world.add_group(&groups[0]);
+    world.add_group(&groups[1]);
+    world.add_group(&groups[2]);
+    world.add_group(&groups[3]);
+
     //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
 
-    let filename = format!("./ppms/chapter{}.ppm", CHAPTER);
+    let filename = format!("./ppms/chapter{}-bb.ppm", CHAPTER);
     match create_file_from_data(&filename, &canvas.to_ppm()) {
         Ok(_) => {
             println!("file created ({})!", filename);

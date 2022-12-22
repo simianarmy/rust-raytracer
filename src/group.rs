@@ -46,6 +46,14 @@ impl Group {
         g_ref
     }
 
+    pub fn from_shapes(shapes: &Vec<ShapeBox>) -> GroupRef {
+        let g = Group::new();
+        for s in shapes.iter() {
+            add_child_shape(&g, s.clone());
+        }
+        g
+    }
+
     pub fn new() -> GroupRef {
         let g = Group {
             props: Shape3D::default(),
@@ -60,6 +68,10 @@ impl Group {
 
     pub fn is_shape(&self) -> bool {
         self.val.is_some()
+    }
+
+    pub fn num_children(&self) -> usize {
+        self.shapes.borrow().len()
     }
 
     pub fn calculate_bounds(&self) -> Bounds {
@@ -126,15 +138,6 @@ impl Shape for Group {
         } else {
             let t_ray = ray.transform(glm::inverse(&self.get_transform()));
             self.local_intersect(&t_ray)
-            /*
-            let mut res = vec![];
-            for s in self.shapes.borrow().iter() {
-                let xs = s.intersect(&t_ray);
-                res.extend(xs);
-            }
-            sort_intersections(&mut res);
-            res
-            */
         }
     }
 
@@ -177,6 +180,52 @@ pub fn add_child_shape(parent: &GroupRef, shape: ShapeBox) {
 pub fn add_child_group(parent: &GroupRef, child: &GroupRef) {
     set_parent(child, parent);
     parent.shapes.borrow_mut().push(child.clone());
+}
+
+pub fn partition_children(g: &GroupRef) -> (GroupRef, GroupRef) {
+    let left = Group::new();
+    let right = Group::new();
+    let (lbounds, rbounds) = g.bounds().split();
+
+    for s in g.shapes.borrow().iter() {
+        let sbounds = s.bounds();
+        if lbounds.contains_bounds(&sbounds) {
+            add_child_group(&left, s);
+        } else if rbounds.contains_bounds(&sbounds) {
+            add_child_group(&right, s);
+        }
+    }
+    // remove copied shapes from the original list
+    g.shapes.borrow_mut().retain(|s| {
+        let sbounds = s.bounds();
+        !lbounds.contains_bounds(&sbounds) && !rbounds.contains_bounds(&sbounds)
+    });
+
+    (left, right)
+}
+
+pub fn make_subgroup(g: &GroupRef, shapes: &Vec<ShapeBox>) {
+    let subgroup = Group::from_shapes(shapes);
+    add_child_group(&g, &subgroup);
+}
+
+pub fn divide(g: &GroupRef, threshold: usize) {
+    // divide on a shape is a no-op
+    if g.val.is_some() {
+        return;
+    }
+    if threshold <= g.num_children() {
+        let (left, right) = partition_children(g);
+        if left.num_children() > 0 {
+            add_child_group(g, &left);
+        }
+        if right.num_children() > 0 {
+            add_child_group(g, &right);
+        }
+    }
+    for child in g.shapes.borrow_mut().iter() {
+        divide(&child, threshold);
+    }
 }
 
 /**
@@ -410,6 +459,7 @@ mod tests {
 
     #[test]
     fn intersecting_ray_group_skips_tests_if_box_missed() {
+        NUM_BOUNDING_OPTS.store(0, Ordering::Relaxed);
         let child = test_shape();
         let group = default_group();
         add_child_shape(&group, Box::new(child));
@@ -420,11 +470,95 @@ mod tests {
 
     #[test]
     fn intersecting_ray_group_tests_children_if_box_hit() {
+        NUM_BOUNDING_OPTS.store(0, Ordering::Relaxed);
         let child = test_shape();
         let group = default_group();
         add_child_shape(&group, Box::new(child));
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         group.intersect(&ray);
         assert_eq!(NUM_BOUNDING_OPTS.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn partition_groups_children() {
+        let mut s1 = sphere_with_id(Some(String::from("s1")));
+        s1.set_transform(&make_translation(-2.0, 0.0, 0.0));
+        let mut s2 = sphere_with_id(Some(String::from("s2")));
+        s2.set_transform(&make_translation(2.0, 0.0, 0.0));
+        let s3 = sphere_with_id(Some(String::from("s3")));
+        let g = default_group();
+        add_child_shape(&g, Box::new(s1.clone()));
+        add_child_shape(&g, Box::new(s2.clone()));
+        add_child_shape(&g, Box::new(s3.clone()));
+        let (left, right) = partition_children(&g);
+        // g is a group of [s3]
+        assert_eq!(g.num_children(), 1);
+        assert_eq!(g.shapes.borrow()[0].get_id(), String::from("g_sphere_s3"));
+        assert_eq!(left.num_children(), 1);
+        assert_eq!(left.shapes.borrow()[0].get_id(), String::from("g_sphere_s1"));
+        assert_eq!(right.num_children(), 1);
+        assert_eq!(right.shapes.borrow()[0].get_id(), String::from("g_sphere_s2"));
+    }
+
+    #[test]
+    fn creating_subgroup_from_children() {
+        let s1 = sphere_with_id(Some("s1".to_string()));
+        let s2 = sphere_with_id(Some("s2".to_string()));
+        let mut g = default_group();
+        make_subgroup(&g, &vec![Box::new(s1), Box::new(s2)]);
+        assert_eq!(g.num_children(), 1);
+        let g0 = Arc::clone(g.shapes.borrow().get(0).unwrap());
+        assert_eq!(g0.shapes.borrow().len(), 2);
+        // g[0] is group [s1, s2]
+    }
+
+    #[test]
+    fn subdividing_group_partitions_its_children() {
+        let mut s1 = sphere_with_id(Some(String::from("s1")));
+        s1.set_transform(&make_translation(-2.0, -2.0, 0.0));
+        let mut s2 = sphere_with_id(Some(String::from("s2")));
+        s2.set_transform(&make_translation(-2.0, 2.0, 0.0));
+        let mut s3 = sphere_with_id(Some(String::from("s3")));
+        s3.set_transform(&make_scaling(4.0, 4.0, 4.0));
+        let g = default_group();
+        add_child_shape(&g, Box::new(s1.clone()));
+        add_child_shape(&g, Box::new(s2.clone()));
+        add_child_shape(&g, Box::new(s3.clone()));
+        divide(&g, 1);
+        assert_eq!(g.num_children(), 2);
+        assert_eq!(g.shapes.borrow()[0].get_id(), String::from("g_sphere_s3"));
+        let g1 = Arc::clone(g.shapes.borrow().get(1).unwrap());
+        assert_eq!(g1.num_children(), 2);
+        // g1[0] is a subgroup of [s1]
+        assert_eq!(g1.shapes.borrow()[0].shapes.borrow()[0].get_id(), String::from("g_sphere_s1"));
+        // g1[1] is a subgroup of [s2]
+        assert_eq!(g1.shapes.borrow()[1].shapes.borrow()[0].get_id(), String::from("g_sphere_s2"));
+    }
+
+    #[test]
+    fn subdividing_group_with_too_few_children() {
+        let mut s1 = sphere_with_id(Some(String::from("s1")));
+        s1.set_transform(&make_translation(-2.0, 0.0, 0.0));
+        let mut s2 = sphere_with_id(Some(String::from("s2")));
+        s2.set_transform(&make_translation(2.0, 1.0, 0.0));
+        let mut s3 = sphere_with_id(Some(String::from("s3")));
+        s3.set_transform(&make_translation(2.0, -1.0, 0.0));
+        let subgroup = Group::new();
+        add_child_shape(&subgroup, Box::new(s1.clone()));
+        add_child_shape(&subgroup, Box::new(s2.clone()));
+        add_child_shape(&subgroup, Box::new(s3.clone()));
+        let s4 = sphere_with_id(Some(String::from("s4")));
+        let g = default_group();
+        add_child_group(&g, &subgroup);
+        add_child_shape(&g, Box::new(s4));
+        divide(&g, 3);
+        assert_eq!(g.num_children(), 2);
+        let g0 = Arc::clone(g.shapes.borrow().get(0).unwrap());
+        assert_eq!(g0.num_children(), 2);
+        // g0[0] is a group of [s1]
+        assert_eq!(g0.shapes.borrow()[0].num_children(), 1);
+        assert_eq!(g0.shapes.borrow()[0].shapes.borrow()[0].get_id(), String::from("g_sphere_s1"));
+        // g0[1] is a group of [s2, s3]
+        assert_eq!(g0.shapes.borrow()[1].shapes.borrow()[0].get_id(), String::from("g_sphere_s2"));
     }
 }
