@@ -1,5 +1,6 @@
 /**
  * Simple scene
+ * Hexagon using Groups
  */
 extern crate nalgebra_glm as glm;
 extern crate raytracer;

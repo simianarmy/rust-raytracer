@@ -1,6 +1,6 @@
 /**
  * Simple scene
- * Testing BVH Optimization
+ * Testing no optimizations
  */
 extern crate nalgebra_glm as glm;
 extern crate raytracer;
