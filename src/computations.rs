@@ -2,7 +2,7 @@ use crate::group;
 use crate::intersection::Intersection;
 use crate::math::*;
 use crate::ray::Ray;
-use crate::shape::*;
+use crate::shapes::shape::*;
 use crate::tuple::*;
 
 #[derive(Debug)]
@@ -90,11 +90,10 @@ mod tests {
 
     use super::*;
     use crate::computations::prepare_computations;
-    use crate::group::Group;
     use crate::intersections;
-    use crate::plane::plane;
     use crate::ray::Ray;
-    use crate::sphere::*;
+    use crate::shapes::plane::plane;
+    use crate::shapes::sphere::*;
     use crate::transformation::*;
 
     #[test]

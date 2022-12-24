@@ -8,11 +8,11 @@ use crate::lights::*;
 use crate::materials::lighting;
 use crate::materials::Material;
 use crate::ray::Ray;
-use crate::shape::*;
-use crate::sphere::sphere_with_id;
+use crate::shapes::shape::*;
+use crate::shapes::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
-use std::sync::{Arc, Weak};
+use std::sync::Arc;
 
 pub const MAX_RAY_DEPTH: u8 = 5;
 
@@ -186,8 +186,8 @@ mod tests {
     use crate::math;
     use crate::math::SQRT_2_DIV_2;
     use crate::pattern;
-    use crate::plane::plane;
-    use crate::sphere::*;
+    use crate::shapes::plane::plane;
+    use crate::shapes::sphere::*;
     use crate::transformation::*;
     use std::f64::consts::SQRT_2;
 

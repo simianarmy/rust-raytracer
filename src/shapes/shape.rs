@@ -159,7 +159,7 @@ pub fn test_shape() -> TestShape {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sphere::*;
+    use crate::shapes::sphere::*;
     use crate::transformation::*;
 
     #[test]

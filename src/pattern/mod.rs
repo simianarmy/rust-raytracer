@@ -1,7 +1,6 @@
 use crate::color::Color;
 use crate::group::*;
 use crate::matrix::Matrix4;
-use crate::shape::*;
 use crate::tuple::Point;
 use glm;
 
@@ -77,7 +76,8 @@ pub fn test_pattern() -> TestPattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sphere::sphere;
+    use crate::shapes::shape::*;
+    use crate::shapes::sphere::*;
     use crate::transformation::*;
     use crate::tuple::*;
 

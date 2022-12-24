@@ -1,11 +1,10 @@
 use crate::bounds::*;
-use crate::group::Group;
 use crate::intersection::Intersection;
 use crate::materials::Material;
 use crate::math;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
-use crate::shape::*;
+use crate::shapes::shape::*;
 use crate::tuple::*;
 use std::mem;
 

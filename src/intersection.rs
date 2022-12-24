@@ -1,7 +1,7 @@
 use crate::computations::Computations;
 use crate::group::*;
 use crate::math::*;
-use crate::shape::*;
+use crate::shapes::shape::*;
 use std::clone::Clone;
 use std::fmt;
 
@@ -106,7 +106,7 @@ mod tests {
     use crate::assert_eq_feps;
     use crate::computations::prepare_computations;
     use crate::ray::Ray;
-    use crate::sphere::*;
+    use crate::shapes::sphere::*;
     use crate::transformation::*;
     use crate::tuple::*;
     use std::clone::Clone;

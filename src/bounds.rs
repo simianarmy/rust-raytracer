@@ -1,10 +1,10 @@
-use crate::cube;
 /**
  * Bounding box / groups
  */
 use crate::math;
 use crate::matrix::*;
 use crate::ray::*;
+use crate::shapes::cube;
 use crate::tuple::*;
 
 #[derive(Clone, Debug)]
@@ -88,10 +88,13 @@ impl Bounds {
         let (ztmin, ztmax) =
             cube::check_axis(ray.origin.z, ray.direction.z, self.min.z, self.max.z);
 
-        let tmin = glm::max3_scalar(xtmin, ytmin, ztmin);
         let tmax = glm::min3_scalar(xtmax, ytmax, ztmax);
-
-        tmin <= tmax
+        if tmax < 0.0 {
+            false
+        } else {
+            let tmin = glm::max3_scalar(xtmin, ytmin, ztmin);
+            tmin <= tmax
+        }
     }
 
     pub fn split(&self) -> (Bounds, Bounds) {
@@ -113,7 +116,10 @@ impl Bounds {
         let mid_min = p0;
         let mid_max = p1;
 
-        (Bounds::new(self.min, mid_max), Bounds::new(mid_min, self.max))
+        (
+            Bounds::new(self.min, mid_max),
+            Bounds::new(mid_min, self.max),
+        )
     }
 }
 
@@ -130,9 +136,6 @@ impl Default for Bounds {
 mod tests {
     use super::*;
     use crate::math;
-    use crate::ray::*;
-    use crate::shape::test_shape;
-    use crate::sphere::*;
     use crate::transformation::*;
 
     #[test]

@@ -13,8 +13,8 @@ use raytracer::materials::lighting;
 use raytracer::math::F3D;
 use raytracer::ppm::*;
 use raytracer::ray::Ray;
-use raytracer::shape::*;
-use raytracer::sphere::sphere;
+use raytracer::shapes::shape::*;
+use raytracer::shapes::sphere::sphere;
 use raytracer::tuple::*;
 use std::sync::Arc;
 

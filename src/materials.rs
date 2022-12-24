@@ -3,10 +3,8 @@ use crate::group::*;
 use crate::lights::*;
 use crate::math::F3D;
 use crate::pattern::*;
-use crate::shape::*;
 use crate::tuple::*;
 use glm::*;
-use std::rc::Rc;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Material {
@@ -103,7 +101,7 @@ mod tests {
     use crate::assert_eq_eps;
     use crate::group::Group;
     use crate::pattern::stripe::stripe_pattern;
-    use crate::sphere::*;
+    use crate::shapes::sphere::*;
 
     fn setup() -> (Material, Point, GroupRef) {
         (

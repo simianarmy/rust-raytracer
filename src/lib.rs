@@ -10,9 +10,8 @@ pub mod math;
 pub mod matrix;
 pub mod ppm;
 pub mod ray;
-pub mod shape;
+pub mod shapes;
 #[macro_use]
-pub mod sphere;
 pub mod transformation;
 #[macro_use]
 pub mod tuple;
@@ -20,10 +19,6 @@ pub mod camera;
 pub mod computations;
 //#[macro_use]
 pub mod bounds;
-pub mod cone;
-pub mod cube;
-pub mod cylinder;
 pub mod group;
 pub mod pattern;
-pub mod plane;
 pub mod world;

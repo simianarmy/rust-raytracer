@@ -8,24 +8,18 @@ extern crate raytracer;
 use rand::Rng;
 use raytracer::camera::Camera;
 use raytracer::color::Color;
-use raytracer::cone::*;
-use raytracer::cube::*;
-use raytracer::cylinder::*;
-use raytracer::group::*;
 use raytracer::group::*;
 use raytracer::lights::*;
 use raytracer::materials::Material;
 use raytracer::math::F3D;
-use raytracer::pattern;
-use raytracer::plane::plane;
 use raytracer::ppm::*;
-use raytracer::shape::*;
-use raytracer::sphere::*;
+use raytracer::shapes::plane::plane;
+use raytracer::shapes::shape::*;
+use raytracer::shapes::sphere::*;
 use raytracer::transformation::*;
 use raytracer::tuple::*;
 use raytracer::world::World;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 
 const CHAPTER: u8 = 14;
 

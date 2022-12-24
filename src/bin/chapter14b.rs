@@ -7,14 +7,14 @@ extern crate raytracer;
 
 use raytracer::camera::Camera;
 use raytracer::color::Color;
-use raytracer::cylinder::*;
 use raytracer::group::*;
 use raytracer::lights::*;
 use raytracer::math::F3D;
-use raytracer::plane::plane;
 use raytracer::ppm::*;
-use raytracer::shape::*;
-use raytracer::sphere::*;
+use raytracer::shapes::cylinder::*;
+use raytracer::shapes::plane::plane;
+use raytracer::shapes::shape::*;
+use raytracer::shapes::sphere::*;
 use raytracer::transformation::*;
 use raytracer::tuple::*;
 use raytracer::world::World;

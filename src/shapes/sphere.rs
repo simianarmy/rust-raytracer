@@ -1,10 +1,9 @@
 use crate::bounds::Bounds;
-use crate::group::Group;
 use crate::intersection::*;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
-use crate::shape::*;
+use crate::shapes::shape::*;
 use crate::tuple::*;
 
 #[derive(Clone, Debug, PartialEq)]
