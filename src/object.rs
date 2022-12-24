@@ -17,7 +17,7 @@ pub fn get_unique_id() -> usize {
     COUNTER.fetch_add(1, Ordering::Relaxed)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Object {
     pub id: String,
     pub transform: Matrix4,
@@ -33,41 +33,67 @@ impl Object {
             transform: glm::identity(),
             material: Material::default(),
             bounds: Bounds::default(),
-            shape: Shape::default(),
+            shape: Shape::None,
         }
     }
 
-    fn get_id(&self) -> String {
-        // TODO: get shape name
-        self.id
+    pub fn get_id(&self) -> String {
+        format!(
+            "{}_{}",
+            match self.shape {
+                Shape::Cube(c) => "cube",
+                Shape::Cone(c) => "cone",
+                Shape::Cylinder(c) => "cylinder",
+                Shape::Plane(c) => "plane",
+                Shape::Sphere(c) => "sphere",
+                Shape::TestShape(c) => "test_shape",
+                Shape::None => "none",
+            },
+            self.id
+        )
     }
 
-    fn get_transform(&self) -> &Matrix4 {
+    pub fn get_transform(&self) -> &Matrix4 {
         &self.transform
     }
-    fn set_transform(&mut self, t: &Matrix4) {
-        self.transform = t;
+    pub fn set_transform(&mut self, t: &Matrix4) {
+        self.transform = *t;
     }
 
-    fn get_material(&self) -> &Material {
+    pub fn get_material(&self) -> &Material {
         &self.material
     }
-    fn set_material(&mut self, t: Material) {
+    pub fn set_material(&mut self, t: Material) {
         self.material = t;
     }
 
-    fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
         // TODO: call on shape
-        self.local_intersect(&t_ray)
+        match self.shape {
+            Shape::Cube(c) => c.local_intersect(&t_ray),
+            Shape::Cone(c) => c.local_intersect(&t_ray),
+            Shape::Cylinder(c) => c.local_intersect(&t_ray),
+            Shape::Plane(c) => c.local_intersect(&t_ray),
+            Shape::Sphere(c) => c.local_intersect(&t_ray),
+            Shape::TestShape(c) => c.local_intersect(&t_ray),
+            Shape::None => {}
+        }
     }
 
-    fn normal_at(&self, world_point: Point) -> Vector {
+    pub fn normal_at(&self, world_point: Point) -> Vector {
         let t = self.get_transform();
         let local_point = inverse(t) * world_point;
         // TODO: call on shape
-        let local_normal = self.local_normal_at(local_point);
-
+        let local_normal = match self.shape {
+            Shape::Cube(c) => c.local_normal_at(local_point),
+            Shape::Cone(c) => c.local_intersect(local_point),
+            Shape::Cylinder(c) => c.local_intersect(local_point),
+            Shape::Plane(c) => c.local_intersect(local_point),
+            Shape::Sphere(c) => c.local_intersect(local_point),
+            Shape::TestShape(c) => c.local_intersect(local_point),
+            Shape::None => vector_zero(),
+        };
         let mut world_normal = transpose(&inverse(t)) * local_normal;
         world_normal.w = 0.0;
         world_normal.normalize()
@@ -102,36 +128,10 @@ impl fmt::Debug for Object {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct TestShape {}
-impl TestShape {
-    fn get_id(&self) -> String {
-        format!("testshape")
-    }
-
-    fn local_intersect(&self, _ray: &Ray) -> Vec<Intersection> {
-        //self.saved_ray = ray;
-        vec![]
-    }
-
-    fn local_normal_at(&self, _point: Point) -> Vector {
-        point_zero()
-    }
-
-    fn bounds(&self) -> Bounds {
-        Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
-    }
-}
-
-pub fn test_shape() -> Object {
-    let o = Object::new();
-    o.shape = Shape::TestShape(TestShape {});
-    o
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shapes::shape::*;
     use crate::shapes::sphere::*;
     use crate::transformation::*;
 

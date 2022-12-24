@@ -3,6 +3,7 @@ use crate::intersection::sort_intersections;
 use crate::intersection::Intersection;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
@@ -85,31 +86,35 @@ impl Group {
 
 impl Group {
     fn get_id(&self) -> String {
-        if let Some(sbox) = &self.val {
-            format!("g_{}", sbox.get_id())
+        if let Some(obj) = &self.val {
+            format!("g_{}", obj.get_id())
         } else {
-            format!("group_{}", self.props.id)
+            format!("group_no_obj")
         }
     }
+
     fn get_transform(&self) -> &Matrix4 {
-        if let Some(sbox) = &self.val {
-            sbox.get_transform()
+        if let Some(obj) = &self.val {
+            obj.get_transform()
         } else {
-            &self.props.transform
+            &glm::identity()
         }
     }
+
     fn set_transform(&mut self, t: &Matrix4) {
-        self.props.transform = *t;
+        self.obj().unwrap().transform = *t;
     }
+
     fn get_material(&self) -> &Material {
-        if let Some(sbox) = &self.val {
-            sbox.get_material()
+        if let Some(obj) = &self.val {
+            obj.get_material()
         } else {
-            &self.props.material
+            &Material::default()
         }
     }
+
     fn set_material(&mut self, m: Material) {
-        self.props.material = m;
+        self.obj.unwrap().material = m;
     }
 
     fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
@@ -170,7 +175,7 @@ fn set_parent(child: &GroupRef, parent: &mut GroupRef) {
     *child.parent.borrow_mut() = Arc::downgrade(&parent);
 }
 
-pub fn add_child_shape(parent: &mut GroupRef, shape: ShapeBox) {
+pub fn add_child_shape(parent: &mut GroupRef, shape: Object) {
     // Make a GroupRef
     let g = Group::from_shape(shape);
     add_child_group(parent, &g);
@@ -209,7 +214,7 @@ pub fn partition_children(g: &mut GroupRef) -> (GroupRef, GroupRef) {
     (left, right)
 }
 
-pub fn make_subgroup(g: &mut GroupRef, shapes: &Vec<ShapeBox>) {
+pub fn make_subgroup(g: &mut GroupRef, shapes: &Vec<Object>) {
     let subgroup = Group::from_shapes(shapes);
     add_child_group(g, &subgroup);
 }
@@ -259,8 +264,8 @@ pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     if has_parent(group) {
         p = world_to_object(&get_parent(group).unwrap(), point);
     }
-    if let Some(sbox) = group.val.as_ref() {
-        glm::inverse(sbox.get_transform()) * p
+    if let Some(obj) = group.val.as_ref() {
+        glm::inverse(obj.get_transform()) * p
     } else {
         glm::inverse(group.get_transform()) * p
     }
@@ -283,8 +288,8 @@ pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
 pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
     let local_point = world_to_object(group, world_point);
     let mut local_normal = vector_zero(); // is this the right default value?
-    if let Some(shape_box) = &group.val {
-        local_normal = shape_box.local_normal_at(local_point)
+    if let Some(obj) = &group.val {
+        local_normal = obj.local_normal_at(local_point)
     }
     normal_to_world(group, &local_normal)
 }

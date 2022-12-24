@@ -1,8 +1,7 @@
 use crate::bounds::*;
 use crate::intersection::Intersection;
-use crate::materials::Material;
 use crate::math;
-use crate::matrix::Matrix4;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
@@ -10,7 +9,6 @@ use std::mem;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cone {
-    pub props: Shape3D,
     pub minimum: math::F3D,
     pub maximum: math::F3D,
     pub closed: bool,
@@ -49,37 +47,22 @@ pub fn check_cap(ray: &Ray, t: math::F3D, y: math::F3D) -> bool {
 }
 
 // constructor utilities
-pub fn cone_with_id(id: Option<String>) -> Cone {
-    Cone {
-        props: Shape3D::new(id),
+pub fn cone_with_id(id: Option<String>) -> Object {
+    let o = Object::new(id);
+    o.shape = Shape::Cone(Cone {
         minimum: -math::INFINITY,
         maximum: math::INFINITY,
         closed: false,
-    }
+    });
+    o
 }
 
-pub fn cone() -> Cone {
+pub fn cone() -> Object {
     cone_with_id(None)
 }
 
-impl Shape for Cone {
-    fn get_id(&self) -> String {
-        format!("cone_{}", self.props.id)
-    }
-    fn get_transform(&self) -> &Matrix4 {
-        &self.props.transform
-    }
-    fn set_transform(&mut self, t: &Matrix4) {
-        self.props.transform = *t;
-    }
-    fn get_material(&self) -> &Material {
-        &self.props.material
-    }
-    fn set_material(&mut self, m: Material) {
-        self.props.material = m;
-    }
-
-    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+impl Cone {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let mut xs = vec![];
         let ro = ray.origin;
         let rd = ray.direction;
@@ -116,7 +99,7 @@ impl Shape for Cone {
         xs
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(&self, point: Point) -> Vector {
         let dist = point.x.powi(2) + point.z.powi(2);
         if dist < 1.0 && point.y >= self.maximum - math::EPSILON {
             vector_y()
@@ -132,7 +115,7 @@ impl Shape for Cone {
         }
     }
 
-    fn bounds(&self) -> Bounds {
+    pub fn bounds(&self) -> Bounds {
         if self.minimum == -math::INFINITY && self.maximum == math::INFINITY {
             Bounds {
                 min: point(-math::INFINITY, -math::INFINITY, -math::INFINITY),

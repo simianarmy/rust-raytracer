@@ -8,6 +8,7 @@ pub mod lights;
 pub mod materials;
 pub mod math;
 pub mod matrix;
+pub mod object;
 pub mod ppm;
 pub mod ray;
 pub mod shapes;
@@ -19,6 +20,6 @@ pub mod camera;
 pub mod computations;
 //#[macro_use]
 pub mod bounds;
-pub mod group;
+//pub mod group;
 pub mod pattern;
 pub mod world;

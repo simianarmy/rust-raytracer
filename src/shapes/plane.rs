@@ -1,47 +1,27 @@
 use crate::bounds::*;
-use crate::group::Group;
 use crate::intersection::*;
-use crate::materials::Material;
 use crate::math;
-use crate::matrix::Matrix4;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Plane {
-    pub props: Shape3D,
-}
+pub struct Plane {}
 
 // constructor utilities
-pub fn plane_with_id(id: Option<String>) -> Plane {
-    Plane {
-        props: Shape3D::new(id),
-    }
+pub fn plane_with_id(id: Option<String>) -> Object {
+    let o = Object::new(id);
+    o.shape = Shape::Plane();
+    o
 }
 
-pub fn plane() -> Plane {
+pub fn plane() -> Object {
     plane_with_id(None)
 }
 
-impl Shape for Plane {
-    fn get_id(&self) -> String {
-        format!("plane_{}", self.props.id)
-    }
-    fn get_transform(&self) -> &Matrix4 {
-        &self.props.transform
-    }
-    fn set_transform(&mut self, t: &Matrix4) {
-        self.props.transform = *t;
-    }
-    fn get_material(&self) -> &Material {
-        &self.props.material
-    }
-    fn set_material(&mut self, m: Material) {
-        self.props.material = m;
-    }
-
-    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+impl Plane {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         if math::f_equals(ray.direction.y, 0.0) {
             vec![]
         } else {
@@ -50,11 +30,11 @@ impl Shape for Plane {
         }
     }
 
-    fn local_normal_at(&self, _point: Point) -> Vector {
+    pub fn local_normal_at(&self, _point: Point) -> Vector {
         point_y()
     }
 
-    fn bounds(&self) -> Bounds {
+    pub fn bounds(&self) -> Bounds {
         Bounds {
             min: point(-math::INFINITY, 0.0, -math::INFINITY),
             max: point(math::INFINITY, 0.0, math::INFINITY),

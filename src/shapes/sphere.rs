@@ -1,45 +1,26 @@
 use crate::bounds::Bounds;
 use crate::intersection::*;
-use crate::materials::Material;
-use crate::matrix::Matrix4;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Sphere {
-    pub props: Shape3D,
-}
+pub struct Sphere {}
 
 // constructor utilities
-pub fn sphere_with_id(id: Option<String>) -> Sphere {
-    Sphere {
-        props: Shape3D::new(id),
-    }
+pub fn sphere_with_id(id: Option<String>) -> Object {
+    let s = Object::new(id);
+    s.shape = Shape::Sphere();
+    s
 }
 
-pub fn sphere() -> Sphere {
+pub fn sphere() -> Object {
     sphere_with_id(None)
 }
 
-impl Shape for Sphere {
-    fn get_id(&self) -> String {
-        format!("sphere_{}", self.props.id)
-    }
-    fn get_transform(&self) -> &Matrix4 {
-        &self.props.transform
-    }
-    fn set_transform(&mut self, t: &Matrix4) {
-        self.props.transform = *t;
-    }
-    fn get_material(&self) -> &Material {
-        &self.props.material
-    }
-    fn set_material(&mut self, m: Material) {
-        self.props.material = m;
-    }
-
-    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+impl Sphere {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let sphere_to_ray = ray.origin - point_zero();
         let a = ray.direction.dot(&ray.direction);
         let b = 2.0 * ray.direction.dot(&sphere_to_ray);
@@ -59,20 +40,20 @@ impl Shape for Sphere {
         }
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(&self, point: Point) -> Vector {
         point - point_zero()
     }
 
-    fn bounds(&self) -> Bounds {
+    pub fn bounds(&self) -> Bounds {
         Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
 }
 
 // test helper
-pub fn glass_sphere() -> Sphere {
+pub fn glass_sphere() -> Object {
     let mut s = sphere();
-    s.props.material.transparency = 1.0;
-    s.props.material.refractive_index = 1.5;
+    s.material.transparency = 1.0;
+    s.material.refractive_index = 1.5;
     s
 }
 

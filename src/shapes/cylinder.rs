@@ -1,8 +1,7 @@
 use crate::bounds::*;
 use crate::intersection::Intersection;
-use crate::materials::Material;
 use crate::math;
-use crate::matrix::Matrix4;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
@@ -10,7 +9,6 @@ use std::mem;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cylinder {
-    pub props: Shape3D,
     pub minimum: math::F3D,
     pub maximum: math::F3D,
     pub closed: bool,
@@ -49,37 +47,22 @@ pub fn check_cap(ray: &Ray, t: math::F3D) -> bool {
 }
 
 // constructor utilities
-pub fn cylinder_with_id(id: Option<String>) -> Cylinder {
-    Cylinder {
-        props: Shape3D::new(id),
+pub fn cylinder_with_id(id: Option<String>) -> Object {
+    let o = Object::new(id);
+    o.shape = Shape::Cylinder(Cylinder {
         minimum: -math::INFINITY,
         maximum: math::INFINITY,
         closed: false,
-    }
+    });
+    o
 }
 
-pub fn cylinder() -> Cylinder {
+pub fn cylinder() -> Object {
     cylinder_with_id(None)
 }
 
-impl Shape for Cylinder {
-    fn get_id(&self) -> String {
-        format!("cylinder_{}", self.props.id)
-    }
-    fn get_transform(&self) -> &Matrix4 {
-        &self.props.transform
-    }
-    fn set_transform(&mut self, t: &Matrix4) {
-        self.props.transform = *t;
-    }
-    fn get_material(&self) -> &Material {
-        &self.props.material
-    }
-    fn set_material(&mut self, m: Material) {
-        self.props.material = m;
-    }
-
-    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+impl Cylinder {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let mut xs = vec![];
         let a = ray.direction.x.powi(2) + ray.direction.z.powi(2);
 
@@ -110,7 +93,7 @@ impl Shape for Cylinder {
         xs
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(&self, point: Point) -> Vector {
         let dist = point.x.powi(2) + point.z.powi(2);
         if dist < 1.0 && point.y >= self.maximum - math::EPSILON {
             vector_y()
@@ -121,7 +104,7 @@ impl Shape for Cylinder {
         }
     }
 
-    fn bounds(&self) -> Bounds {
+    pub fn bounds(&self) -> Bounds {
         Bounds {
             min: point(-1.0, self.minimum, -1.0),
             max: point(1.0, self.maximum, 1.0),

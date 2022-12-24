@@ -1,26 +1,23 @@
 use crate::bounds::*;
 use crate::intersection::Intersection;
 use crate::intersections;
-use crate::materials::Material;
 use crate::math;
-use crate::matrix::Matrix4;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Cube {
-    pub props: Shape3D,
-}
+pub struct Cube {}
 
 // constructor utilities
-pub fn cube_with_id(id: Option<String>) -> Cube {
-    Cube {
-        props: Shape3D::new(id),
-    }
+pub fn cube_with_id(id: Option<String>) -> Object {
+    let o = Object::new(id);
+    o.shape = Shape::Cube();
+    o
 }
 
-pub fn cube() -> Cube {
+pub fn cube() -> Object {
     cube_with_id(None)
 }
 
@@ -51,24 +48,8 @@ pub fn check_axis(
     (tmin, tmax)
 }
 
-impl Shape for Cube {
-    fn get_id(&self) -> String {
-        format!("cube_{}", self.props.id)
-    }
-    fn get_transform(&self) -> &Matrix4 {
-        &self.props.transform
-    }
-    fn set_transform(&mut self, t: &Matrix4) {
-        self.props.transform = *t;
-    }
-    fn get_material(&self) -> &Material {
-        &self.props.material
-    }
-    fn set_material(&mut self, m: Material) {
-        self.props.material = m;
-    }
-
-    fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+impl Cube {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let (xtmin, xtmax) = check_axis(ray.origin.x, ray.direction.x, -1.0, 1.0);
         let (ytmin, ytmax) = check_axis(ray.origin.y, ray.direction.y, -1.0, 1.0);
         let (ztmin, ztmax) = check_axis(ray.origin.z, ray.direction.z, -1.0, 1.0);
@@ -86,7 +67,7 @@ impl Shape for Cube {
         }
     }
 
-    fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(&self, point: Point) -> Vector {
         match point.abs().max() {
             x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
             y if y == point.y.abs() => vector(0.0, point.y, 0.0),
@@ -94,7 +75,7 @@ impl Shape for Cube {
         }
     }
 
-    fn bounds(&self) -> Bounds {
+    pub fn bounds(&self) -> Bounds {
         Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
 }
