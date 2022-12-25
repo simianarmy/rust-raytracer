@@ -21,12 +21,12 @@ pub fn plane() -> Object {
 }
 
 impl Plane {
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn local_intersect(ray: &Ray) -> Vec<math::F3D> {
         if math::f_equals(ray.direction.y, 0.0) {
             vec![]
         } else {
             let t = -ray.origin.y / ray.direction.y;
-            vec![Intersection::new(Box::new(self.clone()), t)]
+            vec![t]
         }
     }
 

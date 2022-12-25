@@ -20,7 +20,7 @@ impl Cylinder {
         self.maximum = max;
     }
 
-    fn intersect_caps(&self, ray: &Ray) -> Vec<Intersection> {
+    fn intersect_caps(&self, ray: &Ray) -> Vec<math::F3D> {
         let mut xs = vec![];
 
         if !self.closed || math::f_equals(ray.direction.y, 0.0) {
@@ -29,12 +29,12 @@ impl Cylinder {
         let t = (self.minimum - ray.origin.y) / ray.direction.y;
 
         if check_cap(ray, t) {
-            xs.push(Intersection::new(Box::new(self.clone()), t));
+            xs.push(t);
         }
         let t = (self.maximum - ray.origin.y) / ray.direction.y;
 
         if check_cap(ray, t) {
-            xs.push(Intersection::new(Box::new(self.clone()), t));
+            xs.push(t);
         }
         xs
     }
@@ -62,7 +62,7 @@ pub fn cylinder() -> Object {
 }
 
 impl Cylinder {
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<math::F3D> {
         let mut xs = vec![];
         let a = ray.direction.x.powi(2) + ray.direction.z.powi(2);
 
@@ -82,11 +82,11 @@ impl Cylinder {
             }
             let y0 = ray.origin.y + t0 * ray.direction.y;
             if self.minimum < y0 && y0 < self.maximum {
-                xs.push(Intersection::new(Box::new(self.clone()), t0));
+                xs.push(t0);
             }
             let y1 = ray.origin.y + t1 * ray.direction.y;
             if self.minimum < y1 && y1 < self.maximum {
-                xs.push(Intersection::new(Box::new(self.clone()), t1));
+                xs.push(t1);
             }
             xs.extend(self.intersect_caps(ray));
         }

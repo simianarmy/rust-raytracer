@@ -1,6 +1,6 @@
 use crate::color::Color;
-use crate::group::*;
 use crate::matrix::Matrix4;
+use crate::shapes::group::*;
 use crate::tuple::Point;
 use glm;
 

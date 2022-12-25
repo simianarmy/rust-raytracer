@@ -1,5 +1,6 @@
 use crate::bounds::Bounds;
 use crate::intersection::*;
+use crate::math;
 use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
@@ -20,7 +21,7 @@ pub fn sphere() -> Object {
 }
 
 impl Sphere {
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn local_intersect(ray: &Ray) -> Vec<math::F3D> {
         let sphere_to_ray = ray.origin - point_zero();
         let a = ray.direction.dot(&ray.direction);
         let b = 2.0 * ray.direction.dot(&sphere_to_ray);
@@ -32,15 +33,11 @@ impl Sphere {
         } else {
             let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
             let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
-
-            crate::intersections!(
-                Intersection::new(Box::new(self.clone()), t1),
-                Intersection::new(Box::new(self.clone()), t2)
-            )
+            vec![t1, t2]
         }
     }
 
-    pub fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(point: Point) -> Vector {
         point - point_zero()
     }
 

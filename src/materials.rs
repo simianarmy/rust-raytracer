@@ -1,8 +1,9 @@
 use crate::color::*;
-use crate::group::*;
 use crate::lights::*;
 use crate::math::F3D;
+use crate::object::Object;
 use crate::pattern::*;
+use crate::shapes::group::*;
 use crate::tuple::*;
 use glm::*;
 
@@ -48,7 +49,7 @@ impl Default for Material {
 // Phong lighting
 pub fn lighting(
     material: &Material,
-    object: GroupRef,
+    object: &Object,
     light: &PointLight,
     point: &Point,
     eyev: &Vector,
@@ -103,12 +104,8 @@ mod tests {
     use crate::pattern::stripe::stripe_pattern;
     use crate::shapes::sphere::*;
 
-    fn setup() -> (Material, Point, GroupRef) {
-        (
-            Material::default(),
-            point_zero(),
-            Group::from_shape(Box::new(sphere())),
-        )
+    fn setup() -> (Material, Point, Object) {
+        (Material::default(), point_zero(), sphere())
     }
 
     #[test]
@@ -126,7 +123,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
     }
 
@@ -136,7 +133,7 @@ mod tests {
         let eyev = vector(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
     }
 
@@ -146,7 +143,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.7364, 0.7364, 0.7364).tuple());
     }
 
@@ -156,7 +153,7 @@ mod tests {
         let eyev = vector(0.0, -2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(1.6364, 1.6364, 1.6364).tuple());
     }
 
@@ -166,7 +163,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, 10.0), Color::white());
-        let result = lighting(&m, object, &light, &position, &eyev, &normalv, false);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -176,7 +173,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, object, &light, &position, &eyev, &normalv, true);
+        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, true);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -197,7 +194,7 @@ mod tests {
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
         let c1 = lighting(
             &m,
-            object.clone(),
+            &object.clone(),
             &light,
             &point(0.9, 0.0, 0.0),
             &eyev,
@@ -206,7 +203,7 @@ mod tests {
         );
         let c2 = lighting(
             &m,
-            object,
+            &object,
             &light,
             &point(1.1, 0.0, 0.0),
             &eyev,

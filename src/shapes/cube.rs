@@ -49,7 +49,15 @@ pub fn check_axis(
 }
 
 impl Cube {
-    pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn local_normal_at(point: Point) -> Vector {
+        match point.abs().max() {
+            x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
+            y if y == point.y.abs() => vector(0.0, point.y, 0.0),
+            _ => vector(0.0, 0.0, point.z),
+        }
+    }
+
+    pub fn local_intersect(ray: &Ray) -> Vec<math::F3D> {
         let (xtmin, xtmax) = check_axis(ray.origin.x, ray.direction.x, -1.0, 1.0);
         let (ytmin, ytmax) = check_axis(ray.origin.y, ray.direction.y, -1.0, 1.0);
         let (ztmin, ztmax) = check_axis(ray.origin.z, ray.direction.z, -1.0, 1.0);
@@ -60,18 +68,7 @@ impl Cube {
         if tmin > tmax {
             vec![]
         } else {
-            intersections!(
-                Intersection::new(Box::new(self.clone()), tmin),
-                Intersection::new(Box::new(self.clone()), tmax)
-            )
-        }
-    }
-
-    pub fn local_normal_at(&self, point: Point) -> Vector {
-        match point.abs().max() {
-            x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
-            y if y == point.y.abs() => vector(0.0, point.y, 0.0),
-            _ => vector(0.0, 0.0, point.z),
+            vec![tmin, tmax]
         }
     }
 

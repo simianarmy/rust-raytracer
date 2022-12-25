@@ -4,6 +4,7 @@
 use crate::bounds::*;
 use crate::intersection::Intersection;
 use crate::materials::Material;
+use crate::math::F3D;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
@@ -38,19 +39,7 @@ impl Object {
     }
 
     pub fn get_id(&self) -> String {
-        format!(
-            "{}_{}",
-            match self.shape {
-                Shape::Cube(c) => "cube",
-                Shape::Cone(c) => "cone",
-                Shape::Cylinder(c) => "cylinder",
-                Shape::Plane(c) => "plane",
-                Shape::Sphere(c) => "sphere",
-                Shape::TestShape(c) => "test_shape",
-                Shape::None => "none",
-            },
-            self.id
-        )
+        format!("{}_{}", self.shape.get_id(), self.id)
     }
 
     pub fn get_transform(&self) -> &Matrix4 {
@@ -69,37 +58,23 @@ impl Object {
 
     pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
-        // TODO: call on shape
-        match self.shape {
-            Shape::Cube(c) => c.local_intersect(&t_ray),
-            Shape::Cone(c) => c.local_intersect(&t_ray),
-            Shape::Cylinder(c) => c.local_intersect(&t_ray),
-            Shape::Plane(c) => c.local_intersect(&t_ray),
-            Shape::Sphere(c) => c.local_intersect(&t_ray),
-            Shape::TestShape(c) => c.local_intersect(&t_ray),
-            Shape::None => {}
-        }
+        self.shape
+            .intersect(&t_ray)
+            .into_iter()
+            .map(|t| Intersection::new(self, t))
+            .collect()
     }
 
     pub fn normal_at(&self, world_point: Point) -> Vector {
         let t = self.get_transform();
         let local_point = inverse(t) * world_point;
-        // TODO: call on shape
-        let local_normal = match self.shape {
-            Shape::Cube(c) => c.local_normal_at(local_point),
-            Shape::Cone(c) => c.local_intersect(local_point),
-            Shape::Cylinder(c) => c.local_intersect(local_point),
-            Shape::Plane(c) => c.local_intersect(local_point),
-            Shape::Sphere(c) => c.local_intersect(local_point),
-            Shape::TestShape(c) => c.local_intersect(local_point),
-            Shape::None => vector_zero(),
-        };
+        let local_normal = self.shape.normal_at(local_point);
         let mut world_normal = transpose(&inverse(t)) * local_normal;
         world_normal.w = 0.0;
         world_normal.normalize()
     }
 
-    fn parent_space_bounds(&self) -> Bounds {
+    pub fn parent_space_bounds(&self) -> Bounds {
         self.bounds.transform(self.get_transform())
     }
 }

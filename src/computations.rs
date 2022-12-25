@@ -1,6 +1,7 @@
 use crate::group;
 use crate::intersection::Intersection;
 use crate::math::*;
+use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
@@ -8,7 +9,7 @@ use crate::tuple::*;
 #[derive(Debug)]
 pub struct Computations {
     pub t: F3D,
-    pub group: group::GroupRef,
+    pub object: Object,
     pub point: Point,
     pub over_point: Point,
     pub under_point: Point,
@@ -21,13 +22,13 @@ pub struct Computations {
 }
 
 fn calc_refractive_indices(i: &Intersection, xs: &Vec<Intersection>) -> (F3D, F3D) {
-    let mut containers: Vec<group::GroupRef> = Vec::new();
+    let mut containers: Vec<Object> = Vec::new();
     let mut n1 = 0.0;
     let mut n2 = 0.0;
 
     for is in xs {
-        let iid = i.group.get_id();
-        let is_hit = i.t == is.t && iid == is.group.get_id();
+        let iid = i.object.get_id();
+        let is_hit = i.t == is.t && iid == is.object.get_id();
 
         if is_hit {
             if containers.len() == 0 {
@@ -39,11 +40,11 @@ fn calc_refractive_indices(i: &Intersection, xs: &Vec<Intersection>) -> (F3D, F3
         // if container holds the current hit object
         if let Some(pos) = containers
             .iter()
-            .position(|i| is.group.get_id() == i.get_id())
+            .position(|i| is.object.get_id() == i.get_id())
         {
             containers.swap_remove(pos);
         } else {
-            containers.push(is.group.clone());
+            containers.push(is.object.clone());
         }
 
         if is_hit {
@@ -62,7 +63,7 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Vec<Intersection>)
     let p = ray.position(i.t);
     // TODO: Pass i.object: GroupRef to group_normal_at() ?
     //let normal = i.group.normal_at(p);
-    let normal = group::normal_at(&i.group, &p);
+    let normal = i.object.normal_at(p);
     let eyev = -ray.direction;
     let inside = normal.dot(&eyev) < 0.0;
     let normalv = if inside { -normal } else { normal };
@@ -71,7 +72,7 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Vec<Intersection>)
 
     Computations {
         t: i.t,
-        group: i.group.clone(),
+        object: i.object.clone(),
         point: p,
         over_point: p + normalv * EPSILON,
         under_point: p - normalv * EPSILON,

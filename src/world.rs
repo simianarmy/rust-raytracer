@@ -7,8 +7,8 @@ use crate::intersections;
 use crate::lights::*;
 use crate::materials::lighting;
 use crate::materials::Material;
+use crate::object::*;
 use crate::ray::Ray;
-use crate::shapes::shape::*;
 use crate::shapes::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
@@ -18,45 +18,46 @@ pub const MAX_RAY_DEPTH: u8 = 5;
 
 pub struct World {
     light: PointLight,
-    shapes: Vec<GroupRef>,
+    objects: Vec<Object>,
 }
 
 impl World {
     pub fn new(light: PointLight) -> World {
         World {
             light,
-            shapes: vec![],
+            objects: vec![],
         }
     }
 
-    pub fn add_shape(&mut self, s: ShapeBox) {
-        self.shapes.push(Group::from_shape(s));
+    pub fn add_shape(&mut self, s: Object) {
+        self.objects.push(s);
     }
 
-    pub fn get_shape(&self, i: usize) -> &ShapeBox {
-        let sbox = self.shapes[i].val.as_ref().unwrap();
-        &sbox
+    pub fn get_shape(&self, i: usize) -> &Object {
+        &self.objects[i]
     }
 
-    pub fn set_shape(&mut self, shape: ShapeBox, i: usize) {
-        self.shapes[i] = Group::from_shape(shape)
+    pub fn set_shape(&mut self, shape: Object, i: usize) {
+        self.objects[i] = shape;
     }
 
+    /*
     pub fn add_group(&mut self, g: &GroupRef) {
-        self.shapes.push(g.clone());
+        self.objects.push(g.clone());
     }
 
     pub fn get_group(&mut self, i: usize) -> &GroupRef {
-        &self.shapes[i]
+        &self.objects[i]
     }
 
     pub fn set_group(&mut self, g: &GroupRef, i: usize) {
-        self.shapes[i] = g.clone();
+        self.objects[i] = g.clone();
     }
+    */
 
     // returns all ray/shape intersections sorted by t
     pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        let mut xs = self.shapes.iter().fold(vec![], |mut acc, curr| {
+        let mut xs = self.objects.iter().fold(vec![], |mut acc, curr| {
             let is = curr.intersect(ray);
             if is.len() > 0 {
                 acc.extend(is);
@@ -71,8 +72,8 @@ impl World {
         let shadowed = self.is_shadowed(&comps.over_point);
         let surface;
         surface = lighting(
-            comps.group.get_material(),
-            Arc::clone(&comps.group),
+            comps.object.get_material(),
+            &comps.object,
             &self.light,
             &comps.over_point,
             &comps.eyev,
@@ -82,7 +83,7 @@ impl World {
         let reflected = self.reflected_color(comps, remaining);
         let refracted = self.refracted_color(comps, remaining);
 
-        let material = comps.group.get_material();
+        let material = comps.object.get_material();
         if material.transparency > 0.0 && material.reflective > 0.0 {
             let reflectance = intersection::schlick(comps);
 
@@ -121,7 +122,7 @@ impl World {
         if remaining == 0 {
             Color::black()
         } else {
-            let m = comps.group.get_material();
+            let m = comps.object.get_material();
             if m.reflective == 0.0 {
                 Color::black()
             } else {
@@ -133,7 +134,7 @@ impl World {
     }
 
     pub fn refracted_color(&self, comps: &Computations, remaining: u8) -> Color {
-        if remaining == 0 || comps.group.get_material().transparency == 0.0 {
+        if remaining == 0 || comps.object.get_material().transparency == 0.0 {
             Color::black()
         } else {
             // use snell's law
@@ -151,7 +152,7 @@ impl World {
                 let refract_ray = Ray::new(comps.under_point, direction);
 
                 let c = self.color_at(&refract_ray, remaining - 1);
-                c * comps.group.get_material().transparency
+                c * comps.object.get_material().transparency
             }
         }
     }
@@ -169,8 +170,8 @@ impl Default for World {
         let mut s2 = sphere_with_id(Some("s2".to_string()));
         s2.set_transform(&make_scaling(0.5, 0.5, 0.5));
         let mut world = World::new(light);
-        world.add_shape(Box::new(s1)); // move operation
-        world.add_shape(Box::new(s2));
+        world.add_shape(s1); // move operation
+        world.add_shape(s2);
         world
     }
 }
@@ -196,8 +197,8 @@ mod tests {
         let light = point_light(point(-10.0, 10.0, -10.0), Color::white());
         let world = World::default();
         assert_eq!(world.light, light);
-        let s1 = &world.shapes[0];
-        let s2 = &world.shapes[1];
+        let s1 = &world.objects[0];
+        let s2 = &world.objects[1];
         assert_eq!(s1.get_id(), "g_sphere_s1");
         assert_eq!(s2.get_id(), "g_sphere_s2");
     }
@@ -227,7 +228,7 @@ mod tests {
     fn shading_an_intersection() {
         let world = World::default();
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let shape = &world.shapes[0];
+        let shape = &world.objects[0];
         let i = Intersection::from_group(shape, 4.0);
         let comps = prepare_computations(&i, &ray, &intersections!(i));
         let c = world.shade_hit(&comps, MAX_RAY_DEPTH);
@@ -239,7 +240,7 @@ mod tests {
         let mut world = World::default();
         world.light = point_light(point(0.0, 0.25, 0.0), Color::white());
         let ray = Ray::new(point_zero(), vector_z());
-        let shape = &world.shapes[1];
+        let shape = &world.objects[1];
         let i = Intersection::from_group(shape, 0.5);
         let comps = prepare_computations(&i, &ray, &intersections!(i));
         let c = world.shade_hit(&comps, MAX_RAY_DEPTH);
@@ -510,7 +511,7 @@ mod tests {
     #[test]
     fn shade_hit_with_transparent_material() {
         let mut world = World::default();
-        let nshapes = world.shapes.len();
+        let nshapes = world.objects.len();
 
         let mut floor = plane();
         floor.set_transform(&make_translation(0.0, -1.0, 0.0));
@@ -543,7 +544,7 @@ mod tests {
     #[test]
     fn shade_hit_with_reflective_transparent_material() {
         let mut world = World::default();
-        let nshapes = world.shapes.len();
+        let nshapes = world.objects.len();
 
         let mut floor = plane();
         floor.set_transform(&make_translation(0.0, -1.0, 0.0));

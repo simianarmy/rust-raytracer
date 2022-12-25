@@ -1,56 +1,53 @@
 use crate::computations::Computations;
-use crate::group::*;
 use crate::math::*;
-use crate::shapes::shape::*;
+use crate::object::*;
+use crate::shapes::group::*;
 use std::clone::Clone;
 use std::fmt;
 
 #[derive(Clone)]
-pub struct Intersection {
+pub struct Intersection<'a> {
     pub t: F3D,
-    pub group: GroupRef,
+    pub object: &'a Object,
 }
 
-impl Intersection {
-    pub fn new(shape: ShapeBox, t: F3D) -> Intersection {
-        Intersection {
-            t,
-            group: Group::from_shape(shape),
-        }
+impl<'a> Intersection<'a> {
+    pub fn new(object: &'a Object, t: F3D) -> Self {
+        Self { t, object }
     }
 
     pub fn from_group(g: &GroupRef, t: F3D) -> Intersection {
         Intersection {
             t,
-            group: g.clone(),
+            object: &g.val.unwrap(),
         }
     }
 }
 
-impl PartialEq for Intersection {
+impl<'a> PartialEq for Intersection<'a> {
     fn eq(&self, other: &Self) -> bool {
         f_equals(self.t, other.t) // todo: object comparison
     }
 }
 
-impl fmt::Debug for Intersection {
+impl<'a> fmt::Debug for Intersection<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
-            "intersection t = {}, group = {}",
+            "intersection t = {}, object = {}",
             self.t,
-            self.group.get_id()
+            self.object.get_id()
         )
     }
 }
 
-impl fmt::Display for Intersection {
+impl<'a> fmt::Display for Intersection<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Intersection: t = {}, group = {}",
+            "Intersection: t = {}, object = {}",
             self.t,
-            self.group.get_id()
+            self.object.get_id()
         )
     }
 }
@@ -77,7 +74,7 @@ pub fn sort_intersections(xs: &mut Vec<Intersection>) {
 /**
  * "Closest" intersection in a collection
  */
-pub fn hit(is: &Vec<Intersection>) -> Option<&Intersection> {
+pub fn hit<'a>(is: &Vec<Intersection<'a>>) -> Option<&'a Intersection<'a>> {
     // filter out negative t values here
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
 }
@@ -114,8 +111,8 @@ mod tests {
     #[test]
     fn intersections_macro_builds_list_from_args() {
         let s = sphere();
-        let i1 = Intersection::new(Box::new(s.clone()), 1.0);
-        let i2 = Intersection::new(Box::new(s.clone()), 2.0);
+        let i1 = Intersection::new(&s, 1.0);
+        let i2 = Intersection::new(&s, 2.0);
         let is = intersections!(i1, i2);
         assert_eq!(is.len(), 2);
         assert_eq!(is[0], i1);
@@ -124,8 +121,8 @@ mod tests {
     #[test]
     fn hit_all_intersections_pos_t() {
         let s = sphere();
-        let i1 = Intersection::new(Box::new(s.clone()), 1.0);
-        let i2 = Intersection::new(Box::new(s.clone()), 2.0);
+        let i1 = Intersection::new(&s, 1.0);
+        let i2 = Intersection::new(&s, 2.0);
         let xs = intersections!(i2, i1);
         let i = hit(&xs);
         assert_eq!(*i.unwrap(), i1);
@@ -134,8 +131,8 @@ mod tests {
     #[test]
     fn hit_some_intersections_neg_t() {
         let s = sphere();
-        let i1 = Intersection::new(Box::new(s.clone()), -1.0);
-        let i2 = Intersection::new(Box::new(s.clone()), 2.0);
+        let i1 = Intersection::new(&s, -1.0);
+        let i2 = Intersection::new(&s, 2.0);
         let xs = intersections!(i2, i1);
         let i = hit(&xs);
         assert_eq!(*i.unwrap(), i2);
@@ -144,8 +141,8 @@ mod tests {
     #[test]
     fn hit_all_intersections_neg_t() {
         let s = sphere();
-        let i1 = Intersection::new(Box::new(s.clone()), -2.0);
-        let i2 = Intersection::new(Box::new(s.clone()), -1.0);
+        let i1 = Intersection::new(&s, -2.0);
+        let i2 = Intersection::new(&s, -1.0);
         let xs = intersections!(i2, i1);
         let i = hit(&xs);
         assert_eq!(i, None);
@@ -154,10 +151,10 @@ mod tests {
     #[test]
     fn hit_always_lowest_nonneg_t() {
         let s = sphere();
-        let i1 = Intersection::new(Box::new(s.clone()), 5.0);
-        let i2 = Intersection::new(Box::new(s.clone()), 7.0);
-        let i3 = Intersection::new(Box::new(s.clone()), -3.0);
-        let i4 = Intersection::new(Box::new(s.clone()), 2.0);
+        let i1 = Intersection::new(&s, 5.0);
+        let i2 = Intersection::new(&s, 7.0);
+        let i3 = Intersection::new(&s, -3.0);
+        let i4 = Intersection::new(&s, 2.0);
         let xs = intersections!(i1, i2, i3, i4);
         let i = hit(&xs);
         assert_eq!(*i.unwrap(), i4);
@@ -168,7 +165,7 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let mut s = sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
-        let i = Intersection::new(Box::new(s.clone()), 5.0);
+        let i = Intersection::new(&s, 5.0);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
@@ -179,8 +176,8 @@ mod tests {
         let sphere = glass_sphere();
         let ray = Ray::new(point(0.0, 0.0, SQRT_2_DIV_2), vector_y());
         let xs = intersections!(
-            Intersection::new(Box::new(sphere.clone()), -SQRT_2_DIV_2),
-            Intersection::new(Box::new(sphere.clone()), SQRT_2_DIV_2)
+            Intersection::new(&sphere, -SQRT_2_DIV_2),
+            Intersection::new(&sphere, SQRT_2_DIV_2)
         );
         let comps = prepare_computations(&xs[1], &ray, &xs);
         println!("comps: {:?}", comps);
@@ -193,8 +190,8 @@ mod tests {
         let sphere = glass_sphere();
         let ray = Ray::new(point_zero(), vector_y());
         let xs = intersections!(
-            Intersection::new(Box::new(sphere.clone()), -1.0),
-            Intersection::new(Box::new(sphere.clone()), 1.0)
+            Intersection::new(&sphere, -1.0),
+            Intersection::new(&sphere, 1.0)
         );
         let comps = prepare_computations(&xs[1], &ray, &xs);
         let reflectance = schlick(&comps);
@@ -205,7 +202,7 @@ mod tests {
     fn schlick_with_small_angle() {
         let sphere = glass_sphere();
         let ray = Ray::new(point(0.0, 0.99, -2.0), vector_z());
-        let xs = intersections!(Intersection::new(Box::new(sphere), 1.8589));
+        let xs = vec![Intersection::new(&sphere, 1.8589)];
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let reflectance = schlick(&comps);
         assert_eq_feps!(reflectance, 0.48873);
