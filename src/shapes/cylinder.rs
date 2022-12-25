@@ -48,7 +48,7 @@ pub fn check_cap(ray: &Ray, t: math::F3D) -> bool {
 
 // constructor utilities
 pub fn cylinder_with_id(id: Option<String>) -> Object {
-    let o = Object::new(id);
+    let mut o = Object::new(id);
     o.shape = Shape::Cylinder(Cylinder {
         minimum: -math::INFINITY,
         maximum: math::INFINITY,

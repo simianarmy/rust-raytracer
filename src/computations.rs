@@ -1,8 +1,8 @@
-use crate::group;
 use crate::intersection::Intersection;
 use crate::math::*;
 use crate::object::Object;
 use crate::ray::Ray;
+use crate::shapes::group;
 use crate::shapes::shape::*;
 use crate::tuple::*;
 
@@ -101,10 +101,10 @@ mod tests {
     fn precomputing_state_of_intersection() {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = sphere();
-        let i = Intersection::new(Box::new(shape), 4.0);
+        let i = Intersection::new(&shape, 4.0);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         assert_eq!(comps.t, i.t);
-        assert_eq!(&comps.group.get_id(), &i.group.get_id());
+        assert_eq!(&comps.object.get_id(), &i.object.get_id());
         assert_eq!(comps.point, point(0.0, 0.0, -1.0));
         assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
         assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
@@ -114,7 +114,7 @@ mod tests {
     fn precomputing_intersection_on_outside() {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = sphere();
-        let i = Intersection::new(Box::new(shape), 4.0);
+        let i = Intersection::new(&shape, 4.0);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         assert!(!comps.inside);
     }
@@ -123,7 +123,7 @@ mod tests {
     fn precomputing_intersection_on_inside() {
         let r = Ray::new(point_zero(), vector_z());
         let shape = sphere();
-        let i = Intersection::new(Box::new(shape), 1.0);
+        let i = Intersection::new(&shape, 1.0);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         assert_eq!(comps.point, point_z());
         assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
@@ -138,7 +138,7 @@ mod tests {
             point(0.0, 1.0, -1.0),
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
         );
-        let i = Intersection::new(Box::new(shape), SQRT_2);
+        let i = Intersection::new(&shape, SQRT_2);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         assert_eq!(comps.reflectv, vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0));
     }
@@ -148,23 +148,23 @@ mod tests {
         let mut a = glass_sphere();
         println!("A = {}", a.get_id());
         a.set_transform(&make_scaling(2.0, 2.0, 2.0));
-        a.props.material.refractive_index = 1.5;
+        a.material.refractive_index = 1.5;
         let mut b = glass_sphere();
         println!("B = {}", b.get_id());
         b.set_transform(&make_translation(0.0, 0.0, -0.25));
-        b.props.material.refractive_index = 2.0;
+        b.material.refractive_index = 2.0;
         let mut c = glass_sphere();
         println!("C = {}", c.get_id());
         c.set_transform(&make_translation(0.0, 0.0, 0.25));
-        c.props.material.refractive_index = 2.5;
+        c.material.refractive_index = 2.5;
         let ray = Ray::new(point(0.0, 0.0, -4.0), vector_y());
         let xs = intersections!(
-            Intersection::new(Box::new(a.clone()), 2.0),
-            Intersection::new(Box::new(b.clone()), 2.75),
-            Intersection::new(Box::new(c.clone()), 3.25),
-            Intersection::new(Box::new(b.clone()), 4.75),
-            Intersection::new(Box::new(c.clone()), 5.25),
-            Intersection::new(Box::new(a.clone()), 6.0)
+            Intersection::new(&a, 2.0),
+            Intersection::new(&b, 2.75),
+            Intersection::new(&c, 3.25),
+            Intersection::new(&b, 4.75),
+            Intersection::new(&c, 5.25),
+            Intersection::new(&a, 6.0)
         );
         let cases = vec![
             (0, 1.0, 1.5),
@@ -186,7 +186,7 @@ mod tests {
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let mut s = glass_sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
-        let i = Intersection::new(Box::new(s), 5.0);
+        let i = Intersection::new(&s, 5.0);
         let xs = intersections!(i);
         let comps = prepare_computations(&i, &ray, &xs);
         assert!(comps.under_point.z > EPSILON / 2.0);

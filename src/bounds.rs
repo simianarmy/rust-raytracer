@@ -4,7 +4,7 @@
 use crate::math;
 use crate::matrix::*;
 use crate::ray::*;
-use crate::shapes::cube;
+use crate::shapes::cube::Cube;
 use crate::tuple::*;
 
 #[derive(Clone, Debug)]
@@ -82,11 +82,11 @@ impl Bounds {
 
     pub fn intersects(&self, ray: &Ray) -> bool {
         let (xtmin, xtmax) =
-            cube::check_axis(ray.origin.x, ray.direction.x, self.min.x, self.max.x);
+            Cube::check_axis(ray.origin.x, ray.direction.x, self.min.x, self.max.x);
         let (ytmin, ytmax) =
-            cube::check_axis(ray.origin.y, ray.direction.y, self.min.y, self.max.y);
+            Cube::check_axis(ray.origin.y, ray.direction.y, self.min.y, self.max.y);
         let (ztmin, ztmax) =
-            cube::check_axis(ray.origin.z, ray.direction.z, self.min.z, self.max.z);
+            Cube::check_axis(ray.origin.z, ray.direction.z, self.min.z, self.max.z);
 
         let tmax = glm::min3_scalar(xtmax, ytmax, ztmax);
         if tmax < 0.0 {

@@ -59,11 +59,11 @@ pub fn lighting(
     // use material pattern for color if it exists
     let mut color = material.color;
     if let Some(tpattern) = &material.pattern {
-        if object.val.is_some() {
-            // I want the concrete pattern from the shape enum variant...
-            let p = tpattern.into_pattern();
-            color = p.pattern_at_shape(object, &point);
-        }
+        //if object.val.is_some() {
+        // I want the concrete pattern from the shape enum variant...
+        let p = tpattern.into_pattern();
+        color = p.pattern_at_shape(Group::from_shape(object), &point);
+        //}
     }
     // combine surface color with lights color/intensity
     let effective_color: Color = color * light.intensity;

@@ -5,7 +5,6 @@ use crate::materials::Material;
 use crate::matrix::Matrix4;
 use crate::object::Object;
 use crate::ray::Ray;
-use crate::shapes::shape::*;
 use crate::tuple::*;
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -47,7 +46,7 @@ impl Group {
     pub fn from_shapes(shapes: &Vec<Object>) -> GroupRef {
         let mut g = Group::new();
         for s in shapes.iter() {
-            add_child_shape(&mut g, s.clone());
+            add_child_shape(&mut g, &s);
         }
         g
     }
@@ -91,33 +90,35 @@ impl Group {
         }
     }
 
-    pub fn get_transform(&self) -> &Matrix4 {
+    pub fn get_transform(&self) -> Matrix4 {
         if let Some(obj) = &self.val {
-            obj.get_transform()
+            obj.get_transform().clone()
         } else {
-            &glm::identity()
+            glm::identity()
         }
     }
 
     pub fn set_transform(&mut self, t: &Matrix4) {
-        self.val.unwrap().transform = *t;
+        self.val.as_mut().unwrap().transform = *t;
     }
 
-    pub fn get_material(&self) -> &Material {
+    pub fn get_material(&self) -> Material {
         if let Some(obj) = &self.val {
-            obj.get_material()
+            obj.get_material().clone()
         } else {
-            &Material::default()
+            Material::default()
         }
     }
 
     pub fn set_material(&mut self, m: Material) {
-        self.val.unwrap().material = m;
+        self.val.as_mut().unwrap().material = m;
     }
 
     pub fn local_intersect(&self, ray: &Ray) -> Vec<Intersection> {
         // Test group's bounding box first
         let mut res = vec![];
+        // TODO: Figure it out
+        /*
         if self.bounds().intersects(ray) {
             for s in self.shapes.borrow().iter() {
                 let xs = s.intersect(ray);
@@ -127,6 +128,7 @@ impl Group {
         } else {
             bump_num_bounding_opts();
         }
+        */
         res
     }
 
@@ -265,12 +267,12 @@ pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     if let Some(obj) = group.val.as_ref() {
         glm::inverse(obj.get_transform()) * p
     } else {
-        glm::inverse(group.get_transform()) * p
+        glm::inverse(&group.get_transform()) * p
     }
 }
 
 pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
-    let mut n = glm::inverse(group.get_transform()).transpose() * normal;
+    let mut n = glm::inverse(&group.get_transform()).transpose() * normal;
     n.w = 0.0;
     n = n.normalize();
 
@@ -296,6 +298,7 @@ pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
 mod tests {
     use super::*;
     //use crate::shapes::cylinder::*;
+    use crate::shapes::shape::*;
     use crate::shapes::sphere::*;
     use crate::transformation::*;
 
@@ -365,19 +368,19 @@ mod tests {
         let xs = g.local_intersect(&r);
         assert_eq!(xs.len(), 4);
         assert_eq!(
-            xs[0].group.val.as_ref().unwrap().get_id(),
+            xs[0].object.val.as_ref().unwrap().get_id(),
             String::from("sphere_s2")
         );
         assert_eq!(
-            xs[1].group.val.as_ref().unwrap().get_id(),
+            xs[1].object.val.as_ref().unwrap().get_id(),
             String::from("sphere_s2")
         );
         assert_eq!(
-            xs[2].group.val.as_ref().unwrap().get_id(),
+            xs[2].object.val.as_ref().unwrap().get_id(),
             String::from("sphere_s1")
         );
         assert_eq!(
-            xs[3].group.val.as_ref().unwrap().get_id(),
+            xs[3].object.val.as_ref().unwrap().get_id(),
             String::from("sphere_s1")
         );
     }

@@ -1,6 +1,5 @@
 use crate::color::Color;
 use crate::computations::*;
-use crate::group::*;
 use crate::intersection;
 use crate::intersection::Intersection;
 use crate::intersections;
@@ -9,6 +8,7 @@ use crate::materials::lighting;
 use crate::materials::Material;
 use crate::object::*;
 use crate::ray::Ray;
+use crate::shapes::group::*;
 use crate::shapes::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
@@ -207,7 +207,7 @@ mod tests {
     fn set_shape() {
         let mut world = World::default();
         let s = sphere_with_id(Some("hi".to_string()));
-        world.set_shape(Box::new(s), 1);
+        world.set_shape(s, 1);
         let bs = world.get_shape(1);
         assert_eq!(bs.get_id(), String::from("sphere_hi"));
     }
@@ -229,7 +229,7 @@ mod tests {
         let world = World::default();
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = &world.objects[0];
-        let i = Intersection::from_group(shape, 4.0);
+        let i = Intersection::from_group(&Group::from_shape(shape), 4.0);
         let comps = prepare_computations(&i, &ray, &intersections!(i));
         let c = world.shade_hit(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(c.tuple(), Color::new(0.38066, 0.47583, 0.2855).tuple());
@@ -241,7 +241,7 @@ mod tests {
         world.light = point_light(point(0.0, 0.25, 0.0), Color::white());
         let ray = Ray::new(point_zero(), vector_z());
         let shape = &world.objects[1];
-        let i = Intersection::from_group(shape, 0.5);
+        let i = Intersection::from_group(&Group::from_shape(shape), 0.5);
         let comps = prepare_computations(&i, &ray, &intersections!(i));
         let c = world.shade_hit(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(c.tuple(), Color::new(0.90498, 0.90498, 0.90498).tuple());
@@ -319,14 +319,14 @@ mod tests {
     #[test]
     fn shade_hit_given_intersection_in_shadow() {
         let mut world = World::new(point_light(point(0.0, 0.0, -10.0), Color::white()));
-        world.add_shape(Box::new(sphere()));
+        world.add_shape(sphere());
 
         let mut s2 = sphere();
         s2.set_transform(&make_translation(0.0, 0.0, 10.0));
-        world.add_shape(Box::new(s2));
+        world.add_shape(s2);
 
         let ray = Ray::new(point(0.0, 0.0, 5.0), vector_z());
-        let i = Intersection::new(world.get_shape(1).clone(), 4.0);
+        let i = Intersection::new(&world.get_shape(1).clone(), 4.0);
         let comps = prepare_computations(&i, &ray, &intersections!(i));
         let c = world.shade_hit(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(c.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
@@ -341,7 +341,7 @@ mod tests {
             ambient: 1.0,
             ..Material::default()
         });
-        let i = Intersection::new(s2, 1.0);
+        let i = Intersection::new(&s2, 1.0);
         let comps = prepare_computations(&i, &r, &intersections!(i));
         let color = world.reflected_color(&comps, MAX_RAY_DEPTH);
         assert_eq!(color, Color::black());
@@ -356,8 +356,8 @@ mod tests {
             ..Material::default()
         });
         shape.set_transform(&make_translation(0.0, -1.0, 0.0));
-        let i = Intersection::new(Box::new(shape.clone()), SQRT_2);
-        world.add_shape(Box::new(shape.clone()));
+        let i = Intersection::new(&shape, SQRT_2);
+        world.add_shape(shape);
         let r = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
@@ -376,8 +376,8 @@ mod tests {
             ..Material::default()
         });
         shape.set_transform(&make_translation(0.0, -1.0, 0.0));
-        let i = Intersection::new(Box::new(shape.clone()), SQRT_2);
-        world.add_shape(Box::new(shape.clone()));
+        let i = Intersection::new(&shape, SQRT_2);
+        world.add_shape(shape);
 
         let r = Ray::new(
             point(0.0, 0.0, -3.0),
@@ -395,13 +395,13 @@ mod tests {
     fn color_at_with_mutually_reflective_surfaces() {
         let mut world = World::new(point_light(point_zero(), Color::white()));
         let mut lower = plane();
-        lower.props.material.reflective = 1.0;
+        lower.material.reflective = 1.0;
         lower.set_transform(&make_translation(0.0, -1.0, 0.0));
         let mut upper = plane();
-        upper.props.material.reflective = 1.0;
+        upper.material.reflective = 1.0;
         upper.set_transform(&make_translation(0.0, 1.0, 0.0));
-        world.add_shape(Box::new(lower));
-        world.add_shape(Box::new(upper));
+        world.add_shape(lower);
+        world.add_shape(upper);
         let r = Ray::new(point_zero(), vector_y());
         let color = world.color_at(&r, MAX_RAY_DEPTH);
         // we should get here
@@ -417,8 +417,8 @@ mod tests {
             ..Material::default()
         });
         shape.set_transform(&make_translation(0.0, -1.0, 0.0));
-        let i = Intersection::new(Box::new(shape.clone()), SQRT_2);
-        world.add_shape(Box::new(shape));
+        let i = Intersection::new(&shape, SQRT_2);
+        world.add_shape(shape);
         let r = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
@@ -434,8 +434,8 @@ mod tests {
         let shape = world.get_shape(0);
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let xs = intersections!(
-            Intersection::new(shape.clone(), 4.0),
-            Intersection::new(shape.clone(), 6.0)
+            Intersection::new(&shape, 4.0),
+            Intersection::new(&shape, 6.0)
         );
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let c = world.refracted_color(&comps, MAX_RAY_DEPTH);
@@ -448,8 +448,8 @@ mod tests {
         let shape = world.get_shape(0);
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let xs = intersections!(
-            Intersection::new(shape.clone(), 4.0),
-            Intersection::new(shape.clone(), 6.0)
+            Intersection::new(&shape, 4.0),
+            Intersection::new(&shape, 6.0)
         );
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let c = world.refracted_color(&comps, 0);
@@ -467,8 +467,8 @@ mod tests {
         });
         let ray = Ray::new(point(0.0, 0.0, -math::SQRT_2_DIV_2), vector_y());
         let xs = intersections!(
-            Intersection::new(shape.clone(), -math::SQRT_2_DIV_2),
-            Intersection::new(shape.clone(), math::SQRT_2_DIV_2)
+            Intersection::new(&shape, -math::SQRT_2_DIV_2),
+            Intersection::new(&shape, math::SQRT_2_DIV_2)
         );
         let comps = prepare_computations(&xs[1], &ray, &xs);
         let c = world.refracted_color(&comps, MAX_RAY_DEPTH);
@@ -498,10 +498,10 @@ mod tests {
 
         let ray = Ray::new(point(0.0, 0.0, 0.1), vector_y());
         let xs = intersections!(
-            Intersection::new(shape1.clone(), -0.9899),
-            Intersection::new(shape2.clone(), -0.4899),
-            Intersection::new(shape2.clone(), 0.4899),
-            Intersection::new(shape1.clone(), 0.9899)
+            Intersection::new(&shape1, -0.9899),
+            Intersection::new(&shape2, -0.4899),
+            Intersection::new(&shape2, 0.4899),
+            Intersection::new(&shape1, 0.9899)
         );
         let comps = prepare_computations(&xs[2], &ray, &xs);
         let c = world.refracted_color(&comps, MAX_RAY_DEPTH);
@@ -520,7 +520,7 @@ mod tests {
             refractive_index: 1.5,
             ..Material::default()
         });
-        world.add_shape(Box::new(floor));
+        world.add_shape(floor);
 
         let mut ball = sphere();
         ball.set_transform(&make_translation(0.0, -3.5, -0.5));
@@ -529,13 +529,13 @@ mod tests {
             ambient: 0.5,
             ..Material::default()
         });
-        world.add_shape(Box::new(ball));
+        world.add_shape(ball);
 
         let ray = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2_DIV_2, SQRT_2_DIV_2),
         );
-        let xs = intersections!(Intersection::new(world.get_shape(nshapes).clone(), SQRT_2));
+        let xs = intersections!(Intersection::new(&world.get_shape(nshapes).clone(), SQRT_2));
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let color = world.shade_hit(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(color.tuple(), Color::new(0.93642, 0.68642, 0.68642).tuple());
@@ -554,7 +554,7 @@ mod tests {
             reflective: 0.5,
             ..Material::default()
         });
-        world.add_shape(Box::new(floor));
+        world.add_shape(floor);
 
         let mut ball = sphere();
         ball.set_transform(&make_translation(0.0, -3.5, -0.5));
@@ -563,13 +563,13 @@ mod tests {
             ambient: 0.5,
             ..Material::default()
         });
-        world.add_shape(Box::new(ball));
+        world.add_shape(ball);
 
         let ray = Ray::new(
             point(0.0, 0.0, -3.0),
             vector(0.0, -SQRT_2_DIV_2, SQRT_2_DIV_2),
         );
-        let xs = intersections!(Intersection::new(world.get_shape(nshapes).clone(), SQRT_2));
+        let xs = intersections!(Intersection::new(&world.get_shape(nshapes).clone(), SQRT_2));
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let color = world.shade_hit(&comps, MAX_RAY_DEPTH);
         assert_eq_eps!(color.tuple(), Color::new(0.93391, 0.69643, 0.69243).tuple());

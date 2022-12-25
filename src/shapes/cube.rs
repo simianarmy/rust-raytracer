@@ -12,7 +12,7 @@ pub struct Cube {}
 
 // constructor utilities
 pub fn cube_with_id(id: Option<String>) -> Object {
-    let o = Object::new(id);
+    let mut o = Object::new(id);
     o.shape = Shape::Cube();
     o
 }
@@ -21,34 +21,34 @@ pub fn cube() -> Object {
     cube_with_id(None)
 }
 
-pub fn check_axis(
-    origin: math::F3D,
-    direction: math::F3D,
-    min: math::F3D,
-    max: math::F3D,
-) -> (math::F3D, math::F3D) {
-    let tmin_numerator = min - origin;
-    let tmax_numerator = max - origin;
-
-    let mut tmin = 0.0;
-    let mut tmax = 0.0;
-
-    if direction.abs() >= math::EPSILON {
-        tmin = tmin_numerator / direction;
-        tmax = tmax_numerator / direction;
-    } else {
-        tmin = tmin_numerator * math::INFINITY;
-        tmax = tmax_numerator * math::INFINITY;
-    }
-    if tmin > tmax {
-        let tmp = tmin;
-        tmin = tmax;
-        tmax = tmp;
-    }
-    (tmin, tmax)
-}
-
 impl Cube {
+    pub fn check_axis(
+        origin: math::F3D,
+        direction: math::F3D,
+        min: math::F3D,
+        max: math::F3D,
+    ) -> (math::F3D, math::F3D) {
+        let tmin_numerator = min - origin;
+        let tmax_numerator = max - origin;
+
+        let mut tmin = 0.0;
+        let mut tmax = 0.0;
+
+        if direction.abs() >= math::EPSILON {
+            tmin = tmin_numerator / direction;
+            tmax = tmax_numerator / direction;
+        } else {
+            tmin = tmin_numerator * math::INFINITY;
+            tmax = tmax_numerator * math::INFINITY;
+        }
+        if tmin > tmax {
+            let tmp = tmin;
+            tmin = tmax;
+            tmax = tmp;
+        }
+        (tmin, tmax)
+    }
+
     pub fn local_normal_at(point: Point) -> Vector {
         match point.abs().max() {
             x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
@@ -58,9 +58,9 @@ impl Cube {
     }
 
     pub fn local_intersect(ray: &Ray) -> Vec<math::F3D> {
-        let (xtmin, xtmax) = check_axis(ray.origin.x, ray.direction.x, -1.0, 1.0);
-        let (ytmin, ytmax) = check_axis(ray.origin.y, ray.direction.y, -1.0, 1.0);
-        let (ztmin, ztmax) = check_axis(ray.origin.z, ray.direction.z, -1.0, 1.0);
+        let (xtmin, xtmax) = Cube::check_axis(ray.origin.x, ray.direction.x, -1.0, 1.0);
+        let (ytmin, ytmax) = Cube::check_axis(ray.origin.y, ray.direction.y, -1.0, 1.0);
+        let (ztmin, ztmax) = Cube::check_axis(ray.origin.z, ray.direction.z, -1.0, 1.0);
 
         let tmin = glm::max3_scalar(xtmin, ytmin, ztmin);
         let tmax = glm::min3_scalar(xtmax, ytmax, ztmax);

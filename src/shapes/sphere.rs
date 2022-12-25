@@ -11,7 +11,7 @@ pub struct Sphere {}
 
 // constructor utilities
 pub fn sphere_with_id(id: Option<String>) -> Object {
-    let s = Object::new(id);
+    let mut s = Object::new(id);
     s.shape = Shape::Sphere();
     s
 }
@@ -104,8 +104,8 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
         let s = sphere_with_id(Some(sid));
         let xs = s.intersect(&r);
-        assert_eq!(xs[0].group.get_id(), String::from("g_sphere_itme"));
-        assert_eq!(xs[1].group.get_id(), String::from("g_sphere_itme"));
+        assert_eq!(xs[0].object.get_id(), String::from("g_sphere_itme"));
+        assert_eq!(xs[1].object.get_id(), String::from("g_sphere_itme"));
     }
 
     #[test]
@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn computing_normal_on_translated_sphere() {
         let mut s = sphere();
-        s.props.transform = make_translation(0.0, 1.0, 0.0);
+        s.transform = make_translation(0.0, 1.0, 0.0);
         let n = s.normal_at(point(0.0, 1.70711, -0.70711));
         assert_eq_eps!(&n, &vector(0.0, 0.70711, -0.70711));
     }
@@ -143,7 +143,7 @@ mod tests {
     fn computing_normal_on_transformed_sphere() {
         let mut s = sphere();
         let m = make_scaling(1.0, 0.5, 1.0) * make_rotation_z(glm::pi::<crate::math::F3D>() / 5.0);
-        s.props.transform = m;
+        s.transform = m;
         let n = s.normal_at(point(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0));
         assert_eq_eps!(&n, &vector(0.0, 0.97014, -0.24254));
     }

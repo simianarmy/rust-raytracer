@@ -99,7 +99,7 @@ mod tests {
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
         let sb = Box::new(object);
-        let c = pattern.pattern_at_shape(Group::from_shape(sb), &point(2.0, 3.0, 4.0));
+        let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }
 
@@ -108,8 +108,7 @@ mod tests {
         let mut pattern = setup();
         let object = sphere();
         pattern.transform = make_scaling(2.0, 2.0, 2.0);
-        let c =
-            pattern.pattern_at_shape(Group::from_shape(Box::new(object)), &point(2.0, 3.0, 4.0));
+        let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }
 
@@ -119,8 +118,7 @@ mod tests {
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
         pattern.transform = make_translation(0.5, 1.0, 1.5);
-        let c =
-            pattern.pattern_at_shape(Group::from_shape(Box::new(object)), &point(2.5, 3.0, 3.5));
+        let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.5, 3.0, 3.5));
         assert_eq!(c, Color::new(0.75, 0.5, 0.25));
     }
 }

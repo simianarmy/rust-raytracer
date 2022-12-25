@@ -38,7 +38,7 @@ impl Shape {
             Shape::Cube() => cube::Cube::local_intersect(ray),
             Shape::Cone(c) => c.local_intersect(ray),
             Shape::Cylinder(c) => c.local_intersect(ray),
-            Shape::Group(g) => g.local_intersect(ray),
+            Shape::Group(g) => vec![], // g.local_intersect(ray),
             Shape::Plane() => plane::Plane::local_intersect(ray),
             Shape::Sphere() => sphere::Sphere::local_intersect(ray),
             Shape::TestShape(c) => c.local_intersect(ray),
@@ -63,7 +63,7 @@ impl Shape {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TestShape {}
 impl TestShape {
-    pub fn local_intersect(&self, _ray: &Ray) -> Vec<Intersection> {
+    pub fn local_intersect(&self, _ray: &Ray) -> Vec<F3D> {
         //self.saved_ray = ray;
         vec![]
     }
@@ -78,7 +78,7 @@ impl TestShape {
 }
 
 pub fn test_shape() -> Object {
-    let o = Object::new(Some("test_shape".to_string()));
+    let mut o = Object::new(Some("test_shape".to_string()));
     o.shape = Shape::TestShape(TestShape {});
     o
 }

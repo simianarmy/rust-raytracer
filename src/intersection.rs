@@ -19,7 +19,7 @@ impl<'a> Intersection<'a> {
     pub fn from_group(g: &GroupRef, t: F3D) -> Intersection {
         Intersection {
             t,
-            object: &g.val.unwrap(),
+            object: &g.val.as_ref().unwrap(),
         }
     }
 }
@@ -74,7 +74,7 @@ pub fn sort_intersections(xs: &mut Vec<Intersection>) {
 /**
  * "Closest" intersection in a collection
  */
-pub fn hit<'a>(is: &Vec<Intersection<'a>>) -> Option<&'a Intersection<'a>> {
+pub fn hit<'a>(is: &'a Vec<Intersection<'a>>) -> Option<&'a Intersection<'a>> {
     // filter out negative t values here
     is.iter().map(|is| is).find(|i| i.t >= 0.0)
 }

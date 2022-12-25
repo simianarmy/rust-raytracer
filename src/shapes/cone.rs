@@ -48,7 +48,7 @@ pub fn check_cap(ray: &Ray, t: math::F3D, y: math::F3D) -> bool {
 
 // constructor utilities
 pub fn cone_with_id(id: Option<String>) -> Object {
-    let o = Object::new(id);
+    let mut o = Object::new(id);
     o.shape = Shape::Cone(Cone {
         minimum: -math::INFINITY,
         maximum: math::INFINITY,

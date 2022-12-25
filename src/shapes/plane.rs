@@ -11,7 +11,7 @@ pub struct Plane {}
 
 // constructor utilities
 pub fn plane_with_id(id: Option<String>) -> Object {
-    let o = Object::new(id);
+    let mut o = Object::new(id);
     o.shape = Shape::Plane();
     o
 }
@@ -30,7 +30,7 @@ impl Plane {
         }
     }
 
-    pub fn local_normal_at(&self, _point: Point) -> Vector {
+    pub fn local_normal_at(_point: Point) -> Vector {
         point_y()
     }
 
@@ -48,36 +48,32 @@ mod tests {
 
     #[test]
     fn normal_is_constant_everywhere() {
-        let p = plane();
-        let n1 = p.local_normal_at(point_zero());
-        let n2 = p.local_normal_at(point(10.0, 0.0, -10.0));
+        let n1 = Plane::local_normal_at(point_zero());
+        let n2 = Plane::local_normal_at(point(10.0, 0.0, -10.0));
         assert_eq!(n1, point_y());
         assert_eq!(n2, point_y());
     }
 
     #[test]
     fn intersect_with_ray_parallel_to_plane() {
-        let p = plane();
         let r = Ray::new(point(0.0, 10.0, 0.0), vector_z());
-        let xs = p.local_intersect(&r);
+        let xs = Plane::local_intersect(&r);
         assert!(xs.is_empty());
     }
 
     #[test]
     fn intersect_with_coplanar_ray() {
-        let p = plane();
         let r = Ray::new(point_zero(), vector_z());
-        let xs = p.local_intersect(&r);
+        let xs = Plane::local_intersect(&r);
         assert!(xs.is_empty());
     }
 
     #[test]
     fn ray_intersect_from_above() {
-        let p = plane();
         let r = Ray::new(point_y(), vector(0.0, -1.0, 0.0));
-        let xs = p.local_intersect(&r);
+        let xs = Plane::local_intersect(&r);
         assert_eq!(xs.len(), 1);
-        assert_eq!(xs[0].t, 1.0);
-        assert_eq!(xs[0].group.get_id(), format!("g_{}", p.get_id()));
+        assert_eq!(xs[0], 1.0);
+        //assert_eq!(xs[0].object.get_id(), format!("g_{}", p.get_id()));
     }
 }
