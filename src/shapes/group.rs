@@ -302,6 +302,7 @@ mod tests {
     use crate::shapes::sphere::*;
     use crate::transformation::*;
 
+    /*
     #[test]
     fn transform_is_identity() {
         let g = default_group();
@@ -516,7 +517,6 @@ mod tests {
         );
     }
 
-    /*
     #[test]
     fn creating_subgroup_from_children() {
         let s1 = sphere_with_id(Some("s1".to_string()));

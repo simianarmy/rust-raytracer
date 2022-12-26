@@ -14,6 +14,36 @@ pub struct Cylinder {
     pub closed: bool,
 }
 
+// helper for intersect_caps
+pub fn check_cap(ray: &Ray, t: math::F3D) -> bool {
+    let v = ray.origin + t * ray.direction;
+    (v.x.powi(2) + v.z.powi(2)) <= 1.0
+}
+
+// constructor utilities
+pub fn cylinder_with_id(
+    id: Option<String>,
+    min: math::F3D,
+    max: math::F3D,
+    closed: bool,
+) -> Object {
+    let mut o = Object::new(id);
+    o.shape = Shape::Cylinder(Cylinder {
+        minimum: min,
+        maximum: max,
+        closed,
+    });
+    o
+}
+
+pub fn cylinder(min: math::F3D, max: math::F3D, closed: bool) -> Object {
+    cylinder_with_id(None, min, max, closed)
+}
+
+pub fn default_cylinder() -> Object {
+    cylinder(-math::INFINITY, math::INFINITY, false)
+}
+
 impl Cylinder {
     pub fn set_bounds(&mut self, min: math::F3D, max: math::F3D) {
         self.minimum = min;
@@ -38,30 +68,6 @@ impl Cylinder {
         }
         xs
     }
-}
-
-// helper for intersect_caps
-pub fn check_cap(ray: &Ray, t: math::F3D) -> bool {
-    let v = ray.origin + t * ray.direction;
-    (v.x.powi(2) + v.z.powi(2)) <= 1.0
-}
-
-// constructor utilities
-pub fn cylinder_with_id(id: Option<String>) -> Object {
-    let mut o = Object::new(id);
-    o.shape = Shape::Cylinder(Cylinder {
-        minimum: -math::INFINITY,
-        maximum: math::INFINITY,
-        closed: false,
-    });
-    o
-}
-
-pub fn cylinder() -> Object {
-    cylinder_with_id(None)
-}
-
-impl Cylinder {
     pub fn local_intersect(&self, ray: &Ray) -> Vec<math::F3D> {
         let mut xs = vec![];
         let a = ray.direction.x.powi(2) + ray.direction.z.powi(2);
@@ -119,7 +125,7 @@ mod tests {
 
     #[test]
     fn ray_misses_cylinder() {
-        let c = cylinder();
+        let c = default_cylinder();
         let tests = vec![
             (point_x(), vector_y()),
             (point_zero(), vector_y()),
@@ -128,14 +134,14 @@ mod tests {
         for t in tests {
             let direction = t.1.normalize();
             let r = Ray::new(t.0, direction);
-            let xs = c.local_intersect(&r);
+            let xs = c.intersect(&r);
             assert!(xs.is_empty());
         }
     }
 
     #[test]
     fn ray_strikes_cylinder() {
-        let c = cylinder();
+        let c = default_cylinder();
         for t in vec![
             (point(1.0, 0.0, -5.0), vector_z(), 5.0, 5.0),
             (point(0.0, 0.0, -5.0), vector_z(), 4.0, 6.0),
@@ -148,7 +154,7 @@ mod tests {
         ] {
             let dir = t.1.normalize();
             let r = Ray::new(t.0, dir);
-            let xs = c.local_intersect(&r);
+            let xs = c.intersect(&r);
             assert_eq!(xs.len(), 2);
             assert_eq_feps!(xs[0].t, t.2);
             assert_eq_feps!(xs[1].t, t.3);
@@ -157,29 +163,31 @@ mod tests {
 
     #[test]
     fn normal_vector() {
-        let c = cylinder();
+        let c = default_cylinder();
         for t in vec![
             (point_x(), vector_x()),
             (point(0.0, 5.0, -1.0), vector(0.0, 0.0, -1.0)),
             (point(0.0, -2.0, 1.0), vector_z()),
             (point(-1.0, 1.0, 0.0), vector_x() * -1.0),
         ] {
-            let n = c.local_normal_at(t.0);
+            let n = c.normal_at(t.0);
             assert_eq!(n, t.1);
         }
     }
 
     #[test]
     fn default_y_values() {
-        let c = cylinder();
-        assert_eq!(c.minimum, -math::INFINITY);
-        assert_eq!(c.maximum, math::INFINITY);
+        if let Shape::Cylinder(c) = default_cylinder().shape {
+            assert_eq!(c.minimum, -math::INFINITY);
+            assert_eq!(c.maximum, math::INFINITY);
+        } else {
+            panic!("no cylinder shape");
+        }
     }
 
     #[test]
     fn intersecting_constrained_cyclinder() {
-        let mut c = cylinder();
-        c.set_bounds(1.0, 2.0);
+        let mut c = cylinder(1.0, 2.0, false);
         let tests = vec![
             (point(0.0, 1.5, 0.0), vector(0.1, 1.0, 0.0), 0),
             (point(0.0, 3.0, -5.0), vector_z(), 0),
@@ -189,21 +197,21 @@ mod tests {
         ];
         for t in tests {
             let r = Ray::new(t.0, t.1.normalize());
-            let xs = c.local_intersect(&r);
+            let xs = c.intersect(&r);
             assert_eq!(xs.len(), t.2);
         }
     }
 
     #[test]
     fn default_closed_value() {
-        assert!(!cylinder().closed);
+        if let Shape::Cylinder(c) = default_cylinder().shape {
+            assert!(!c.closed);
+        }
     }
 
     #[test]
     fn intersecting_caps_of_closed_cylinder() {
-        let mut c = cylinder();
-        c.set_bounds(1.0, 2.0);
-        c.closed = true;
+        let mut c = cylinder(1.0, 2.0, true);
         let tests = vec![
             (point(0.0, 3.0, 0.0), vector(0.0, -1.0, 0.0), 2),
             (point(0.0, 3.0, -2.0), vector(0.0, -1.0, 2.0), 2),
@@ -212,23 +220,21 @@ mod tests {
         ];
         for t in tests {
             let r = Ray::new(t.0, t.1.normalize());
-            let xs = c.local_intersect(&r);
+            let xs = c.intersect(&r);
             assert_eq!(xs.len(), t.2);
         }
     }
 
     #[test]
     fn normal_at_end_caps() {
-        let mut c = cylinder();
-        c.set_bounds(1.0, 2.0);
-        c.closed = true;
+        let mut c = cylinder(1.0, 2.0, true);
         for t in vec![
             (point_y(), vector(0.0, -1.0, 0.0)),
             (point(0.5, 1.0, 0.0), vector(0.0, -1.0, 0.0)),
             (point(0.0, 2.0, 0.0), vector_y()),
             (point(0.0, 2.0, 0.5), vector_y()),
         ] {
-            let n = c.local_normal_at(t.0);
+            let n = c.normal_at(t.0);
             assert_eq!(n, t.1);
         }
     }
