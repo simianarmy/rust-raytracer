@@ -52,31 +52,54 @@ impl<'a> fmt::Display for Intersection<'a> {
     }
 }
 
-// Intersection list builder
-#[macro_export]
-macro_rules! intersections {
-    ( $( $x:expr ),* ) => {
-        {
-            let mut temp_vec = Vec::new();
-            $(
-                temp_vec.push($x.clone());
-            )*
-            crate::intersection::sort_intersections(&mut temp_vec);
-            temp_vec
+#[derive(Debug)]
+pub struct Intersections<'a> {
+    intersections: Vec<Intersection<'a>>,
+}
+
+impl<'a> Intersections<'a> {
+    pub fn from_intersections(intersections: Vec<Intersection<'a>>) -> Self {
+        let mut is = Self::new();
+        is.intersections = intersections;
+        is
+    }
+
+    pub fn new() -> Self {
+        Self {
+            intersections: Vec::<Intersection<'a>>::with_capacity(16),
         }
-    };
+    }
+
+    pub fn len(&self) -> usize {
+        self.intersections.len()
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<Intersection> {
+        self.intersections.iter()
+    }
+
+    pub fn sort_intersections(mut self) -> Self {
+        self.intersections
+            .sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+        self
+    }
+
+    /**
+     * "Closest" intersection in a collection
+     */
+    pub fn hit(&self) -> Option<&Intersection<'a>> {
+        // filter out negative t values here
+        self.intersections.iter().find(|i| i.t >= 0.0)
+    }
 }
 
-pub fn sort_intersections(xs: &mut Vec<Intersection>) {
-    xs.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
-}
+// intersections[i]
+impl<'a> std::ops::Index<usize> for Intersections<'a> {
+    type Output = Intersection<'a>;
 
-/**
- * "Closest" intersection in a collection
- */
-pub fn hit<'a>(is: &'a Vec<Intersection<'a>>) -> Option<&'a Intersection<'a>> {
-    // filter out negative t values here
-    is.iter().map(|is| is).find(|i| i.t >= 0.0)
+    fn index(&self, i: usize) -> &Intersection<'a> {
+        &self.intersections[i]
+    }
 }
 
 // Approximate Fresnel effect
@@ -113,7 +136,7 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, 1.0);
         let i2 = Intersection::new(&s, 2.0);
-        let is = intersections!(i1, i2);
+        let is = Intersections::from_intersections(vec![i1, i2]);
         assert_eq!(is.len(), 2);
         assert_eq!(is[0], i1);
     }
@@ -123,8 +146,8 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, 1.0);
         let i2 = Intersection::new(&s, 2.0);
-        let xs = intersections!(i2, i1);
-        let i = hit(&xs);
+        let is = Intersections::from_intersections(vec![i1, i2]);
+        let i = is.hit();
         assert_eq!(*i.unwrap(), i1);
     }
 
@@ -133,8 +156,8 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, -1.0);
         let i2 = Intersection::new(&s, 2.0);
-        let xs = intersections!(i2, i1);
-        let i = hit(&xs);
+        let is = Intersections::from_intersections(vec![i1, i2]);
+        let i = is.hit();
         assert_eq!(*i.unwrap(), i2);
     }
 
@@ -143,8 +166,8 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, -2.0);
         let i2 = Intersection::new(&s, -1.0);
-        let xs = intersections!(i2, i1);
-        let i = hit(&xs);
+        let is = Intersections::from_intersections(vec![i1, i2]);
+        let i = is.hit();
         assert_eq!(i, None);
     }
 
@@ -155,8 +178,8 @@ mod tests {
         let i2 = Intersection::new(&s, 7.0);
         let i3 = Intersection::new(&s, -3.0);
         let i4 = Intersection::new(&s, 2.0);
-        let xs = intersections!(i1, i2, i3, i4);
-        let i = hit(&xs);
+        let is = Intersections::from_intersections(vec![i1, i2, i3, i4]);
+        let i = is.hit();
         assert_eq!(*i.unwrap(), i4);
     }
 
@@ -166,7 +189,7 @@ mod tests {
         let mut s = sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = Intersection::new(&s, 5.0);
-        let comps = prepare_computations(&i, &r, &intersections!(i));
+        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
     }
@@ -175,10 +198,10 @@ mod tests {
     fn schlick_under_total_internal_reflection() {
         let sphere = glass_sphere();
         let ray = Ray::new(point(0.0, 0.0, SQRT_2_DIV_2), vector_y());
-        let xs = intersections!(
+        let xs = Intersections::from_intersections(vec![
             Intersection::new(&sphere, -SQRT_2_DIV_2),
-            Intersection::new(&sphere, SQRT_2_DIV_2)
-        );
+            Intersection::new(&sphere, SQRT_2_DIV_2),
+        ]);
         let comps = prepare_computations(&xs[1], &ray, &xs);
         println!("comps: {:?}", comps);
         let reflectance = schlick(&comps);
@@ -189,10 +212,10 @@ mod tests {
     fn schlick_with_perpendicular_viewing_angle() {
         let sphere = glass_sphere();
         let ray = Ray::new(point_zero(), vector_y());
-        let xs = intersections!(
+        let xs = Intersections::from_intersections(vec![
             Intersection::new(&sphere, -1.0),
-            Intersection::new(&sphere, 1.0)
-        );
+            Intersection::new(&sphere, 1.0),
+        ]);
         let comps = prepare_computations(&xs[1], &ray, &xs);
         let reflectance = schlick(&comps);
         assert_eq_feps!(reflectance, 0.04);
@@ -202,7 +225,7 @@ mod tests {
     fn schlick_with_small_angle() {
         let sphere = glass_sphere();
         let ray = Ray::new(point(0.0, 0.99, -2.0), vector_z());
-        let xs = vec![Intersection::new(&sphere, 1.8589)];
+        let xs = Intersections::from_intersections(vec![Intersection::new(&sphere, 1.8589)]);
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let reflectance = schlick(&comps);
         assert_eq_feps!(reflectance, 0.48873);

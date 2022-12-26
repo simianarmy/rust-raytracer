@@ -1,6 +1,5 @@
 use crate::bounds::*;
-use crate::intersection::sort_intersections;
-use crate::intersection::Intersection;
+use crate::intersection::*;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
 use crate::object::Object;

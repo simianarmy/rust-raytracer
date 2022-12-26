@@ -1,4 +1,4 @@
-use crate::intersection::Intersection;
+use crate::intersection::*;
 use crate::math::*;
 use crate::object::Object;
 use crate::ray::Ray;
@@ -21,12 +21,12 @@ pub struct Computations {
     pub n2: F3D,
 }
 
-fn calc_refractive_indices(i: &Intersection, xs: &Vec<Intersection>) -> (F3D, F3D) {
+fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
     let mut containers: Vec<Object> = Vec::new();
     let mut n1 = 0.0;
     let mut n2 = 0.0;
 
-    for is in xs {
+    for is in xs.iter() {
         let iid = i.object.get_id();
         let is_hit = i.t == is.t && iid == is.object.get_id();
 
@@ -59,7 +59,7 @@ fn calc_refractive_indices(i: &Intersection, xs: &Vec<Intersection>) -> (F3D, F3
     (n1, n2)
 }
 
-pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Vec<Intersection>) -> Computations {
+pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Intersections) -> Computations {
     let p = ray.position(i.t);
     // TODO: Pass i.object: GroupRef to group_normal_at() ?
     //let normal = i.group.normal_at(p);
@@ -91,7 +91,7 @@ mod tests {
 
     use super::*;
     use crate::computations::prepare_computations;
-    use crate::intersections;
+    use crate::intersection::*;
     use crate::ray::Ray;
     use crate::shapes::plane::plane;
     use crate::shapes::sphere::*;
@@ -102,7 +102,7 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = sphere();
         let i = Intersection::new(&shape, 4.0);
-        let comps = prepare_computations(&i, &r, &intersections!(i));
+        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
         assert_eq!(comps.t, i.t);
         assert_eq!(&comps.object.get_id(), &i.object.get_id());
         assert_eq!(comps.point, point(0.0, 0.0, -1.0));
@@ -115,7 +115,7 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = sphere();
         let i = Intersection::new(&shape, 4.0);
-        let comps = prepare_computations(&i, &r, &intersections!(i));
+        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
         assert!(!comps.inside);
     }
 
@@ -124,7 +124,7 @@ mod tests {
         let r = Ray::new(point_zero(), vector_z());
         let shape = sphere();
         let i = Intersection::new(&shape, 1.0);
-        let comps = prepare_computations(&i, &r, &intersections!(i));
+        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
         assert_eq!(comps.point, point_z());
         assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
         assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
@@ -139,7 +139,7 @@ mod tests {
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
         );
         let i = Intersection::new(&shape, SQRT_2);
-        let comps = prepare_computations(&i, &r, &intersections!(i));
+        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
         assert_eq!(comps.reflectv, vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0));
     }
 
@@ -158,14 +158,14 @@ mod tests {
         c.set_transform(&make_translation(0.0, 0.0, 0.25));
         c.material.refractive_index = 2.5;
         let ray = Ray::new(point(0.0, 0.0, -4.0), vector_y());
-        let xs = intersections!(
+        let xs = Intersections::from_intersections(vec![
             Intersection::new(&a, 2.0),
             Intersection::new(&b, 2.75),
             Intersection::new(&c, 3.25),
             Intersection::new(&b, 4.75),
             Intersection::new(&c, 5.25),
-            Intersection::new(&a, 6.0)
-        );
+            Intersection::new(&a, 6.0),
+        ]);
         let cases = vec![
             (0, 1.0, 1.5),
             (1, 1.5, 2.0),
@@ -187,7 +187,7 @@ mod tests {
         let mut s = glass_sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = Intersection::new(&s, 5.0);
-        let xs = intersections!(i);
+        let xs = Intersections::from_intersections(vec![i]);
         let comps = prepare_computations(&i, &ray, &xs);
         assert!(comps.under_point.z > EPSILON / 2.0);
         assert!(comps.point.z < comps.under_point.z);

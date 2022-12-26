@@ -100,8 +100,8 @@ pub fn lighting(
 mod tests {
     use super::*;
     use crate::assert_eq_eps;
-    use crate::group::Group;
     use crate::pattern::stripe::stripe_pattern;
+    use crate::shapes::group::Group;
     use crate::shapes::sphere::*;
 
     fn setup() -> (Material, Point, Object) {

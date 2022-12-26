@@ -47,18 +47,22 @@ pub fn check_cap(ray: &Ray, t: math::F3D, y: math::F3D) -> bool {
 }
 
 // constructor utilities
-pub fn cone_with_id(id: Option<String>) -> Object {
+pub fn cone_with_id(id: Option<String>, min: math::F3D, max: math::F3D, closed: bool) -> Object {
     let mut o = Object::new(id);
     o.shape = Shape::Cone(Cone {
-        minimum: -math::INFINITY,
-        maximum: math::INFINITY,
-        closed: false,
+        minimum: min,
+        maximum: max,
+        closed,
     });
     o
 }
 
-pub fn cone() -> Object {
-    cone_with_id(None)
+pub fn cone(min: math::F3D, max: math::F3D, closed: bool) -> Object {
+    cone_with_id(None, min, max, closed)
+}
+
+pub fn default_cone() -> Object {
+    cone(-math::INFINITY, math::INFINITY, false)
 }
 
 impl Cone {
@@ -142,7 +146,7 @@ mod tests {
 
     #[test]
     fn ray_strikes_cone() {
-        let c = cone();
+        let c = default_cone();
         for t in vec![
             (point(0.0, 0.0, -5.0), vector_z(), 5.0, 5.0),
             (
@@ -160,27 +164,31 @@ mod tests {
         ] {
             let dir = t.1.normalize();
             let r = Ray::new(t.0, dir);
-            let xs = c.local_intersect(&r);
+            let xs = match c.shape {
+                Shape::Cone(c) => c.local_intersect(&r),
+                _ => vec![],
+            };
             assert_eq!(xs.len(), 2);
-            assert_eq_feps!(xs[0].t, t.2);
-            assert_eq_feps!(xs[1].t, t.3);
+            assert_eq_feps!(xs[0], t.2);
+            assert_eq_feps!(xs[1], t.3);
         }
     }
 
     #[test]
     fn intersecting_with_ray_parallel_to_a_half() {
-        let c = cone();
+        let c = default_cone();
         let r = Ray::new(point(0.0, 0.0, -1.0), vector(0.0, 1.0, 1.0).normalize());
-        let xs = c.local_intersect(&r);
+        let xs = match c.shape {
+            Shape::Cone(c) => c.local_intersect(&r),
+            _ => vec![],
+        };
         assert_eq!(xs.len(), 1);
-        assert_eq_feps!(xs[0].t, 0.35355);
+        assert_eq_feps!(xs[0], 0.35355);
     }
 
     #[test]
     fn intersecting_caps_of_closed_cone() {
-        let mut c = cone();
-        c.set_bounds(-0.5, 0.5);
-        c.closed = true;
+        let mut c = cone(-0.5, 0.5, true);
         let tests = vec![
             (point(0.0, 0.0, -5.0), vector_y(), 0),
             (point(0.0, 0.0, -0.25), vector(0.0, 1.0, 1.0), 2),
@@ -189,21 +197,27 @@ mod tests {
         for t in tests {
             println!("test = {:?}", t);
             let r = Ray::new(t.0, (t.1).normalize());
-            let xs = c.local_intersect(&r);
+            let xs = match c.shape {
+                Shape::Cone(c) => c.local_intersect(&r),
+                _ => vec![],
+            };
             assert_eq!(xs.len(), t.2);
         }
     }
 
     #[test]
     fn normal_at() {
-        let c = cone();
+        let c = default_cone();
         for t in vec![
             (point_zero(), vector_zero()),
             (point_unit(), vector(1.0, -SQRT_2, 1.0)),
             (point(-1.0, -1.0, 0.0), vector(-1.0, 1.0, 0.0)),
         ] {
             println!("test: {:?}", t);
-            let n = c.local_normal_at(t.0);
+            let n = match c.shape {
+                Shape::Cone(c) => c.local_normal_at(t.0),
+                _ => vector_zero(),
+            };
             assert_eq!(n, t.1);
         }
     }

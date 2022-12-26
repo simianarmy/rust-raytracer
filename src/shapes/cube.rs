@@ -1,6 +1,5 @@
 use crate::bounds::*;
-use crate::intersection::Intersection;
-use crate::intersections;
+use crate::intersection::*;
 use crate::math;
 use crate::object::Object;
 use crate::ray::Ray;
@@ -95,10 +94,10 @@ mod tests {
         ];
         for t in tests {
             let r = Ray::new(t.0, t.1);
-            let xs = c.local_intersect(&r);
+            let xs = Cube::local_intersect(&r);
             assert_eq!(xs.len(), 2);
-            assert_eq!(xs[0].t, t.2);
-            assert_eq!(xs[1].t, t.3);
+            assert_eq!(xs[0], t.2);
+            assert_eq!(xs[1], t.3);
         }
     }
 
@@ -111,7 +110,7 @@ mod tests {
         ];
         for t in tests {
             let r = Ray::new(t.0, t.1);
-            let xs = c.local_intersect(&r);
+            let xs = Cube::local_intersect(&r);
             assert!(xs.is_empty());
         }
     }
@@ -126,7 +125,7 @@ mod tests {
             (point(-1.0, -1.0, -1.0), vector(-1.0, 0.0, 0.0)),
         ];
         for t in tests {
-            let normal = c.local_normal_at(t.0);
+            let normal = Cube::local_normal_at(t.0);
             assert_eq!(normal, t.1);
         }
     }
