@@ -79,6 +79,13 @@ impl Object {
     pub fn parent_space_bounds(&self) -> Bounds {
         self.bounds.transform(self.get_transform())
     }
+
+    pub fn is_shape(&self) -> bool {
+        match self.shape {
+            Shape::None => false,
+            _ => true,
+        }
+    }
 }
 
 impl Default for Object {

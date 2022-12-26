@@ -24,7 +24,7 @@ fn bump_num_bounding_opts() {
 
 #[derive(Clone, Debug)]
 pub struct Group {
-    pub val: Option<Box<Object>>,
+    pub val: Box<Object>,
     pub parent: Parent,
     pub shapes: Children,
     bounds: Option<Bounds>,
@@ -33,7 +33,7 @@ pub struct Group {
 impl Group {
     pub fn from_shape(obj: &Object) -> GroupRef {
         let g = Group {
-            val: Some(Box::new(obj.clone())),
+            val: Box::new(obj.clone()),
             parent: RefCell::new(Weak::new()),
             shapes: RefCell::new(Vec::new()),
             bounds: None,
@@ -52,7 +52,7 @@ impl Group {
 
     pub fn new() -> GroupRef {
         let g = Group {
-            val: None,
+            val: Box::new(Object::new(None)),
             parent: RefCell::new(Weak::new()),
             shapes: RefCell::new(Vec::new()),
             bounds: None,
@@ -61,8 +61,8 @@ impl Group {
         g_ref
     }
 
-    pub fn is_shape(&self) -> bool {
-        self.val.is_some()
+    pub fn is_leaf(&self) -> bool {
+        self.val.is_shape()
     }
 
     pub fn num_children(&self) -> usize {
@@ -70,8 +70,8 @@ impl Group {
     }
 
     pub fn calculate_bounds(&self) -> Bounds {
-        if let Some(sbox) = &self.val {
-            sbox.parent_space_bounds()
+        if self.is_leaf() {
+            self.val.parent_space_bounds()
         } else {
             let mut bounds = Bounds::default();
             for s in self.shapes.borrow().iter() {
@@ -82,72 +82,79 @@ impl Group {
     }
 
     pub fn get_id(&self) -> String {
-        if let Some(obj) = &self.val {
-            format!("g_{}", obj.get_id())
+        if self.is_leaf() {
+            format!("g_{}", self.val.get_id())
         } else {
             format!("group_no_obj")
         }
     }
 
     pub fn get_transform(&self) -> Matrix4 {
-        if let Some(obj) = &self.val {
-            obj.get_transform().clone()
+        if self.is_leaf() {
+            self.val.get_transform().clone()
         } else {
             glm::identity()
         }
     }
 
     pub fn set_transform(&mut self, t: &Matrix4) {
-        if let Some(obj) = self.val.as_mut() {
-            obj.set_transform(t);
+        if self.is_leaf() {
+            self.val.as_mut().set_transform(t);
         } else {
             let mut obj = Object::new(None);
             obj.set_transform(t);
-            self.val = Some(Box::new(obj));
+            self.val = Box::new(obj);
         }
     }
 
     pub fn get_material(&self) -> Material {
-        if let Some(obj) = &self.val {
-            obj.get_material().clone()
+        if self.is_leaf() {
+            self.val.get_material().clone()
         } else {
             Material::default()
         }
     }
 
     pub fn set_material(&mut self, m: Material) {
-        if let Some(obj) = self.val.as_mut() {
-            obj.set_material(m);
+        if self.is_leaf() {
+            self.val.as_mut().set_material(m);
         } else {
             let mut obj = Object::new(None);
             obj.set_material(m);
-            self.val = Some(Box::new(obj));
+            self.val = Box::new(obj);
         }
     }
 
     pub fn local_intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         // Test group's bounding box first
-        let mut res = Intersections::new();
-        // TODO: Figure it out
         if self.bounds().intersects(ray) {
-            for s in self.shapes.borrow().iter() {
-                for xs in s.intersect(ray).iter() {
-                    res.push(xs.clone());
+            // OK I need to be able to iterate over self.shapes without
+            // causing a borrow...
+            let mut acc = Intersections::new();
+            let shit = self.shapes.as_ptr();
+            unsafe {
+                for i in 0..(*shit).len() {
+                    //shit.iter().fold(Intersections::new(), |mut acc, curr| {
+                    let xs = (*shit).get(i).unwrap().intersect(ray);
+                    for is in xs.intersections {
+                        acc.push(is.clone());
+                    }
                 }
             }
+            acc.sort_intersections()
         } else {
             bump_num_bounding_opts();
+            Intersections::new()
         }
-        res
     }
 
     pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
-        if let Some(sbox) = &self.val {
-            sbox.intersect(ray)
-        } else {
-            let t_ray = ray.transform(glm::inverse(&self.get_transform()));
-            self.local_intersect(&t_ray)
+        // Need elegant way to differentiate Leaf vs Group nodes
+        if self.is_leaf() {
+            return self.val.intersect(ray);
         }
+        let t_ray = ray.transform(glm::inverse(&self.get_transform()));
+        self.local_intersect(&t_ray)
     }
 
     pub fn local_normal_at(&self, _point: Point) -> Vector {
@@ -162,8 +169,8 @@ impl Group {
 impl fmt::Display for Group {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut sid = String::from("");
-        if let Some(sbox) = &self.val {
-            sid = sbox.get_id();
+        if self.is_leaf() {
+            sid = self.val.get_id();
         }
         write!(f, "Group id {} Shape: {}", self.get_id(), sid)
     }
@@ -230,7 +237,7 @@ pub fn make_subgroup(g: &mut GroupRef, shapes: &Vec<Object>) {
 
 pub fn divide(g: &mut GroupRef, threshold: usize) {
     // divide on a shape is a no-op
-    if g.val.is_some() {
+    if g.is_leaf() {
         return;
     }
     if threshold <= g.num_children() {
@@ -273,8 +280,8 @@ pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     if has_parent(group) {
         p = world_to_object(&get_parent(group).unwrap(), point);
     }
-    if let Some(obj) = group.val.as_ref() {
-        glm::inverse(obj.get_transform()) * p
+    if group.is_leaf() {
+        glm::inverse(group.val.get_transform()) * p
     } else {
         glm::inverse(&group.get_transform()) * p
     }
@@ -297,8 +304,8 @@ pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
 pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
     let local_point = world_to_object(group, world_point);
     let mut local_normal = vector_zero(); // is this the right default value?
-    if let Some(obj) = &group.val {
-        local_normal = obj.normal_at(local_point)
+    if group.is_leaf() {
+        local_normal = group.val.normal_at(local_point)
     }
     normal_to_world(group, &local_normal)
 }
@@ -307,6 +314,7 @@ pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
 mod tests {
     use super::*;
     //use crate::shapes::cylinder::*;
+    use crate::assert_eq_eps;
     use crate::shapes::shape::*;
     use crate::shapes::sphere::*;
     use crate::transformation::*;
@@ -339,7 +347,7 @@ mod tests {
         add_child_shape(&mut g, &s);
         assert_eq!(g.shapes.borrow().len(), 1);
         let child = &g.shapes.borrow()[0];
-        assert_eq!(s.get_id(), child.val.as_ref().unwrap().get_id());
+        assert_eq!(s.get_id(), child.val.as_ref().get_id());
         assert!(g.shapes.borrow()[0].parent.borrow().upgrade().is_some());
     }
 
@@ -382,11 +390,10 @@ mod tests {
         assert_eq!(xs[3].object.get_id(), String::from("sphere_s1"));
     }
 
-    /*
     #[test]
     fn intersecting_transformed_group() {
         let mut g = default_group();
-        (*Arc::get_mut(&mut g).unwrap()).set_transform(&make_scaling(2.0, 2.0, 2.0));
+        set_transform(&mut g, &make_scaling(2.0, 2.0, 2.0));
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
         add_child_shape(&mut g, &s);
@@ -444,6 +451,7 @@ mod tests {
         assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
     }
 
+    /*
     #[test]
     #[should_panic]
     fn local_normal_at_illegal() {

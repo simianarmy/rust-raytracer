@@ -17,10 +17,7 @@ impl<'a> Intersection<'a> {
     }
 
     pub fn from_group(g: &GroupRef, t: F3D) -> Intersection {
-        Intersection {
-            t,
-            object: &g.val.as_ref().unwrap(),
-        }
+        Intersection { t, object: &g.val }
     }
 }
 
@@ -52,9 +49,9 @@ impl<'a> fmt::Display for Intersection<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Intersections<'a> {
-    intersections: Vec<Intersection<'a>>,
+    pub intersections: Vec<Intersection<'a>>,
 }
 
 impl<'a> Intersections<'a> {
@@ -72,6 +69,10 @@ impl<'a> Intersections<'a> {
 
     pub fn len(&self) -> usize {
         self.intersections.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.intersections.is_empty()
     }
 
     pub fn push(&mut self, is: Intersection<'a>) {

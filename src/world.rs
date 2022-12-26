@@ -10,7 +10,6 @@ use crate::shapes::group::*;
 use crate::shapes::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
-use std::sync::Arc;
 
 pub const MAX_RAY_DEPTH: u8 = 5;
 
@@ -54,15 +53,16 @@ impl World {
     */
 
     // returns all ray/shape intersections sorted by t
-    pub fn intersect(&self, ray: &Ray) -> Intersections {
-        let mut xs = self.objects.iter().fold(vec![], |mut acc, curr| {
-            for is in curr.intersect(ray).iter() {
-                acc.push(is.clone());
-            }
-            acc
-        });
-        xs.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
-        Intersections::from_intersections(xs)
+    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+        self.objects
+            .iter()
+            .fold(Intersections::new(), |mut acc, curr| {
+                for is in curr.intersect(ray).intersections {
+                    acc.push(is.clone());
+                }
+                acc
+            })
+            .sort_intersections()
     }
 
     pub fn shade_hit(&self, comps: &Computations, remaining: u8) -> Color {
