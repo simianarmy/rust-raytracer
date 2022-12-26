@@ -33,7 +33,7 @@ impl Shape {
         }
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Vec<F3D> {
+    pub fn intersect<'a>(&'a self, ray: &Ray) -> Vec<F3D> {
         match self {
             Shape::Cube() => cube::Cube::local_intersect(ray),
             Shape::Cone(c) => c.local_intersect(ray),
@@ -68,7 +68,7 @@ impl Shape {
             Shape::Sphere() => sphere::Sphere::bounds(),
             Shape::TestShape(c) => c.bounds(),
             Shape::Group(g) => panic!("implement me"),
-            Shape::None => unreachable!("Shape::None::bounds"),
+            Shape::None => Bounds::default(),
         }
     }
 }

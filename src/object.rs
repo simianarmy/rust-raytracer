@@ -2,9 +2,8 @@
  * Represents an object in a World
  */
 use crate::bounds::*;
-use crate::intersection::Intersection;
+use crate::intersection::*;
 use crate::materials::Material;
-use crate::math::F3D;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
@@ -57,13 +56,15 @@ impl Object {
         self.material = t;
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
-        self.shape
-            .intersect(&t_ray)
-            .into_iter()
-            .map(|t| Intersection::new(self, t))
-            .collect()
+        Intersections::from_intersections(
+            self.shape
+                .intersect(&t_ray)
+                .into_iter()
+                .map(|t| Intersection::new(self, t))
+                .collect(),
+        )
     }
 
     pub fn normal_at(&self, world_point: Point) -> Vector {
@@ -107,7 +108,6 @@ impl fmt::Debug for Object {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shapes::shape::*;
     use crate::shapes::sphere::*;
     use crate::transformation::*;
 

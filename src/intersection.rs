@@ -74,6 +74,10 @@ impl<'a> Intersections<'a> {
         self.intersections.len()
     }
 
+    pub fn push(&mut self, is: Intersection<'a>) {
+        self.intersections.push(is);
+    }
+
     pub fn iter(&self) -> std::slice::Iter<Intersection> {
         self.intersections.iter()
     }

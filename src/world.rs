@@ -56,9 +56,8 @@ impl World {
     // returns all ray/shape intersections sorted by t
     pub fn intersect(&self, ray: &Ray) -> Intersections {
         let mut xs = self.objects.iter().fold(vec![], |mut acc, curr| {
-            let is = curr.intersect(ray);
-            if is.len() > 0 {
-                acc.extend(is);
+            for is in curr.intersect(ray).iter() {
+                acc.push(is.clone());
             }
             acc
         });
