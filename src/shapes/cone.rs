@@ -165,7 +165,7 @@ mod tests {
             let dir = t.1.normalize();
             let r = Ray::new(t.0, dir);
             let xs = match c.shape {
-                Shape::Cone(c) => c.local_intersect(&r),
+                Shape::Cone(ref c) => c.local_intersect(&r),
                 _ => vec![],
             };
             assert_eq!(xs.len(), 2);
@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn intersecting_caps_of_closed_cone() {
-        let mut c = cone(-0.5, 0.5, true);
+        let c = cone(-0.5, 0.5, true);
         let tests = vec![
             (point(0.0, 0.0, -5.0), vector_y(), 0),
             (point(0.0, 0.0, -0.25), vector(0.0, 1.0, 1.0), 2),
@@ -198,7 +198,7 @@ mod tests {
             println!("test = {:?}", t);
             let r = Ray::new(t.0, (t.1).normalize());
             let xs = match c.shape {
-                Shape::Cone(c) => c.local_intersect(&r),
+                Shape::Cone(ref c) => c.local_intersect(&r),
                 _ => vec![],
             };
             assert_eq!(xs.len(), t.2);
@@ -215,7 +215,7 @@ mod tests {
         ] {
             println!("test: {:?}", t);
             let n = match c.shape {
-                Shape::Cone(c) => c.local_normal_at(t.0),
+                Shape::Cone(ref c) => c.local_normal_at(t.0),
                 _ => vector_zero(),
             };
             assert_eq!(n, t.1);

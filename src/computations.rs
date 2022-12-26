@@ -91,7 +91,6 @@ mod tests {
 
     use super::*;
     use crate::computations::prepare_computations;
-    use crate::intersection::*;
     use crate::ray::Ray;
     use crate::shapes::plane::plane;
     use crate::shapes::sphere::*;
@@ -102,7 +101,8 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = sphere();
         let i = Intersection::new(&shape, 4.0);
-        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
+        let comps =
+            prepare_computations(&i, &r, &Intersections::from_intersections(vec![i.clone()]));
         assert_eq!(comps.t, i.t);
         assert_eq!(&comps.object.get_id(), &i.object.get_id());
         assert_eq!(comps.point, point(0.0, 0.0, -1.0));
@@ -115,7 +115,8 @@ mod tests {
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = sphere();
         let i = Intersection::new(&shape, 4.0);
-        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
+        let comps =
+            prepare_computations(&i, &r, &Intersections::from_intersections(vec![i.clone()]));
         assert!(!comps.inside);
     }
 
@@ -124,7 +125,8 @@ mod tests {
         let r = Ray::new(point_zero(), vector_z());
         let shape = sphere();
         let i = Intersection::new(&shape, 1.0);
-        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
+        let comps =
+            prepare_computations(&i, &r, &Intersections::from_intersections(vec![i.clone()]));
         assert_eq!(comps.point, point_z());
         assert_eq!(comps.eyev, vector(0.0, 0.0, -1.0));
         assert_eq!(comps.normalv, vector(0.0, 0.0, -1.0));
@@ -139,7 +141,8 @@ mod tests {
             vector(0.0, -SQRT_2 / 2.0, SQRT_2 / 2.0),
         );
         let i = Intersection::new(&shape, SQRT_2);
-        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
+        let comps =
+            prepare_computations(&i, &r, &Intersections::from_intersections(vec![i.clone()]));
         assert_eq!(comps.reflectv, vector(0.0, SQRT_2 / 2.0, SQRT_2 / 2.0));
     }
 
@@ -187,7 +190,7 @@ mod tests {
         let mut s = glass_sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = Intersection::new(&s, 5.0);
-        let xs = Intersections::from_intersections(vec![i]);
+        let xs = Intersections::from_intersections(vec![i.clone()]);
         let comps = prepare_computations(&i, &ray, &xs);
         assert!(comps.under_point.z > EPSILON / 2.0);
         assert!(comps.point.z < comps.under_point.z);

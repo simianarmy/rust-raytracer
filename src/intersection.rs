@@ -5,7 +5,7 @@ use crate::shapes::group::*;
 use std::clone::Clone;
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Intersection<'a> {
     pub t: F3D,
     pub object: &'a Object,
@@ -24,22 +24,22 @@ impl<'a> Intersection<'a> {
     }
 }
 
-impl<'a> PartialEq for Intersection<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        f_equals(self.t, other.t) // todo: object comparison
-    }
-}
+//impl<'a> PartialEq for Intersection<'a> {
+//fn eq(&self, other: &Self) -> bool {
+//f_equals(self.t, other.t) // todo: object comparison
+//}
+//}
 
-impl<'a> fmt::Debug for Intersection<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "intersection t = {}, object = {}",
-            self.t,
-            self.object.get_id()
-        )
-    }
-}
+//impl<'a> fmt::Debug for Intersection<'a> {
+//fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+//write!(
+//f,
+//"intersection t = {}, object = {}",
+//self.t,
+//self.object.get_id()
+//)
+//}
+//}
 
 impl<'a> fmt::Display for Intersection<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -61,7 +61,7 @@ impl<'a> Intersections<'a> {
     pub fn from_intersections(intersections: Vec<Intersection<'a>>) -> Self {
         let mut is = Self::new();
         is.intersections = intersections;
-        is
+        is.sort_intersections()
     }
 
     pub fn new() -> Self {
@@ -136,7 +136,7 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, 1.0);
         let i2 = Intersection::new(&s, 2.0);
-        let is = Intersections::from_intersections(vec![i1, i2]);
+        let is = Intersections::from_intersections(vec![i1.clone(), i2]);
         assert_eq!(is.len(), 2);
         assert_eq!(is[0], i1);
     }
@@ -146,9 +146,9 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, 1.0);
         let i2 = Intersection::new(&s, 2.0);
-        let is = Intersections::from_intersections(vec![i1, i2]);
+        let is = Intersections::from_intersections(vec![i1.clone(), i2]);
         let i = is.hit();
-        assert_eq!(*i.unwrap(), i1);
+        assert_eq!(i, Some(&i1));
     }
 
     #[test]
@@ -156,9 +156,9 @@ mod tests {
         let s = sphere();
         let i1 = Intersection::new(&s, -1.0);
         let i2 = Intersection::new(&s, 2.0);
-        let is = Intersections::from_intersections(vec![i1, i2]);
+        let is = Intersections::from_intersections(vec![i1, i2.clone()]);
         let i = is.hit();
-        assert_eq!(*i.unwrap(), i2);
+        assert_eq!(i, Some(&i2));
     }
 
     #[test]
@@ -178,9 +178,9 @@ mod tests {
         let i2 = Intersection::new(&s, 7.0);
         let i3 = Intersection::new(&s, -3.0);
         let i4 = Intersection::new(&s, 2.0);
-        let is = Intersections::from_intersections(vec![i1, i2, i3, i4]);
+        let is = Intersections::from_intersections(vec![i1, i2, i3, i4.clone()]);
         let i = is.hit();
-        assert_eq!(*i.unwrap(), i4);
+        assert_eq!(i, Some(&i4));
     }
 
     #[test]
@@ -189,7 +189,8 @@ mod tests {
         let mut s = sphere();
         s.set_transform(&make_translation(0.0, 0.0, 1.0));
         let i = Intersection::new(&s, 5.0);
-        let comps = prepare_computations(&i, &r, &Intersections::from_intersections(vec![i]));
+        let comps =
+            prepare_computations(&i, &r, &Intersections::from_intersections(vec![i.clone()]));
         assert!(comps.over_point.z < -crate::math::EPSILON / 2.0);
         assert!(comps.point.z > comps.over_point.z);
     }

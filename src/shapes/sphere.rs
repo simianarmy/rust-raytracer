@@ -41,7 +41,7 @@ impl Sphere {
         point - point_zero()
     }
 
-    pub fn bounds(&self) -> Bounds {
+    pub fn bounds() -> Bounds {
         Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
 }
@@ -102,10 +102,10 @@ mod tests {
     fn intersect_sets_the_object_on_intersection() {
         let sid = String::from("itme");
         let r = Ray::new(point(0.0, 0.0, -5.0), vector(0.0, 0.0, 1.0));
-        let s = sphere_with_id(Some(sid));
+        let s = sphere_with_id(Some(sid.clone()));
         let xs = s.intersect(&r);
-        assert_eq!(xs[0].object.get_id(), String::from("g_sphere_itme"));
-        assert_eq!(xs[1].object.get_id(), String::from("g_sphere_itme"));
+        assert_eq!(xs[0].object.get_id(), String::from("sphere_itme"));
+        assert_eq!(xs[1].object.get_id(), String::from("sphere_itme"));
     }
 
     #[test]

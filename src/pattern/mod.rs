@@ -98,7 +98,6 @@ mod tests {
         let pattern = setup();
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
-        let sb = Box::new(object);
         let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }

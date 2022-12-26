@@ -34,7 +34,7 @@ impl Plane {
         point_y()
     }
 
-    pub fn bounds(&self) -> Bounds {
+    pub fn bounds() -> Bounds {
         Bounds {
             min: point(-math::INFINITY, 0.0, -math::INFINITY),
             max: point(math::INFINITY, 0.0, math::INFINITY),

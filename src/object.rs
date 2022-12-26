@@ -47,6 +47,7 @@ impl Object {
     }
     pub fn set_transform(&mut self, t: &Matrix4) {
         self.transform = *t;
+        self.bounds = self.shape.bounds();
     }
 
     pub fn get_material(&self) -> &Material {

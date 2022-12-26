@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn intersecting_constrained_cyclinder() {
-        let mut c = cylinder(1.0, 2.0, false);
+        let c = cylinder(1.0, 2.0, false);
         let tests = vec![
             (point(0.0, 1.5, 0.0), vector(0.1, 1.0, 0.0), 0),
             (point(0.0, 3.0, -5.0), vector_z(), 0),
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn intersecting_caps_of_closed_cylinder() {
-        let mut c = cylinder(1.0, 2.0, true);
+        let c = cylinder(1.0, 2.0, true);
         let tests = vec![
             (point(0.0, 3.0, 0.0), vector(0.0, -1.0, 0.0), 2),
             (point(0.0, 3.0, -2.0), vector(0.0, -1.0, 2.0), 2),
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn normal_at_end_caps() {
-        let mut c = cylinder(1.0, 2.0, true);
+        let c = cylinder(1.0, 2.0, true);
         for t in vec![
             (point_y(), vector(0.0, -1.0, 0.0)),
             (point(0.5, 1.0, 0.0), vector(0.0, -1.0, 0.0)),

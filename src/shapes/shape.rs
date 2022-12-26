@@ -58,6 +58,19 @@ impl Shape {
             Shape::None => unreachable!("Shape::None::normal_at"),
         }
     }
+
+    pub fn bounds(&self) -> Bounds {
+        match self {
+            Shape::Cube() => cube::Cube::bounds(),
+            Shape::Cone(c) => c.bounds(),
+            Shape::Cylinder(c) => c.bounds(),
+            Shape::Plane() => plane::Plane::bounds(),
+            Shape::Sphere() => sphere::Sphere::bounds(),
+            Shape::TestShape(c) => c.bounds(),
+            Shape::Group(g) => panic!("implement me"),
+            Shape::None => unreachable!("Shape::None::bounds"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -78,7 +91,7 @@ impl TestShape {
 }
 
 pub fn test_shape() -> Object {
-    let mut o = Object::new(Some("test_shape".to_string()));
+    let mut o = Object::new(None);
     o.shape = Shape::TestShape(TestShape {});
     o
 }

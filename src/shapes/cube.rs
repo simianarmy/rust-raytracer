@@ -71,7 +71,7 @@ impl Cube {
         }
     }
 
-    pub fn bounds(&self) -> Bounds {
+    pub fn bounds() -> Bounds {
         Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
 }
