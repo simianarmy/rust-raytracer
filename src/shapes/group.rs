@@ -4,6 +4,7 @@ use crate::materials::Material;
 use crate::matrix::Matrix4;
 use crate::object::Object;
 use crate::ray::Ray;
+use crate::shapes::shape::*;
 use crate::tuple::*;
 use std::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -81,40 +82,6 @@ impl Group {
         }
     }
 
-    pub fn get_id(&self) -> String {
-        if self.is_leaf() {
-            format!("g_{}", self.val.get_id())
-        } else {
-            format!("group_no_obj")
-        }
-    }
-
-    pub fn get_transform(&self) -> &Matrix4 {
-        &self.val.get_transform()
-    }
-
-    pub fn set_transform(&mut self, t: &Matrix4) {
-        self.val.set_transform(t);
-    }
-
-    pub fn get_material(&self) -> Material {
-        if self.is_leaf() {
-            self.val.get_material().clone()
-        } else {
-            Material::default()
-        }
-    }
-
-    pub fn set_material(&mut self, m: Material) {
-        if self.is_leaf() {
-            self.val.as_mut().set_material(m);
-        } else {
-            let mut obj = Object::new(None);
-            obj.set_material(m);
-            self.val = Box::new(obj);
-        }
-    }
-
     pub fn local_intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         // Test group's bounding box first
         if self.bounds().intersects(ray) {
@@ -147,10 +114,6 @@ impl Group {
         self.local_intersect(&t_ray)
     }
 
-    pub fn local_normal_at(&self, _point: Point) -> Vector {
-        panic!("local_normal_at should never be called on a group!");
-    }
-
     pub fn bounds(&self) -> Bounds {
         self.calculate_bounds()
     }
@@ -169,14 +132,18 @@ impl fmt::Display for Group {
         let mut sid = String::from("");
         if self.is_leaf() {
             sid = self.val.get_id();
+            write!(f, "Group leaf (shape: {})", sid)
+        } else {
+            write!(f, "Group")
         }
-        write!(f, "Group id {} Shape: {}", self.get_id(), sid)
     }
 }
 
 // default constructor
-pub fn default_group() -> GroupRef {
-    Group::new()
+pub fn group_object() -> Object {
+    let mut obj = Object::new(None);
+    obj.shape = Shape::Group(Group::new());
+    obj
 }
 
 fn set_bounds(g: &mut GroupRef) {
@@ -319,13 +286,13 @@ mod tests {
 
     #[test]
     fn transform_is_identity() {
-        let g = default_group();
+        let g = group_object();
         assert_eq!(g.get_transform(), &Matrix4::identity());
     }
 
     #[test]
     fn set_transform_on_group() {
-        let mut g = default_group();
+        let mut g = group_object();
         // eesh
         set_transform(&mut g, &make_translation(1.0, 0.0, 0.0));
         println!("group: {}", g);
@@ -334,14 +301,14 @@ mod tests {
 
     #[test]
     fn default_parent_is_empty() {
-        let g = default_group();
+        let g = group_object();
         assert!(g.parent.borrow().upgrade().is_none());
         assert!(g.shapes.borrow().is_empty())
     }
 
     #[test]
     fn adding_child_shape() {
-        let mut g = default_group();
+        let mut g = group_object();
         let s = test_shape();
         add_child_shape(&mut g, &s);
         assert_eq!(g.shapes.borrow().len(), 1);
@@ -352,8 +319,8 @@ mod tests {
 
     #[test]
     fn adding_child_group() {
-        let mut g1 = default_group();
-        let g2 = default_group();
+        let mut g1 = group_object();
+        let g2 = group_object();
         add_child_group(&mut g1, &g2);
         assert_eq!(g1.shapes.borrow().len(), 1);
         let child_group = &g1.shapes.borrow()[0];
@@ -363,7 +330,7 @@ mod tests {
 
     #[test]
     fn intersection_ray_with_empty_group() {
-        let g = default_group();
+        let g = group_object();
         let r = Ray::new(point_zero(), vector_z());
         let xs = g.local_intersect(&r);
         assert!(xs.is_empty());
@@ -371,7 +338,7 @@ mod tests {
 
     #[test]
     fn intersection_ray_with_nonempty_group() {
-        let mut g = default_group();
+        let mut g = group_object();
         let s1 = sphere_with_id(Some(String::from("s1")));
         let mut s2 = sphere_with_id(Some(String::from("s2")));
         s2.set_transform(&make_translation(0.0, 0.0, -3.0));
@@ -391,7 +358,7 @@ mod tests {
 
     #[test]
     fn intersecting_transformed_group() {
-        let mut g = default_group();
+        let mut g = group_object();
         set_transform(&mut g, &make_scaling(2.0, 2.0, 2.0));
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
@@ -403,9 +370,9 @@ mod tests {
 
     #[test]
     fn converting_point_from_world_to_object_space() {
-        let mut g1 = default_group();
+        let mut g1 = group_object();
         set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
-        let mut g2 = default_group();
+        let mut g2 = group_object();
         set_transform(&mut g2, &make_scaling(2.0, 2.0, 2.0));
         add_child_group(&mut g1, &g2);
         let mut s = sphere();
@@ -420,24 +387,26 @@ mod tests {
 
     #[test]
     fn converting_normal_from_object_to_normal_space() {
-        let mut g1 = default_group();
+        let mut g1 = group_object();
         set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
-        let mut g2 = default_group();
+        let mut g2 = group_object();
         set_transform(&mut g2, &make_scaling(1.0, 2.0, 3.0));
         add_child_group(&mut g1, &g2);
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        add_child_shape(&mut g2, &s);
+        let mut g3 = Group::new();
+        add_child_shape(&mut g3, &s);
+        add_child_group(&mut g2, &g3);
         let threes = 3_f64.sqrt() / 3.0;
-        let n = s.normal_to_world(&vector(threes, threes, threes));
+        let n = normal_to_world(&g3, &vector(threes, threes, threes));
         assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
     }
 
     #[test]
     fn find_normal_on_child() {
-        let mut g1 = default_group();
+        let mut g1 = group_object();
         set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
-        let mut g2 = default_group();
+        let mut g2 = group_object();
         set_transform(&mut g2, &make_scaling(1.0, 2.0, 3.0));
         add_child_group(&mut g1, &g2);
         let mut s = sphere();
@@ -454,7 +423,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn local_normal_at_illegal() {
-        default_group().local_normal_at(point_zero());
+        group_object().local_normal_at(point_zero());
     }
 
     #[test]
@@ -465,7 +434,7 @@ mod tests {
         // TODO: Fix
         c.set_bounds(-2.0, 2.0);
         c.set_transform(&(make_translation(-4.0, -1.0, 4.0) * make_scaling(0.5, 1.0, 0.5)));
-        let mut g = default_group();
+        let mut g = group_object();
         add_child_shape(&mut g, &s);
         add_child_shape(&mut g, &c);
         let bounds = g.bounds();
@@ -477,7 +446,7 @@ mod tests {
     fn intersecting_ray_group_skips_tests_if_box_missed() {
         NUM_BOUNDING_OPTS.store(0, Ordering::SeqCst);
         let child = test_shape();
-        let mut group = default_group();
+        let mut group = group_object();
         add_child_shape(&mut group, &child);
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_y());
         group.intersect(&ray);
@@ -487,7 +456,7 @@ mod tests {
     #[test]
     fn intersecting_ray_group_tests_children_if_box_hit() {
         let child = test_shape();
-        let mut group = default_group();
+        let mut group = group_object();
         add_child_shape(&mut group, &child);
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let xs = group.intersect(&ray);
@@ -501,7 +470,7 @@ mod tests {
         let mut s2 = sphere_with_id(Some(String::from("s2")));
         s2.set_transform(&make_translation(2.0, 0.0, 0.0));
         let s3 = sphere_with_id(Some(String::from("s3")));
-        let mut g = default_group();
+        let mut g = group_object();
         add_child_shape(&mut g, &s1);
         add_child_shape(&mut g, &s2);
         add_child_shape(&mut g, &s3);
@@ -525,7 +494,7 @@ mod tests {
     fn creating_subgroup_from_children() {
         let s1 = sphere_with_id(Some("s1".to_string()));
         let s2 = sphere_with_id(Some("s2".to_string()));
-        let mut g = default_group();
+        let mut g = group_object();
         make_subgroup(&mut g, &vec![Box::new(s1), Box::new(s2)]);
         assert_eq!(g.num_children(), 1);
         let g0 = Arc::clone(g.shapes.borrow().get(0).unwrap());
@@ -541,7 +510,7 @@ mod tests {
         s2.set_transform(&make_translation(-2.0, 2.0, 0.0));
         let mut s3 = sphere_with_id(Some(String::from("s3")));
         s3.set_transform(&make_scaling(4.0, 4.0, 4.0));
-        let mut g = default_group();
+        let mut g = group_object();
         add_child_shape(&mut g, Box::new(s1.clone()));
         add_child_shape(&mut g, Box::new(s2.clone()));
         add_child_shape(&mut g, Box::new(s3.clone()));
@@ -575,7 +544,7 @@ mod tests {
         add_child_shape(&mut subgroup, Box::new(s2.clone()));
         add_child_shape(&mut subgroup, Box::new(s3.clone()));
         let s4 = sphere_with_id(Some(String::from("s4")));
-        let mut g = default_group();
+        let mut g = group_object();
         add_child_group(&mut g, &subgroup);
         add_child_shape(&mut g, Box::new(s4));
         divide(&mut g, 3);

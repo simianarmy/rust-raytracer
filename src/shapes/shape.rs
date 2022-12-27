@@ -13,7 +13,7 @@ pub enum Shape {
     Cube(),
     Cone(cone::Cone),
     Cylinder(cylinder::Cylinder),
-    Group(group::Group),
+    Group(group::GroupRef),
     Plane(),
     Sphere(),
     TestShape(TestShape),
