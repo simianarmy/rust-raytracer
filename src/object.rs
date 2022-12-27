@@ -68,12 +68,18 @@ impl Object {
     }
 
     pub fn normal_at(&self, world_point: Point) -> Vector {
+        /* pre-groups
         let t = self.get_transform();
         let local_point = inverse(t) * world_point;
         let local_normal = self.shape.normal_at(local_point);
         let mut world_normal = transpose(&inverse(t)) * local_normal;
         world_normal.w = 0.0;
-        world_normal.normalize()
+        world_normal.normalize();
+        */
+
+        let local_point = self.world_to_object(world_point);
+        let local_normal = self.shape.normal_at(local_point);
+        self.normal_to_world(&local_normal)
     }
 
     pub fn parent_space_bounds(&self) -> Bounds {
@@ -84,6 +90,43 @@ impl Object {
         match self.shape {
             Shape::None => false,
             _ => true,
+        }
+    }
+
+    fn world_to_object(&self, point: Point) -> Point {
+        let p = match &self.shape {
+            Shape::Group(g) => {
+                if let Some(gref) = g.get_parent() {
+                    let gp = gref.val.world_to_object(point);
+                    gp
+                } else {
+                    point
+                }
+            }
+            _ => point,
+        };
+        //if group.is_leaf() {
+        //glm::inverse(group.val.get_transform()) * p
+        //} else {
+        //glm::inverse(group.get_transform()) * p
+        //}
+        glm::inverse(self.get_transform()) * p
+    }
+
+    pub fn normal_to_world(&self, normal: &Vector) -> Vector {
+        let mut n = glm::inverse(self.get_transform()).transpose() * normal;
+        n.w = 0.0;
+        n = n.normalize();
+
+        match &self.shape {
+            Shape::Group(g) => {
+                if let Some(gr) = g.get_parent() {
+                    gr.val.normal_to_world(&n)
+                } else {
+                    n
+                }
+            }
+            _ => n,
         }
     }
 }

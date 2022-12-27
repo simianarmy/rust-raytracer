@@ -89,22 +89,12 @@ impl Group {
         }
     }
 
-    pub fn get_transform(&self) -> Matrix4 {
-        if self.is_leaf() {
-            self.val.get_transform().clone()
-        } else {
-            glm::identity()
-        }
+    pub fn get_transform(&self) -> &Matrix4 {
+        &self.val.get_transform()
     }
 
     pub fn set_transform(&mut self, t: &Matrix4) {
-        if self.is_leaf() {
-            self.val.as_mut().set_transform(t);
-        } else {
-            let mut obj = Object::new(None);
-            obj.set_transform(t);
-            self.val = Box::new(obj);
-        }
+        self.val.set_transform(t);
     }
 
     pub fn get_material(&self) -> Material {
@@ -153,7 +143,7 @@ impl Group {
         if self.is_leaf() {
             return self.val.intersect(ray);
         }
-        let t_ray = ray.transform(glm::inverse(&self.get_transform()));
+        let t_ray = ray.transform(glm::inverse(self.get_transform()));
         self.local_intersect(&t_ray)
     }
 
@@ -163,6 +153,14 @@ impl Group {
 
     pub fn bounds(&self) -> Bounds {
         self.calculate_bounds()
+    }
+
+    pub fn get_parent(&self) -> Option<GroupRef> {
+        self.parent.borrow().upgrade()
+    }
+
+    pub fn has_parent(&self) -> bool {
+        self.get_parent().is_some()
     }
 }
 
@@ -283,12 +281,12 @@ pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
     if group.is_leaf() {
         glm::inverse(group.val.get_transform()) * p
     } else {
-        glm::inverse(&group.get_transform()) * p
+        glm::inverse(group.get_transform()) * p
     }
 }
 
 pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
-    let mut n = glm::inverse(&group.get_transform()).transpose() * normal;
+    let mut n = glm::inverse(group.get_transform()).transpose() * normal;
     n.w = 0.0;
     n = n.normalize();
 
@@ -322,7 +320,7 @@ mod tests {
     #[test]
     fn transform_is_identity() {
         let g = default_group();
-        assert_eq!(g.get_transform(), Matrix4::identity());
+        assert_eq!(g.get_transform(), &Matrix4::identity());
     }
 
     #[test]
@@ -330,7 +328,8 @@ mod tests {
         let mut g = default_group();
         // eesh
         set_transform(&mut g, &make_translation(1.0, 0.0, 0.0));
-        assert_eq!(g.get_transform(), make_translation(1.0, 0.0, 0.0));
+        println!("group: {}", g);
+        assert_eq!(g.get_transform(), &make_translation(1.0, 0.0, 0.0));
     }
 
     #[test]
@@ -428,11 +427,9 @@ mod tests {
         add_child_group(&mut g1, &g2);
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        let mut g3 = Group::new();
-        add_child_shape(&mut g3, &s);
-        add_child_group(&mut g2, &g3);
+        add_child_shape(&mut g2, &s);
         let threes = 3_f64.sqrt() / 3.0;
-        let n = normal_to_world(&g3, &vector(threes, threes, threes));
+        let n = s.normal_to_world(&vector(threes, threes, threes));
         assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
     }
 
@@ -445,9 +442,11 @@ mod tests {
         add_child_group(&mut g1, &g2);
         let mut s = sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        let g3 = Group::from_shape(&s);
-        add_child_group(&mut g2, &g3);
-        let n = normal_at(&g3, &point(1.7321, 1.1547, -5.5774));
+        //let g3 = Group::from_shape(&s);
+        //add_child_group(&mut g2, &g3);
+        //let n = normal_at(&g3, &point(1.7321, 1.1547, -5.5774));
+        add_child_shape(&mut g2, &s);
+        let n = s.normal_at(point(1.7321, 1.1547, -5.5774));
         assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
     }
 
