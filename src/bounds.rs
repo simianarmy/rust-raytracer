@@ -7,7 +7,7 @@ use crate::ray::*;
 use crate::shapes::cube::Cube;
 use crate::tuple::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Bounds {
     pub min: Point,
     pub max: Point,

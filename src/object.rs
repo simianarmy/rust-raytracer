@@ -6,6 +6,7 @@ use crate::intersection::*;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
+use crate::shapes::group::*;
 use crate::shapes::shape::*;
 use crate::tuple::*;
 use glm::*;
@@ -30,12 +31,18 @@ impl Object {
     pub fn new(id: Option<String>) -> Object {
         Object {
             id: id.unwrap_or(get_unique_id().to_string()),
-            transform: glm::identity(),
-            material: Material::default(),
-            bounds: Bounds::default(),
-            shape: Shape::None,
+            ..Object::default()
         }
     }
+
+    pub fn group(/* TODO: children */) -> Object {
+        Object {
+            shape: Shape::Group(Group::new()),
+            ..Object::default()
+        }
+    }
+
+    // TODO: Add remaining shape constructors here
 
     pub fn get_id(&self) -> String {
         format!("{}_{}", self.shape.get_id(), self.id)
@@ -93,7 +100,7 @@ impl Object {
         }
     }
 
-    fn world_to_object(&self, point: Point) -> Point {
+    pub fn world_to_object(&self, point: Point) -> Point {
         let p = match &self.shape {
             Shape::Group(g) => {
                 if let Some(gref) = g.get_parent() {
@@ -133,7 +140,13 @@ impl Object {
 
 impl Default for Object {
     fn default() -> Self {
-        Object::new(None)
+        Self {
+            id: get_unique_id().to_string(),
+            transform: glm::identity(),
+            material: Material::default(),
+            bounds: Bounds::default(),
+            shape: Shape::None,
+        }
     }
 }
 

@@ -17,7 +17,7 @@ pub trait Pattern {
     fn pattern_at(&self, point: &Point) -> Color;
 
     fn pattern_at_shape(&self, group: GroupRef, point: &Point) -> Color {
-        let local_point = world_to_object(&group, point);
+        let local_point = group.val.world_to_object(*point);
         let pattern_point = glm::inverse(&self.get_transform()) * local_point;
         self.pattern_at(&pattern_point)
     }

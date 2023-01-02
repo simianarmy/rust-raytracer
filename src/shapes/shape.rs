@@ -67,7 +67,7 @@ impl Shape {
             Shape::Plane() => plane::Plane::bounds(),
             Shape::Sphere() => sphere::Sphere::bounds(),
             Shape::TestShape(c) => c.bounds(),
-            Shape::Group(g) => panic!("implement me"),
+            Shape::Group(g) => g.bounds(),
             Shape::None => Bounds::default(),
         }
     }

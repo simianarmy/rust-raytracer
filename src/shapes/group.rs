@@ -1,567 +1,499 @@
-use crate::bounds::*;
-use crate::intersection::*;
-use crate::materials::Material;
-use crate::matrix::Matrix4;
-use crate::object::Object;
-use crate::ray::Ray;
-use crate::shapes::shape::*;
-use crate::tuple::*;
-use std::fmt;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{
-    cell::RefCell,
-    sync::{Arc, Weak},
+/**
+ * Code from https://github.com/ahamez/ray-tracer/blob/7daa348119b81c6701c0545071e0972be48109fa/src/rtc/shapes/group.rs
+ * After spending way too much time trying to implement a bidirectional tree myself with Arc,
+ * Refcell, etc.
+ */
+use crate::{
+    bounds::Bounds,
+    intersection::Intersections,
+    object::Object,
+    ray::Ray,
+    shapes::shape::Shape,
+    //rtc::{BoundingBox, IntersectionPusher, Object, Ray, Shape, Transform},
+    tuple::{Point, Vector},
 };
+//use serde::{Deserialize, Serialize};
 
-pub type GroupRef = Arc<Group>;
-type Parent = RefCell<Weak<Group>>;
-type Children = RefCell<Vec<GroupRef>>;
+/* ---------------------------------------------------------------------------------------------- */
 
-pub static NUM_BOUNDING_OPTS: AtomicUsize = AtomicUsize::new(0);
-
-fn bump_num_bounding_opts() {
-    NUM_BOUNDING_OPTS.fetch_add(1, Ordering::SeqCst);
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Group {
-    pub val: Box<Object>,
-    pub parent: Parent,
-    pub shapes: Children,
-    bounds: Option<Bounds>,
+    bounding_box: Bounds,
+    children: Vec<Object>,
 }
+
+/* ---------------------------------------------------------------------------------------------- */
 
 impl Group {
-    pub fn from_shape(obj: &Object) -> GroupRef {
-        let g = Group {
-            val: Box::new(obj.clone()),
-            parent: RefCell::new(Weak::new()),
-            shapes: RefCell::new(Vec::new()),
-            bounds: None,
-        };
-        let g_ref = Arc::new(g);
-        g_ref
-    }
+    pub fn new(children: Vec<Object>) -> Self {
+        let bounding_box = Group::mk_bounding_box(&children);
 
-    pub fn from_shapes(shapes: &Vec<Object>) -> GroupRef {
-        let mut g = Group::new();
-        for s in shapes.iter() {
-            add_child_shape(&mut g, &s);
-        }
-        g
-    }
-
-    pub fn new() -> GroupRef {
-        let g = Group {
-            val: Box::new(Object::new(None)),
-            parent: RefCell::new(Weak::new()),
-            shapes: RefCell::new(Vec::new()),
-            bounds: None,
-        };
-        let g_ref = Arc::new(g);
-        g_ref
-    }
-
-    pub fn is_leaf(&self) -> bool {
-        self.val.is_shape()
-    }
-
-    pub fn num_children(&self) -> usize {
-        self.shapes.borrow().len()
-    }
-
-    pub fn calculate_bounds(&self) -> Bounds {
-        if self.is_leaf() {
-            self.val.parent_space_bounds()
-        } else {
-            let mut bounds = Bounds::default();
-            for s in self.shapes.borrow().iter() {
-                bounds.add_bounds(&s.bounds());
-            }
-            bounds
+        Self {
+            children,
+            bounding_box,
         }
     }
 
-    pub fn local_intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
-        // Test group's bounding box first
+    pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         if self.bounds().intersects(ray) {
-            // OK I need to be able to iterate over self.shapes without
-            // causing a borrow...
-            let mut acc = Intersections::new();
-            let shit = self.shapes.as_ptr();
-            unsafe {
-                for i in 0..(*shit).len() {
-                    //shit.iter().fold(Intersections::new(), |mut acc, curr| {
-                    let xs = (*shit).get(i).unwrap().intersect(ray);
-                    for is in xs.intersections {
-                        acc.push(is.clone());
-                    }
-                }
+            for child in &self.children {
+                //push.set_object(child);
+                child.intersects(ray);
             }
-            acc.sort_intersections()
-        } else {
-            bump_num_bounding_opts();
-            Intersections::new()
         }
     }
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
-        // Need elegant way to differentiate Leaf vs Group nodes
-        if self.is_leaf() {
-            return self.val.intersect(ray);
-        }
-        let t_ray = ray.transform(glm::inverse(self.get_transform()));
-        self.local_intersect(&t_ray)
+    pub fn normal_at(&self, _object_point: &Point) -> Vector {
+        unreachable!()
+    }
+
+    pub fn children(&self) -> &Vec<Object> {
+        &self.children
     }
 
     pub fn bounds(&self) -> Bounds {
-        self.calculate_bounds()
+        self.bounding_box
     }
 
-    pub fn get_parent(&self) -> Option<GroupRef> {
-        self.parent.borrow().upgrade()
+    fn partition(self) -> Self {
+        let mut left_children = Vec::with_capacity(self.children.len());
+        let mut right_children = Vec::with_capacity(self.children.len());
+        let mut children = Vec::with_capacity(self.children.len());
+
+        let (left_bbox, right_bbox) = self.bounding_box.split();
+        for child in self.children {
+            if left_bbox.contains_bounds(&child.bounding_box()) {
+                left_children.push(child);
+            } else if right_bbox.contains_bounds(&child.bounding_box()) {
+                right_children.push(child);
+            } else {
+                // All children that are neither contained in the left nor right
+                // sub bounding box stay at this level.
+                children.push(child);
+            }
+        }
+
+        if !left_children.is_empty() {
+            let left_child =
+                Object::new_dummy().with_shape(Shape::Group(Group::new(left_children)));
+            children.push(left_child);
+        }
+
+        if !right_children.is_empty() {
+            let right_child =
+                Object::new_dummy().with_shape(Shape::Group(Group::new(right_children)));
+            children.push(right_child);
+        }
+
+        Self { children, ..self }
     }
 
-    pub fn has_parent(&self) -> bool {
-        self.get_parent().is_some()
-    }
-}
-
-impl fmt::Display for Group {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut sid = String::from("");
-        if self.is_leaf() {
-            sid = self.val.get_id();
-            write!(f, "Group leaf (shape: {})", sid)
+    pub fn divide(self, threshold: usize) -> Self {
+        let g = if self.children.len() <= threshold {
+            self
         } else {
-            write!(f, "Group")
+            self.partition()
+        };
+
+        let children = g
+            .children
+            .into_iter()
+            .map(|child| child.divide(threshold))
+            .collect();
+
+        Self { children, ..g }
+    }
+
+    fn mk_bounding_box(children: &[Object]) -> Bounds {
+        let mut bbox = Bounds::default();
+        for child in children {
+            bbox = bbox + child.bounding_box();
+        }
+
+        bbox
+    }
+}
+
+/* ---------------------------------------------------------------------------------------------- */
+
+#[derive(Clone, Debug)]
+pub enum GroupBuilder {
+    Leaf(Object),
+    Node(Object, Vec<GroupBuilder>),
+}
+
+impl GroupBuilder {
+    pub fn build(self) -> Object {
+        GroupBuilder::rec(self, &Matrix::id())
+    }
+
+    fn rec(gb: Self, transform: &Matrix) -> Object {
+        match gb {
+            GroupBuilder::Leaf(o) => o.transform(transform),
+            GroupBuilder::Node(group, children) => {
+                let child_transform = *transform * *group.transformation();
+                let new_children = children
+                    .into_iter()
+                    .map(|child| GroupBuilder::rec(child, &child_transform))
+                    .collect();
+
+                group
+                    .with_shape(Shape::Group(Group::new(new_children)))
+                    // The group transformation has been applied to all children.
+                    // To make sure it's not propagated again in future usages of this
+                    // newly created group, we set it to an Id transformation which is
+                    // "neutral".
+                    .with_transformation(Matrix::id())
+            }
+        }
+    }
+
+    pub fn from_object(object: &Object) -> Self {
+        match object.shape() {
+            Shape::Group(g) => GroupBuilder::Node(
+                object.clone(),
+                g.children()
+                    .iter()
+                    .filter_map(|child| match child.shape() {
+                        Shape::Group(g) => {
+                            if g.children().is_empty() {
+                                None
+                            } else {
+                                Some(GroupBuilder::from_object(child))
+                            }
+                        }
+                        _ => Some(GroupBuilder::from_object(child)),
+                    })
+                    .collect(),
+            ),
+            _other => GroupBuilder::Leaf(object.clone()),
         }
     }
 }
 
-// default constructor
-pub fn group_object() -> Object {
-    let mut obj = Object::new(None);
-    obj.shape = Shape::Group(Group::new());
-    obj
-}
-
-fn set_bounds(g: &mut GroupRef) {
-    //(*Arc::get_mut(g).unwrap()).bounds = Some(g.calculate_bounds());
-}
-
-fn set_parent(child: &GroupRef, parent: &mut GroupRef) {
-    // `child_node.parent` is set to weak reference to `parent_node`.
-    //println!("adding {} to {}", child.get_id(), parent.get_id());
-    *child.parent.borrow_mut() = Arc::downgrade(&parent);
-}
-
-pub fn add_child_shape(parent: &mut GroupRef, shape: &Object) {
-    // Make a GroupRef
-    let g = Group::from_shape(shape);
-    add_child_group(parent, &g);
-}
-
-pub fn add_child_group(parent: &mut GroupRef, child: &GroupRef) {
-    set_parent(child, parent);
-    parent.shapes.borrow_mut().push(child.clone());
-    // We want to recalculate the bounding box for parent
-    set_bounds(parent);
-}
-
-pub fn partition_children(g: &mut GroupRef) -> (GroupRef, GroupRef) {
-    let mut left = Group::new();
-    let mut right = Group::new();
-    let (lbounds, rbounds) = g.bounds().split();
-
-    for s in g.shapes.borrow().iter() {
-        let sbounds = s.bounds();
-        if lbounds.contains_bounds(&sbounds) {
-            add_child_group(&mut left, s);
-        } else if rbounds.contains_bounds(&sbounds) {
-            add_child_group(&mut right, s);
-        }
-    }
-    // remove copied shapes from the original list
-    g.shapes.borrow_mut().retain(|s| {
-        let sbounds = s.bounds();
-        !lbounds.contains_bounds(&sbounds) && !rbounds.contains_bounds(&sbounds)
-    });
-    // Recalculate bounds for g
-    set_bounds(g);
-    set_bounds(&mut left);
-    set_bounds(&mut right);
-
-    (left, right)
-}
-
-pub fn make_subgroup(g: &mut GroupRef, shapes: &Vec<Object>) {
-    let subgroup = Group::from_shapes(shapes);
-    add_child_group(g, &subgroup);
-}
-
-pub fn divide(g: &mut GroupRef, threshold: usize) {
-    // divide on a shape is a no-op
-    if g.is_leaf() {
-        return;
-    }
-    if threshold <= g.num_children() {
-        let (left, right) = partition_children(g);
-        if left.num_children() > 0 {
-            add_child_group(g, &left);
-        }
-        if right.num_children() > 0 {
-            add_child_group(g, &right);
-        }
-    }
-    for child in g.shapes.borrow_mut().iter_mut() {
-        divide(child, threshold);
-    }
-}
-
-/**
- * Helpers to limit syntax explosions
- */
-
-pub fn set_transform(group: &mut GroupRef, transform: &Matrix4) {
-    (*Arc::get_mut(group).unwrap()).set_transform(transform);
-}
-
-fn get_parent(group: &GroupRef) -> Option<GroupRef> {
-    group.parent.borrow().upgrade()
-}
-
-fn has_parent(group: &GroupRef) -> bool {
-    get_parent(group).is_some()
-}
-
-/**
- * Recursive functions operating up parent trees
- */
-
-pub fn world_to_object(group: &GroupRef, point: &Point) -> Point {
-    let mut p = point.clone();
-
-    if has_parent(group) {
-        p = world_to_object(&get_parent(group).unwrap(), point);
-    }
-    if group.is_leaf() {
-        glm::inverse(group.val.get_transform()) * p
-    } else {
-        glm::inverse(group.get_transform()) * p
-    }
-}
-
-pub fn normal_to_world(group: &GroupRef, normal: &Vector) -> Vector {
-    let mut n = glm::inverse(group.get_transform()).transpose() * normal;
-    n.w = 0.0;
-    n = n.normalize();
-
-    if has_parent(group) {
-        n = normal_to_world(&get_parent(group).unwrap(), &n);
-    }
-    n
-}
-
-/**
- * Important function here
- */
-pub fn normal_at(group: &GroupRef, world_point: &Point) -> Vector {
-    let local_point = world_to_object(group, world_point);
-    let mut local_normal = vector_zero(); // is this the right default value?
-    if group.is_leaf() {
-        local_normal = group.val.normal_at(local_point)
-    }
-    normal_to_world(group, &local_normal)
-}
+/* ---------------------------------------------------------------------------------------------- */
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    //use crate::shapes::cylinder::*;
-    use crate::assert_eq_eps;
-    use crate::shapes::shape::*;
-    use crate::shapes::sphere::*;
-    use crate::transformation::*;
+    use crate::{
+        primitive::{Point, Tuple, Vector},
+        rtc::{IntersectionPusher, Intersections},
+    };
 
-    #[test]
-    fn transform_is_identity() {
-        let g = group_object();
-        assert_eq!(g.get_transform(), &Matrix4::identity());
+    struct Push<'a> {
+        pub xs: Vec<f64>,
+        pub object: &'a Object,
+    }
+
+    impl<'a> Push<'a> {
+        pub fn new(object: &'a Object) -> Self {
+            Self { xs: vec![], object }
+        }
+    }
+
+    impl<'a> IntersectionPusher<'a> for Push<'a> {
+        fn t(&mut self, t: f64) {
+            self.xs.push(t);
+        }
+        fn t_u_v(&mut self, _t: f64, _u: f64, _v: f64) {
+            panic!();
+        }
+        fn set_object(&mut self, object: &'a Object) {
+            self.object = object
+        }
     }
 
     #[test]
-    fn set_transform_on_group() {
-        let mut g = group_object();
-        // eesh
-        set_transform(&mut g, &make_translation(1.0, 0.0, 0.0));
-        println!("group: {}", g);
-        assert_eq!(g.get_transform(), &make_translation(1.0, 0.0, 0.0));
+    fn intersecting_a_ray_with_an_empty_group() {
+        let group = Object::new_group(vec![]);
+        let ray = Ray {
+            origin: Point::new(0.0, 0.0, 0.0),
+            direction: Vector::new(0.0, 0.0, 1.0),
+        };
+
+        let object = Object::new_dummy();
+        let mut push = Push::new(&object);
+
+        group.intersects(&ray, &mut push);
+
+        assert_eq!(push.xs.len(), 0);
     }
 
     #[test]
-    fn default_parent_is_empty() {
-        let g = group_object();
-        assert!(g.parent.borrow().upgrade().is_none());
-        assert!(g.shapes.borrow().is_empty())
-    }
+    fn intersecting_a_ray_with_an_non_empty_group() {
+        let s1 = Object::new_sphere();
+        let s2 = Object::new_sphere().translate(0.0, 0.0, -3.0).transform();
+        let s3 = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
 
-    #[test]
-    fn adding_child_shape() {
-        let mut g = group_object();
-        let s = test_shape();
-        add_child_shape(&mut g, &s);
-        assert_eq!(g.shapes.borrow().len(), 1);
-        let child = &g.shapes.borrow()[0];
-        assert_eq!(s.get_id(), child.val.as_ref().get_id());
-        assert!(g.shapes.borrow()[0].parent.borrow().upgrade().is_some());
-    }
+        let group = Object::new_group(vec![s1.clone(), s2.clone(), s3]);
 
-    #[test]
-    fn adding_child_group() {
-        let mut g1 = group_object();
-        let g2 = group_object();
-        add_child_group(&mut g1, &g2);
-        assert_eq!(g1.shapes.borrow().len(), 1);
-        let child_group = &g1.shapes.borrow()[0];
-        assert_eq!(child_group.get_id(), g2.get_id());
-        assert!(g1.shapes.borrow()[0].parent.borrow().upgrade().is_some());
-    }
+        let ray = Ray {
+            origin: Point::new(0.0, 0.0, -5.0),
+            direction: Vector::new(0.0, 0.0, 1.0),
+        };
 
-    #[test]
-    fn intersection_ray_with_empty_group() {
-        let g = group_object();
-        let r = Ray::new(point_zero(), vector_z());
-        let xs = g.local_intersect(&r);
-        assert!(xs.is_empty());
-    }
+        let objects = vec![group];
+        let xs = ray.intersects(&objects[..], Intersections::new());
 
-    #[test]
-    fn intersection_ray_with_nonempty_group() {
-        let mut g = group_object();
-        let s1 = sphere_with_id(Some(String::from("s1")));
-        let mut s2 = sphere_with_id(Some(String::from("s2")));
-        s2.set_transform(&make_translation(0.0, 0.0, -3.0));
-        let mut s3 = sphere_with_id(Some(String::from("s3")));
-        s3.set_transform(&make_translation(5.0, 0.0, 0.0));
-        add_child_shape(&mut g, &s1);
-        add_child_shape(&mut g, &s2);
-        add_child_shape(&mut g, &s3);
-        let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let xs = g.local_intersect(&r);
         assert_eq!(xs.len(), 4);
-        assert_eq!(xs[0].object.get_id(), String::from("sphere_s2"));
-        assert_eq!(xs[1].object.get_id(), String::from("sphere_s2"));
-        assert_eq!(xs[2].object.get_id(), String::from("sphere_s1"));
-        assert_eq!(xs[3].object.get_id(), String::from("sphere_s1"));
+        assert_eq!(*xs[0].object(), s2.clone());
+        assert_eq!(*xs[1].object(), s2);
+        assert_eq!(*xs[2].object(), s1.clone());
+        assert_eq!(*xs[3].object(), s1);
     }
 
     #[test]
-    fn intersecting_transformed_group() {
-        let mut g = group_object();
-        set_transform(&mut g, &make_scaling(2.0, 2.0, 2.0));
-        let mut s = sphere();
-        s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        add_child_shape(&mut g, &s);
-        let r = Ray::new(point(10.0, 0.0, -10.0), vector_z());
-        let xs = g.intersect(&r);
+    fn intersecting_a_ray_with_a_nested_non_empty_group() {
+        {
+            let s1 = Object::new_sphere();
+            let s2 = Object::new_sphere().translate(0.0, 0.0, -3.0).transform();
+            let s3 = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+
+            let group_1 = Object::new_group(vec![s1.clone(), s2.clone(), s3.clone()]);
+            let group_2 = Object::new_group(vec![group_1]);
+
+            let ray = Ray {
+                origin: Point::new(0.0, 0.0, -5.0),
+                direction: Vector::new(0.0, 0.0, 1.0),
+            };
+
+            let objects = vec![group_2];
+            let xs = ray.intersects(&objects[..], Intersections::new());
+
+            assert_eq!(xs.len(), 4);
+            assert_eq!(*xs[0].object(), s2);
+            assert_eq!(*xs[1].object(), s2);
+            assert_eq!(*xs[2].object(), s1);
+            assert_eq!(*xs[3].object(), s1);
+        }
+        {
+            let s1 = Object::new_sphere();
+            let s2 = Object::new_sphere().translate(0.0, 0.0, -3.0).transform();
+            let s3 = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+
+            let group_1 = Object::new_group(vec![s1.clone(), s3]);
+            let group_2 = Object::new_group(vec![group_1, s2.clone()]);
+
+            let ray = Ray {
+                origin: Point::new(0.0, 0.0, -5.0),
+                direction: Vector::new(0.0, 0.0, 1.0),
+            };
+
+            let objects = vec![group_2];
+            let xs = ray.intersects(&objects[..], Intersections::new());
+
+            assert_eq!(xs.len(), 4);
+            assert_eq!(*xs[0].object(), s2);
+            assert_eq!(*xs[1].object(), s2);
+            assert_eq!(*xs[2].object(), s1);
+            assert_eq!(*xs[3].object(), s1);
+        }
+    }
+
+    #[test]
+    fn intersecting_a_transformed_group() {
+        let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+
+        let group = Object::new_group(vec![s]).scale(2.0, 2.0, 2.0).transform();
+
+        let ray = Ray {
+            origin: Point::new(10.0, 0.0, -10.0),
+            direction: Vector::new(0.0, 0.0, 1.0),
+        };
+
+        let objects = vec![group];
+        let xs = ray.intersects(&objects[..], Intersections::new());
+
         assert_eq!(xs.len(), 2);
     }
 
     #[test]
-    fn converting_point_from_world_to_object_space() {
-        let mut g1 = group_object();
-        set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
-        let mut g2 = group_object();
-        set_transform(&mut g2, &make_scaling(2.0, 2.0, 2.0));
-        add_child_group(&mut g1, &g2);
-        let mut s = sphere();
-        s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        let g3 = Group::from_shape(&s);
-        add_child_group(&mut g2, &g3);
-        //let g3 = Group::new();
-        //add_child_shape(&g3, Box::new(s));
-        let p = world_to_object(&g3, &point(-2.0, 0.0, -10.0));
-        assert_eq_eps!(p, point(0.0, 0.0, -1.0));
+    fn intersecting_a_nested_transformed_group() {
+        {
+            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+
+            let group_1 = Object::new_group(vec![s]);
+            let group_2 = Object::new_group(vec![group_1])
+                .scale(2.0, 2.0, 2.0)
+                .transform();
+
+            let ray = Ray {
+                origin: Point::new(10.0, 0.0, -10.0),
+                direction: Vector::new(0.0, 0.0, 1.0),
+            };
+
+            let objects = vec![group_2];
+            let xs = ray.intersects(&objects[..], Intersections::new());
+
+            assert_eq!(xs.len(), 2);
+        }
+        {
+            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+
+            let group_1 = Object::new_group(vec![s]).scale(2.0, 2.0, 2.0).transform();
+            let group_2 = Object::new_group(vec![group_1]);
+
+            let ray = Ray {
+                origin: Point::new(10.0, 0.0, -10.0),
+                direction: Vector::new(0.0, 0.0, 1.0),
+            };
+
+            let objects = vec![group_2];
+            let xs = ray.intersects(&objects[..], Intersections::new());
+
+            assert_eq!(xs.len(), 2);
+        }
     }
 
     #[test]
-    fn converting_normal_from_object_to_normal_space() {
-        let mut g1 = group_object();
-        set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
-        let mut g2 = group_object();
-        set_transform(&mut g2, &make_scaling(1.0, 2.0, 3.0));
-        add_child_group(&mut g1, &g2);
-        let mut s = sphere();
-        s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        let mut g3 = Group::new();
-        add_child_shape(&mut g3, &s);
-        add_child_group(&mut g2, &g3);
-        let threes = 3_f64.sqrt() / 3.0;
-        let n = normal_to_world(&g3, &vector(threes, threes, threes));
-        assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
+    fn transformations_are_propagated() {
+        let s = Object::new_sphere()
+            .translate(5.0, 0.0, 0.0)
+            .scale(2.0, 2.0, 2.0)
+            .rotate_y(std::f64::consts::PI / 2.0)
+            .transform();
+
+        let expected_transformation = s.transformation();
+
+        // With one group
+        {
+            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let g2 = Object::new_group(vec![s])
+                .scale(2.0, 2.0, 2.0)
+                .rotate_y(std::f64::consts::PI / 2.0)
+                .transform();
+
+            // Retrieve the s with the baked-in group transform.
+            let group_s = g2.shape().as_group().unwrap().children[0].clone();
+
+            assert_eq!(group_s.transformation(), expected_transformation);
+        }
+        {
+            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let g2 = Object::new_group(vec![s])
+                .rotate_y(std::f64::consts::PI / 2.0)
+                .scale(2.0, 2.0, 2.0)
+                .transform();
+            let g1 = Object::new_group(vec![g2]);
+
+            // Retrieve the s with the baked-in group transform.
+            let group_g2 = g1.shape().as_group().unwrap().children[0].clone();
+            let group_s = group_g2.shape().as_group().unwrap().children[0].clone();
+
+            assert_eq!(group_s.transformation(), expected_transformation);
+        }
+        // With three nested groups, only one being transformed
+        {
+            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let g2 = Object::new_group(vec![s])
+                .rotate_y(std::f64::consts::PI / 2.0)
+                .scale(2.0, 2.0, 2.0)
+                .transform();
+            let g1 = Object::new_group(vec![g2]);
+            let g0 = Object::new_group(vec![g1]);
+
+            // Retrieve the s with the baked-in group transform.
+            let group_g1 = g0.shape().as_group().unwrap().children[0].clone();
+            let group_g2 = group_g1.shape().as_group().unwrap().children[0].clone();
+            let group_s = group_g2.shape().as_group().unwrap().children[0].clone();
+
+            assert_eq!(group_s.transformation(), expected_transformation);
+        }
+        // With two nested groups with transformations in both
+        {
+            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let g2 = Object::new_group(vec![s])
+                .rotate_y(std::f64::consts::PI / 2.0)
+                .transform();
+            let g1 = Object::new_group(vec![g2]).scale(2.0, 2.0, 2.0).transform();
+
+            // Retrieve the s with the baked-in group transform.
+            let group_g2 = g1.shape().as_group().unwrap().children[0].clone();
+            let group_s = group_g2.shape().as_group().unwrap().children[0].clone();
+
+            assert_eq!(group_s.transformation(), expected_transformation);
+        }
     }
 
     #[test]
-    fn find_normal_on_child() {
-        let mut g1 = group_object();
-        set_transform(&mut g1, &make_rotation_y(glm::half_pi()));
-        let mut g2 = group_object();
-        set_transform(&mut g2, &make_scaling(1.0, 2.0, 3.0));
-        add_child_group(&mut g1, &g2);
-        let mut s = sphere();
-        s.set_transform(&make_translation(5.0, 0.0, 0.0));
-        //let g3 = Group::from_shape(&s);
-        //add_child_group(&mut g2, &g3);
-        //let n = normal_at(&g3, &point(1.7321, 1.1547, -5.5774));
-        add_child_shape(&mut g2, &s);
-        let n = s.normal_at(point(1.7321, 1.1547, -5.5774));
-        assert_eq_eps!(n, vector(0.2857, 0.4286, -0.8571));
-    }
+    fn a_group_has_a_bounding_box_that_contains_its_children() {
+        let s = Object::new_sphere()
+            .scale(2.0, 2.0, 2.0)
+            .translate(2.0, 5.0, -3.0)
+            .transform();
+        let c = Object::new_cylinder(-2.0, 2.0, true)
+            .scale(0.5, 1.0, 0.5)
+            .translate(-4.0, -1.0, 4.0)
+            .transform();
 
-    /*
-    #[test]
-    #[should_panic]
-    fn local_normal_at_illegal() {
-        group_object().local_normal_at(point_zero());
+        let g = Object::new_group(vec![s, c]);
+
+        assert_eq!(g.bounding_box().min(), Point::new(-4.5, -3.0, -5.0));
+        assert_eq!(g.bounding_box().max(), Point::new(4.0, 7.0, 4.5));
     }
 
     #[test]
-    fn bounding_box_fits_children() {
-        let mut s = sphere();
-        s.set_transform(&(make_translation(2.0, 5.0, -3.0) * make_scaling(2.0, 2.0, 2.0)));
-        let mut c = cylinder();
-        // TODO: Fix
-        c.set_bounds(-2.0, 2.0);
-        c.set_transform(&(make_translation(-4.0, -1.0, 4.0) * make_scaling(0.5, 1.0, 0.5)));
-        let mut g = group_object();
-        add_child_shape(&mut g, &s);
-        add_child_shape(&mut g, &c);
-        let bounds = g.bounds();
-        assert_eq!(bounds.min, point(-4.5, -3.0, -5.0));
-        assert_eq!(bounds.max, point(4.0, 7.0, 4.5));
+    fn intersecting_a_ray_with_doesnt_test_children_if_bbox_is_missed() {
+        let ts = Object::new_test_shape();
+
+        let g = Object::new_group(vec![ts]);
+
+        let ray = Ray {
+            origin: Point::new(0.0, 0.0, -5.0),
+            direction: Vector::new(0.0, 1.0, 0.0),
+        };
+
+        let object = Object::new_dummy();
+        let mut push = Push::new(&object);
+        g.intersects(&ray, &mut push);
+
+        let ts = g.shape().as_group().unwrap().children()[0]
+            .shape()
+            .as_test_shape()
+            .unwrap();
+
+        assert!(ts.ray().is_none());
     }
 
     #[test]
-    fn intersecting_ray_group_skips_tests_if_box_missed() {
-        NUM_BOUNDING_OPTS.store(0, Ordering::SeqCst);
-        let child = test_shape();
-        let mut group = group_object();
-        add_child_shape(&mut group, &child);
-        let ray = Ray::new(point(0.0, 0.0, -5.0), vector_y());
-        group.intersect(&ray);
-        assert_eq!(NUM_BOUNDING_OPTS.load(Ordering::SeqCst), 1);
+    fn intersecting_a_ray_with_tests_children_if_bbox_is_hit() {
+        let ts = Object::new_test_shape();
+
+        let g = Object::new_group(vec![ts]);
+
+        let ray = Ray {
+            origin: Point::new(0.0, 0.0, -5.0),
+            direction: Vector::new(0.0, 0.0, 1.0),
+        };
+
+        let object = Object::new_dummy();
+        let mut push = Push::new(&object);
+        g.intersects(&ray, &mut push);
+
+        let ts = g.shape().as_group().unwrap().children()[0]
+            .shape()
+            .as_test_shape()
+            .unwrap();
+
+        assert!(ts.ray().is_some());
     }
 
     #[test]
-    fn intersecting_ray_group_tests_children_if_box_hit() {
-        let child = test_shape();
-        let mut group = group_object();
-        add_child_shape(&mut group, &child);
-        let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let xs = group.intersect(&ray);
-        // TODO: Test optimization not made
-    }
+    fn partitioning_a_group_s_children() {
+        let s1 = Object::new_sphere().translate(-2.0, 0.0, 0.0).transform();
+        let s2 = Object::new_sphere().translate(2.0, 0.0, 0.0).transform();
+        let s3 = Object::new_sphere();
 
-    #[test]
-    fn partition_groups_children() {
-        let mut s1 = sphere_with_id(Some(String::from("s1")));
-        s1.set_transform(&make_translation(-2.0, 0.0, 0.0));
-        let mut s2 = sphere_with_id(Some(String::from("s2")));
-        s2.set_transform(&make_translation(2.0, 0.0, 0.0));
-        let s3 = sphere_with_id(Some(String::from("s3")));
-        let mut g = group_object();
-        add_child_shape(&mut g, &s1);
-        add_child_shape(&mut g, &s2);
-        add_child_shape(&mut g, &s3);
-        let (left, right) = partition_children(&mut g);
-        // g is a group of [s3]
-        assert_eq!(g.num_children(), 1);
-        assert_eq!(g.shapes.borrow()[0].get_id(), String::from("g_sphere_s3"));
-        assert_eq!(left.num_children(), 1);
-        assert_eq!(
-            left.shapes.borrow()[0].get_id(),
-            String::from("g_sphere_s1")
-        );
-        assert_eq!(right.num_children(), 1);
-        assert_eq!(
-            right.shapes.borrow()[0].get_id(),
-            String::from("g_sphere_s2")
-        );
-    }
+        let g = Object::new_group(vec![s1.clone(), s2.clone(), s3.clone()]);
 
-    #[test]
-    fn creating_subgroup_from_children() {
-        let s1 = sphere_with_id(Some("s1".to_string()));
-        let s2 = sphere_with_id(Some("s2".to_string()));
-        let mut g = group_object();
-        make_subgroup(&mut g, &vec![Box::new(s1), Box::new(s2)]);
-        assert_eq!(g.num_children(), 1);
-        let g0 = Arc::clone(g.shapes.borrow().get(0).unwrap());
-        assert_eq!(g0.shapes.borrow().len(), 2);
-        // g[0] is group [s1, s2]
-    }
+        let g = g.shape().as_group().unwrap().clone().partition();
+        let g_children = g.children();
 
-    #[test]
-    fn subdividing_group_partitions_its_children() {
-        let mut s1 = sphere_with_id(Some(String::from("s1")));
-        s1.set_transform(&make_translation(-2.0, -2.0, 0.0));
-        let mut s2 = sphere_with_id(Some(String::from("s2")));
-        s2.set_transform(&make_translation(-2.0, 2.0, 0.0));
-        let mut s3 = sphere_with_id(Some(String::from("s3")));
-        s3.set_transform(&make_scaling(4.0, 4.0, 4.0));
-        let mut g = group_object();
-        add_child_shape(&mut g, Box::new(s1.clone()));
-        add_child_shape(&mut g, Box::new(s2.clone()));
-        add_child_shape(&mut g, Box::new(s3.clone()));
-        divide(&mut g, 1);
-        assert_eq!(g.num_children(), 2);
-        assert_eq!(g.shapes.borrow()[0].get_id(), String::from("g_sphere_s3"));
-        let g1 = Arc::clone(g.shapes.borrow().get(1).unwrap());
-        assert_eq!(g1.num_children(), 2);
-        // g1[0] is a subgroup of [s1]
-        assert_eq!(
-            g1.shapes.borrow()[0].shapes.borrow()[0].get_id(),
-            String::from("g_sphere_s1")
-        );
-        // g1[1] is a subgroup of [s2]
-        assert_eq!(
-            g1.shapes.borrow()[1].shapes.borrow()[0].get_id(),
-            String::from("g_sphere_s2")
-        );
+        assert_eq!(g_children[0], s3);
+        // left child
+        assert_eq!(g_children[1].shape().as_group().unwrap().children()[0], s1);
+        // right child
+        assert_eq!(g_children[2].shape().as_group().unwrap().children()[0], s2);
     }
-
-    #[test]
-    fn subdividing_group_with_too_few_children() {
-        let mut s1 = sphere_with_id(Some(String::from("s1")));
-        s1.set_transform(&make_translation(-2.0, 0.0, 0.0));
-        let mut s2 = sphere_with_id(Some(String::from("s2")));
-        s2.set_transform(&make_translation(2.0, 1.0, 0.0));
-        let mut s3 = sphere_with_id(Some(String::from("s3")));
-        s3.set_transform(&make_translation(2.0, -1.0, 0.0));
-        let mut subgroup = Group::new();
-        add_child_shape(&mut subgroup, Box::new(s1.clone()));
-        add_child_shape(&mut subgroup, Box::new(s2.clone()));
-        add_child_shape(&mut subgroup, Box::new(s3.clone()));
-        let s4 = sphere_with_id(Some(String::from("s4")));
-        let mut g = group_object();
-        add_child_group(&mut g, &subgroup);
-        add_child_shape(&mut g, Box::new(s4));
-        divide(&mut g, 3);
-        assert_eq!(g.num_children(), 2);
-        let g0 = Arc::clone(g.shapes.borrow().get(0).unwrap());
-        assert_eq!(g0.num_children(), 2);
-        // g0[0] is a group of [s1]
-        assert_eq!(g0.shapes.borrow()[0].num_children(), 1);
-        assert_eq!(
-            g0.shapes.borrow()[0].shapes.borrow()[0].get_id(),
-            String::from("g_sphere_s1")
-        );
-        // g0[1] is a group of [s2, s3]
-        assert_eq!(
-            g0.shapes.borrow()[1].shapes.borrow()[0].get_id(),
-            String::from("g_sphere_s2")
-        );
-    }
-    */
 }
