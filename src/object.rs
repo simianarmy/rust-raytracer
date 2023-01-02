@@ -35,14 +35,42 @@ impl Object {
         }
     }
 
-    pub fn group(/* TODO: children */) -> Object {
+    pub fn new_dummy() -> Self {
+        Object::new(Some(String::from("dummy")))
+    }
+
+    pub fn new_group(children: Vec<Object>) -> Self {
+        let children_group_builders = children
+            .iter()
+            .filter_map(|child| match child.shape() {
+                Shape::Group(g) => {
+                    if g.children().is_empty() {
+                        None
+                    } else {
+                        Some(GroupBuilder::from_object(child))
+                    }
+                }
+
+                _ => Some(GroupBuilder::from_object(child)),
+            })
+            .collect();
+        let group_builder = GroupBuilder::Node(Object::new_dummy(), children_group_builders);
+        let object = group_builder.build();
+
         Object {
-            shape: Shape::Group(Group::new()),
-            ..Object::default()
+            bounds: object.shape.bounds(),
+            ..object
         }
     }
 
     // TODO: Add remaining shape constructors here
+    //
+    pub fn with_shape(mut self, shape: Shape) -> Self {
+        self.shape = shape;
+        self.bounds = self.shape.bounds();
+
+        self
+    }
 
     pub fn get_id(&self) -> String {
         format!("{}_{}", self.shape.get_id(), self.id)
@@ -54,6 +82,15 @@ impl Object {
     pub fn set_transform(&mut self, t: &Matrix4) {
         self.transform = *t;
         self.bounds = self.shape.bounds();
+    }
+
+    pub fn with_transformation(mut self, transformation: Matrix4) -> Self {
+        self.set_transform(&transformation);
+        //self.transformation_inverse = self.transformation.invert();
+        //self.transformation_inverse_transpose = self.transformation_inverse.transpose();
+        //self.bounding_box = self.shape_bounds().transform(&self.transformation);
+
+        self
     }
 
     pub fn get_material(&self) -> &Material {
@@ -93,15 +130,19 @@ impl Object {
         self.bounds.transform(self.get_transform())
     }
 
+    pub fn shape(&self) -> &Shape {
+        &self.shape
+    }
+
     pub fn is_shape(&self) -> bool {
-        match self.shape {
+        match self.shape() {
             Shape::None => false,
             _ => true,
         }
     }
 
     pub fn world_to_object(&self, point: Point) -> Point {
-        let p = match &self.shape {
+        let p = match self.shape() {
             Shape::Group(g) => {
                 if let Some(gref) = g.get_parent() {
                     let gp = gref.val.world_to_object(point);
@@ -134,6 +175,44 @@ impl Object {
                 }
             }
             _ => n,
+        }
+    }
+
+    pub fn divide(self, threshold: usize) -> Self {
+        Self {
+            shape: self.shape.divide(threshold),
+            ..self
+        }
+    }
+
+    /**
+     * For GroupBuilder
+     */
+    pub fn transform(self, new_transformation: &Matrix4) -> Self {
+        match self.shape() {
+            Shape::Group(g) => {
+                // Each time a Group is transformed, we convert it back to a GroupBuilder,
+                // which is easier to manipulate. It's not the most efficient, but as this
+                // is only peformed when constructing objects of a world, it has no impact on
+                // the rendering itself.
+                let children_group_builders =
+                    g.children().iter().map(GroupBuilder::from_object).collect();
+
+                // We then create a new top GroupBuilder Node from which the new transformation is
+                // applied.
+                let group_builder = GroupBuilder::Node(
+                    Object::new(Some(String::from("dummy")))
+                        .with_transformation(*new_transformation),
+                    children_group_builders,
+                );
+
+                // Convert back to a Group.
+                group_builder.build()
+            }
+            _other_shape => {
+                let new_transformation = *new_transformation * self.transform;
+                self.with_transformation(new_transformation)
+            }
         }
     }
 }

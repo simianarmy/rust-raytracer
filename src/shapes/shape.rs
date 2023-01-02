@@ -38,7 +38,7 @@ impl Shape {
             Shape::Cube() => cube::Cube::local_intersect(ray),
             Shape::Cone(c) => c.local_intersect(ray),
             Shape::Cylinder(c) => c.local_intersect(ray),
-            Shape::Group(g) => vec![], // g.local_intersect(ray),
+            Shape::Group(g) => g.intersect(ray),
             Shape::Plane() => plane::Plane::local_intersect(ray),
             Shape::Sphere() => sphere::Sphere::local_intersect(ray),
             Shape::TestShape(c) => c.local_intersect(ray),
@@ -54,7 +54,7 @@ impl Shape {
             Shape::Plane() => plane::Plane::local_normal_at(point),
             Shape::Sphere() => sphere::Sphere::local_normal_at(point),
             Shape::TestShape(c) => c.local_normal_at(point),
-            Shape::Group(g) => panic!("implement me"),
+            Shape::Group(g) => g.normal_at(g),
             Shape::None => unreachable!("Shape::None::normal_at"),
         }
     }
@@ -69,6 +69,13 @@ impl Shape {
             Shape::TestShape(c) => c.bounds(),
             Shape::Group(g) => g.bounds(),
             Shape::None => Bounds::default(),
+        }
+    }
+
+    pub fn divide(self, threshold: usize) -> Self {
+        match self {
+            Shape::Group(g) => Shape::Group(g.divide(threshold)),
+            _ => self,
         }
     }
 }

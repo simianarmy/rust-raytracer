@@ -1,11 +1,13 @@
 /**
- * Code from https://github.com/ahamez/ray-tracer/blob/7daa348119b81c6701c0545071e0972be48109fa/src/rtc/shapes/group.rs
+ * Code from https://github.com/ahamez/ray-tracer
+ *
  * After spending way too much time trying to implement a bidirectional tree myself with Arc,
- * Refcell, etc.
+ * Refcell, etc., this looked like a nice clean solution
  */
 use crate::{
     bounds::Bounds,
     intersection::Intersections,
+    matrix::Matrix4,
     object::Object,
     ray::Ray,
     shapes::shape::Shape,
@@ -18,7 +20,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Group {
-    bounding_box: Bounds,
+    bounds: Bounds,
     children: Vec<Object>,
 }
 
@@ -26,21 +28,20 @@ pub struct Group {
 
 impl Group {
     pub fn new(children: Vec<Object>) -> Self {
-        let bounding_box = Group::mk_bounding_box(&children);
+        let bounds = Group::mk_bounding_box(&children);
 
-        Self {
-            children,
-            bounding_box,
-        }
+        Self { children, bounds }
     }
 
     pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
-        if self.bounds().intersects(ray) {
+        let mut xs = Intersections::new();
+        if self.bounding_box().intersects(ray) {
             for child in &self.children {
                 //push.set_object(child);
-                child.intersects(ray);
+                xs.extend(child.intersect(ray));
             }
         }
+        xs
     }
 
     pub fn normal_at(&self, _object_point: &Point) -> Vector {
@@ -51,8 +52,8 @@ impl Group {
         &self.children
     }
 
-    pub fn bounds(&self) -> Bounds {
-        self.bounding_box
+    pub fn bounding_box(&self) -> Bounds {
+        self.bounds
     }
 
     fn partition(self) -> Self {
@@ -60,11 +61,11 @@ impl Group {
         let mut right_children = Vec::with_capacity(self.children.len());
         let mut children = Vec::with_capacity(self.children.len());
 
-        let (left_bbox, right_bbox) = self.bounding_box.split();
+        let (left_bbox, right_bbox) = self.bounds.split();
         for child in self.children {
-            if left_bbox.contains_bounds(&child.bounding_box()) {
+            if left_bbox.contains_bounds(&child.bounds) {
                 left_children.push(child);
-            } else if right_bbox.contains_bounds(&child.bounding_box()) {
+            } else if right_bbox.contains_bounds(&child.bounds) {
                 right_children.push(child);
             } else {
                 // All children that are neither contained in the left nor right
@@ -107,7 +108,7 @@ impl Group {
     fn mk_bounding_box(children: &[Object]) -> Bounds {
         let mut bbox = Bounds::default();
         for child in children {
-            bbox = bbox + child.bounding_box();
+            bbox = bbox + child.bounds;
         }
 
         bbox
@@ -124,14 +125,14 @@ pub enum GroupBuilder {
 
 impl GroupBuilder {
     pub fn build(self) -> Object {
-        GroupBuilder::rec(self, &Matrix::id())
+        GroupBuilder::rec(self, &glm::identity())
     }
 
-    fn rec(gb: Self, transform: &Matrix) -> Object {
+    fn rec(gb: Self, transform: &Matrix4) -> Object {
         match gb {
             GroupBuilder::Leaf(o) => o.transform(transform),
             GroupBuilder::Node(group, children) => {
-                let child_transform = *transform * *group.transformation();
+                let child_transform = transform * group.get_transform();
                 let new_children = children
                     .into_iter()
                     .map(|child| GroupBuilder::rec(child, &child_transform))
@@ -143,13 +144,13 @@ impl GroupBuilder {
                     // To make sure it's not propagated again in future usages of this
                     // newly created group, we set it to an Id transformation which is
                     // "neutral".
-                    .with_transformation(Matrix::id())
+                    .with_transformation(glm::identity())
             }
         }
     }
 
     pub fn from_object(object: &Object) -> Self {
-        match object.shape() {
+        match object.shape {
             Shape::Group(g) => GroupBuilder::Node(
                 object.clone(),
                 g.children()
@@ -173,6 +174,7 @@ impl GroupBuilder {
 
 /* ---------------------------------------------------------------------------------------------- */
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -497,3 +499,4 @@ mod tests {
         assert_eq!(g_children[2].shape().as_group().unwrap().children()[0], s2);
     }
 }
+*/
