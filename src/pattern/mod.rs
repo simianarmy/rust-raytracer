@@ -1,6 +1,6 @@
 use crate::color::Color;
 use crate::matrix::Matrix4;
-use crate::shapes::group::*;
+use crate::object::Object;
 use crate::tuple::Point;
 use glm;
 
@@ -16,8 +16,8 @@ pub trait Pattern {
 
     fn pattern_at(&self, point: &Point) -> Color;
 
-    fn pattern_at_shape(&self, group: GroupRef, point: &Point) -> Color {
-        let local_point = group.val.world_to_object(*point);
+    fn pattern_at_shape(&self, obj: &Object, point: &Point) -> Color {
+        let local_point = obj.world_to_object(*point);
         let pattern_point = glm::inverse(&self.get_transform()) * local_point;
         self.pattern_at(&pattern_point)
     }

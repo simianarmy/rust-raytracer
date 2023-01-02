@@ -83,6 +83,10 @@ impl<'a> Intersections<'a> {
         self.intersections.iter()
     }
 
+    pub fn extend(&mut self, is: &Intersections<'a>) {
+        self.intersections.extend(is.intersections);
+    }
+
     pub fn sort_intersections(mut self) -> Self {
         self.intersections
             .sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());

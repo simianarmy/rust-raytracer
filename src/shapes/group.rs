@@ -33,12 +33,12 @@ impl Group {
         Self { children, bounds }
     }
 
-    pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         let mut xs = Intersections::new();
         if self.bounding_box().intersects(ray) {
             for child in &self.children {
                 //push.set_object(child);
-                xs.extend(child.intersect(ray));
+                xs.extend(&child.intersect(ray));
             }
         }
         xs
@@ -108,7 +108,7 @@ impl Group {
     fn mk_bounding_box(children: &[Object]) -> Bounds {
         let mut bbox = Bounds::default();
         for child in children {
-            bbox = bbox + child.bounds;
+            bbox.add_bounds(&child.bounds);
         }
 
         bbox

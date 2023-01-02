@@ -62,7 +62,7 @@ pub fn lighting(
         //if object.val.is_some() {
         // I want the concrete pattern from the shape enum variant...
         let p = tpattern.into_pattern();
-        color = p.pattern_at_shape(Group::from_shape(object), &point);
+        color = p.pattern_at_shape(object, &point);
         //}
     }
     // combine surface color with lights color/intensity
