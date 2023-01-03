@@ -81,15 +81,19 @@ impl Object {
     pub fn get_transform(&self) -> &Matrix4 {
         &self.transform
     }
-    pub fn set_transform(&mut self, t: &Matrix4) {
-        self.transform = *t;
+    pub fn get_transformation_inverse(&self) -> &Matrix4 {
+        &self.transformation_inverse
     }
 
-    pub fn with_transformation(mut self, transformation: Matrix4) -> Self {
-        self.transform = transformation;
+    pub fn set_transform(&mut self, t: &Matrix4) {
+        self.transform = *t;
         self.transformation_inverse = glm::inverse(&self.transform);
         self.transformation_inverse_transpose = self.transformation_inverse.transpose();
         self.bounds = self.shape.bounds().transform(&self.transform);
+    }
+
+    pub fn with_transformation(mut self, transformation: Matrix4) -> Self {
+        self.set_transform(&transformation);
 
         self
     }
@@ -118,7 +122,12 @@ impl Object {
     pub fn normal_at(&self, world_point: Point) -> Vector {
         let local_point = self.world_to_object(&world_point);
         let local_normal = self.shape.normal_at(local_point);
-        self.normal_to_world(&local_normal)
+        let res = self.normal_to_world(&local_normal);
+        println!(
+            "local_point {}\nlocal_normal {}\nres {}",
+            local_point, local_normal, res
+        );
+        res
     }
 
     pub fn parent_space_bounds(&self) -> Bounds {
@@ -141,7 +150,7 @@ impl Object {
     }
 
     pub fn normal_to_world(&self, normal: &Vector) -> Vector {
-        (self.transformation_inverse_transpose * *normal).normalize()
+        (self.transformation_inverse_transpose * normal).normalize()
     }
 
     pub fn divide(self, threshold: usize) -> Self {
@@ -207,10 +216,13 @@ impl fmt::Debug for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(
             f,
-            "shape: {}\nmaterial: {:?}\ntransform: {}",
+            "\nid: {}\nmaterial: {:?}\ntransform: {}\ninverse: {}\ninverse transpose: {}\nbounds: {:?}",
             self.get_id(),
             self.get_material(),
-            self.get_transform()
+            self.get_transform(),
+            self.get_transformation_inverse(),
+            self.transformation_inverse_transpose,
+            self.bounds,
         )
     }
 }
