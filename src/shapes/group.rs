@@ -254,24 +254,22 @@ mod tests {
         }
     }
 
-    /*
     #[test]
     fn intersecting_a_transformed_group() {
-        let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+        let mut s = Object::new_sphere();
+        s.set_transform(&make_translation(5.0, 0.0, 0.0));
 
-        let group = Object::new_group(vec![s]).scale(2.0, 2.0, 2.0).transform();
+        let mut group = Object::new_group(vec![s]);
+        group.set_transform(&make_scaling(2.0, 2.0, 2.0));
 
-        let ray = Ray {
-            origin: Point::new(10.0, 0.0, -10.0),
-            direction: Vector::new(0.0, 0.0, 1.0),
-        };
+        let ray = Ray::new(point(10.0, 0.0, -10.0), vector_z());
 
-        let objects = vec![group];
-        let xs = ray.intersects(&objects[..], Intersections::new());
+        let xs = group.intersect(&ray);
 
         assert_eq!(xs.len(), 2);
     }
 
+    /*
     #[test]
     fn intersecting_a_nested_transformed_group() {
         {
