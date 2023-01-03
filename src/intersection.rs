@@ -16,9 +16,9 @@ impl<'a> Intersection<'a> {
         Self { t, object }
     }
 
-    pub fn from_group(g: &GroupRef, t: F3D) -> Intersection {
-        Intersection { t, object: &g.val }
-    }
+    //pub fn from_group(g: &GroupRef, t: F3D) -> Intersection {
+    //Intersection { t, object: &g.val }
+    //}
 }
 
 //impl<'a> PartialEq for Intersection<'a> {
@@ -84,7 +84,9 @@ impl<'a> Intersections<'a> {
     }
 
     pub fn extend(&mut self, is: &Intersections<'a>) {
-        self.intersections.extend(is.intersections);
+        for is in is.intersections.iter() {
+            self.intersections.push(is.clone());
+        }
     }
 
     pub fn sort_intersections(mut self) -> Self {

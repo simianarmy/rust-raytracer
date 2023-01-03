@@ -38,10 +38,10 @@ impl Shape {
             Shape::Cube() => cube::Cube::local_intersect(ray),
             Shape::Cone(c) => c.local_intersect(ray),
             Shape::Cylinder(c) => c.local_intersect(ray),
-            Shape::Group(g) => g.intersect(ray),
             Shape::Plane() => plane::Plane::local_intersect(ray),
             Shape::Sphere() => sphere::Sphere::local_intersect(ray),
             Shape::TestShape(c) => c.local_intersect(ray),
+            Shape::Group(g) => unreachable!("Group::intersect from Shape"),
             Shape::None => unreachable!("Shape::None::intersect"),
         }
     }
@@ -54,7 +54,7 @@ impl Shape {
             Shape::Plane() => plane::Plane::local_normal_at(point),
             Shape::Sphere() => sphere::Sphere::local_normal_at(point),
             Shape::TestShape(c) => c.local_normal_at(point),
-            Shape::Group(g) => g.normal_at(g),
+            Shape::Group(g) => g.normal_at(&point),
             Shape::None => unreachable!("Shape::None::normal_at"),
         }
     }
@@ -67,7 +67,7 @@ impl Shape {
             Shape::Plane() => plane::Plane::bounds(),
             Shape::Sphere() => sphere::Sphere::bounds(),
             Shape::TestShape(c) => c.bounds(),
-            Shape::Group(g) => g.bounds(),
+            Shape::Group(g) => g.bounding_box(),
             Shape::None => Bounds::default(),
         }
     }

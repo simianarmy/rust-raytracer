@@ -229,8 +229,8 @@ mod tests {
         let world = World::default();
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let shape = &world.objects[0];
-        let group = Group::from_shape(&shape);
-        let i = Intersection::from_group(&group, 4.0);
+        let group = GroupBuilder::from_object(&shape).build();
+        let i = Intersection::new(&group, 4.0);
         let comps = prepare_computations(
             &i,
             &ray,
@@ -246,8 +246,8 @@ mod tests {
         world.light = point_light(point(0.0, 0.25, 0.0), Color::white());
         let ray = Ray::new(point_zero(), vector_z());
         let shape = &world.objects[1];
-        let group = Group::from_shape(&shape);
-        let i = Intersection::from_group(&group, 0.5);
+        let group = GroupBuilder::from_object(&shape).build();
+        let i = Intersection::new(&group, 0.5);
         let comps = prepare_computations(
             &i,
             &ray,

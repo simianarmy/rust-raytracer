@@ -33,7 +33,7 @@ impl Group {
         Self { children, bounds }
     }
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         let mut xs = Intersections::new();
         if self.bounding_box().intersects(ray) {
             for child in &self.children {
@@ -150,7 +150,7 @@ impl GroupBuilder {
     }
 
     pub fn from_object(object: &Object) -> Self {
-        match object.shape {
+        match object.shape() {
             Shape::Group(g) => GroupBuilder::Node(
                 object.clone(),
                 g.children()

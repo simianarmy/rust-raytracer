@@ -22,6 +22,8 @@ pub fn get_unique_id() -> usize {
 pub struct Object {
     pub id: String,
     pub transform: Matrix4,
+    pub transformation_inverse: Matrix4,
+    pub transformation_inverse_transpose: Matrix4,
     pub material: Material,
     pub bounds: Bounds,
     pub shape: Shape,
@@ -81,14 +83,13 @@ impl Object {
     }
     pub fn set_transform(&mut self, t: &Matrix4) {
         self.transform = *t;
-        self.bounds = self.shape.bounds();
     }
 
     pub fn with_transformation(mut self, transformation: Matrix4) -> Self {
-        self.set_transform(&transformation);
-        //self.transformation_inverse = self.transformation.invert();
-        //self.transformation_inverse_transpose = self.transformation_inverse.transpose();
-        //self.bounding_box = self.shape_bounds().transform(&self.transformation);
+        self.transform = transformation;
+        self.transformation_inverse = glm::inverse(&self.transform);
+        self.transformation_inverse_transpose = self.transformation_inverse.transpose();
+        self.bounds = self.shape.bounds().transform(&self.transform);
 
         self
     }
@@ -102,26 +103,20 @@ impl Object {
 
     pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         let t_ray = ray.transform(inverse(&self.get_transform()));
-        Intersections::from_intersections(
-            self.shape
-                .intersect(&t_ray)
-                .into_iter()
-                .map(|t| Intersection::new(self, t))
-                .collect(),
-        )
+        match self.shape() {
+            Shape::Group(g) => g.intersects(&t_ray),
+            _ => Intersections::from_intersections(
+                self.shape
+                    .intersect(&t_ray)
+                    .into_iter()
+                    .map(|t| Intersection::new(self, t))
+                    .collect(),
+            ),
+        }
     }
 
     pub fn normal_at(&self, world_point: Point) -> Vector {
-        /* pre-groups
-        let t = self.get_transform();
-        let local_point = inverse(t) * world_point;
-        let local_normal = self.shape.normal_at(local_point);
-        let mut world_normal = transpose(&inverse(t)) * local_normal;
-        world_normal.w = 0.0;
-        world_normal.normalize();
-        */
-
-        let local_point = self.world_to_object(world_point);
+        let local_point = self.world_to_object(&world_point);
         let local_normal = self.shape.normal_at(local_point);
         self.normal_to_world(&local_normal)
     }
@@ -141,41 +136,12 @@ impl Object {
         }
     }
 
-    pub fn world_to_object(&self, point: Point) -> Point {
-        let p = match self.shape() {
-            Shape::Group(g) => {
-                if let Some(gref) = g.get_parent() {
-                    let gp = gref.val.world_to_object(point);
-                    gp
-                } else {
-                    point
-                }
-            }
-            _ => point,
-        };
-        //if group.is_leaf() {
-        //glm::inverse(group.val.get_transform()) * p
-        //} else {
-        //glm::inverse(group.get_transform()) * p
-        //}
-        glm::inverse(self.get_transform()) * p
+    pub fn world_to_object(&self, world_point: &Point) -> Point {
+        self.transformation_inverse * *world_point
     }
 
     pub fn normal_to_world(&self, normal: &Vector) -> Vector {
-        let mut n = glm::inverse(self.get_transform()).transpose() * normal;
-        n.w = 0.0;
-        n = n.normalize();
-
-        match &self.shape {
-            Shape::Group(g) => {
-                if let Some(gr) = g.get_parent() {
-                    gr.val.normal_to_world(&n)
-                } else {
-                    n
-                }
-            }
-            _ => n,
-        }
+        (self.transformation_inverse_transpose * *normal).normalize()
     }
 
     pub fn divide(self, threshold: usize) -> Self {
@@ -222,6 +188,8 @@ impl Default for Object {
         Self {
             id: get_unique_id().to_string(),
             transform: glm::identity(),
+            transformation_inverse: glm::identity(),
+            transformation_inverse_transpose: glm::identity(),
             material: Material::default(),
             bounds: Bounds::default(),
             shape: Shape::None,

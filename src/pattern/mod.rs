@@ -17,7 +17,7 @@ pub trait Pattern {
     fn pattern_at(&self, point: &Point) -> Color;
 
     fn pattern_at_shape(&self, obj: &Object, point: &Point) -> Color {
-        let local_point = obj.world_to_object(*point);
+        let local_point = obj.world_to_object(point);
         let pattern_point = glm::inverse(&self.get_transform()) * local_point;
         self.pattern_at(&pattern_point)
     }
@@ -98,7 +98,7 @@ mod tests {
         let pattern = setup();
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
-        let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.0, 3.0, 4.0));
+        let c = pattern.pattern_at_shape(&object, &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }
 
@@ -107,7 +107,7 @@ mod tests {
         let mut pattern = setup();
         let object = sphere();
         pattern.transform = make_scaling(2.0, 2.0, 2.0);
-        let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.0, 3.0, 4.0));
+        let c = pattern.pattern_at_shape(&object, &point(2.0, 3.0, 4.0));
         assert_eq!(c, Color::new(1.0, 1.5, 2.0));
     }
 
@@ -117,7 +117,7 @@ mod tests {
         let mut object = sphere();
         object.set_transform(&make_scaling(2.0, 2.0, 2.0));
         pattern.transform = make_translation(0.5, 1.0, 1.5);
-        let c = pattern.pattern_at_shape(Group::from_shape(&object), &point(2.5, 3.0, 3.5));
+        let c = pattern.pattern_at_shape(&object, &point(2.5, 3.0, 3.5));
         assert_eq!(c, Color::new(0.75, 0.5, 0.25));
     }
 }
