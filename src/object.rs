@@ -122,7 +122,10 @@ impl Object {
     pub fn normal_at(&self, world_point: Point) -> Vector {
         let local_point = self.world_to_object(&world_point);
         let local_normal = self.shape().normal_at(&local_point);
-        println!("local_point {}\nlocal_normal {}", local_point, local_normal);
+        println!(
+            "world_point {}\nlocal_point {}\nlocal_normal {}",
+            world_point, local_point, local_normal
+        );
         self.normal_to_world(&local_normal)
     }
 
