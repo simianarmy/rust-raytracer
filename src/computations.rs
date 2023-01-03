@@ -61,8 +61,6 @@ fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
 
 pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Intersections) -> Computations {
     let p = ray.position(i.t);
-    // TODO: Pass i.object: GroupRef to group_normal_at() ?
-    //let normal = i.group.normal_at(p);
     let normal = i.object.normal_at(p);
     let eyev = -ray.direction;
     let inside = normal.dot(&eyev) < 0.0;
@@ -149,15 +147,12 @@ mod tests {
     #[test]
     fn finding_n1_n2_at_various_intersections() {
         let mut a = glass_sphere();
-        println!("A = {}", a.get_id());
         a.set_transform(&make_scaling(2.0, 2.0, 2.0));
         a.material.refractive_index = 1.5;
         let mut b = glass_sphere();
-        println!("B = {}", b.get_id());
         b.set_transform(&make_translation(0.0, 0.0, -0.25));
         b.material.refractive_index = 2.0;
         let mut c = glass_sphere();
-        println!("C = {}", c.get_id());
         c.set_transform(&make_translation(0.0, 0.0, 0.25));
         c.material.refractive_index = 2.5;
         let ray = Ray::new(point(0.0, 0.0, -4.0), vector_y());

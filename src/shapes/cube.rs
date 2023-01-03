@@ -48,7 +48,7 @@ impl Cube {
         (tmin, tmax)
     }
 
-    pub fn local_normal_at(point: Point) -> Vector {
+    pub fn local_normal_at(point: &Point) -> Vector {
         match point.abs().max() {
             x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
             y if y == point.y.abs() => vector(0.0, point.y, 0.0),
@@ -125,7 +125,7 @@ mod tests {
             (point(-1.0, -1.0, -1.0), vector(-1.0, 0.0, 0.0)),
         ];
         for t in tests {
-            let normal = Cube::local_normal_at(t.0);
+            let normal = Cube::local_normal_at(&t.0);
             assert_eq!(normal, t.1);
         }
     }

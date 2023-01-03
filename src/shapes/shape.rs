@@ -41,12 +41,12 @@ impl Shape {
             Shape::Plane() => plane::Plane::local_intersect(ray),
             Shape::Sphere() => sphere::Sphere::local_intersect(ray),
             Shape::TestShape(c) => c.local_intersect(ray),
-            Shape::Group(g) => unreachable!("Group::intersect from Shape"),
+            Shape::Group(_) => unreachable!("Group::intersect from Shape"),
             Shape::None => unreachable!("Shape::None::intersect"),
         }
     }
 
-    pub fn normal_at(&self, point: Point) -> Vector {
+    pub fn normal_at(&self, point: &Point) -> Vector {
         match self {
             Shape::Cube() => cube::Cube::local_normal_at(point),
             Shape::Cone(c) => c.local_normal_at(point),
@@ -54,7 +54,7 @@ impl Shape {
             Shape::Plane() => plane::Plane::local_normal_at(point),
             Shape::Sphere() => sphere::Sphere::local_normal_at(point),
             Shape::TestShape(c) => c.local_normal_at(point),
-            Shape::Group(g) => g.normal_at(&point),
+            Shape::Group(g) => g.normal_at(point),
             Shape::None => unreachable!("Shape::None::normal_at"),
         }
     }
@@ -88,7 +88,7 @@ impl TestShape {
         vec![]
     }
 
-    pub fn local_normal_at(&self, _point: Point) -> Vector {
+    pub fn local_normal_at(&self, _point: &Point) -> Vector {
         point_zero()
     }
 

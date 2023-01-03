@@ -31,13 +31,14 @@ impl Sphere {
         if discriminant < 0.0 {
             vec![]
         } else {
-            let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
-            let t2 = (-b + discriminant.sqrt()) / (2.0 * a);
+            let ds = discriminant.sqrt();
+            let t1 = (-b - ds) / (2.0 * a);
+            let t2 = (-b + ds) / (2.0 * a);
             vec![t1, t2]
         }
     }
 
-    pub fn local_normal_at(point: Point) -> Vector {
+    pub fn local_normal_at(point: &Point) -> Vector {
         point - point_zero()
     }
 
@@ -119,7 +120,7 @@ mod tests {
     fn normal_at_nonaxial_point() {
         let s = sphere();
         let val = 3_f64.sqrt() / 3.0;
-        let n = s.normal_at(point(val, val, val));
+        let n = Sphere::local_normal_at(&point(val, val, val));
         assert_eq_eps!(&n, &vector(val, val, val));
     }
 

@@ -88,7 +88,7 @@ impl Object {
     pub fn set_transform(&mut self, t: &Matrix4) {
         self.transform = *t;
         self.transformation_inverse = glm::inverse(&self.transform);
-        self.transformation_inverse_transpose = self.transformation_inverse.transpose();
+        self.transformation_inverse_transpose = glm::transpose(&self.transformation_inverse);
         self.bounds = self.shape.bounds().transform(&self.transform);
     }
 
@@ -121,13 +121,17 @@ impl Object {
 
     pub fn normal_at(&self, world_point: Point) -> Vector {
         let local_point = self.world_to_object(&world_point);
-        let local_normal = self.shape.normal_at(local_point);
-        let res = self.normal_to_world(&local_normal);
-        println!(
-            "local_point {}\nlocal_normal {}\nres {}",
-            local_point, local_normal, res
-        );
-        res
+        let local_normal = self.shape().normal_at(&local_point);
+        println!("local_point {}\nlocal_normal {}", local_point, local_normal);
+        self.normal_to_world(&local_normal)
+    }
+
+    pub fn world_to_object(&self, world_point: &Point) -> Point {
+        self.get_transformation_inverse() * world_point
+    }
+
+    pub fn normal_to_world(&self, normal: &Vector) -> Vector {
+        glm::normalize(&(self.transformation_inverse_transpose * normal))
     }
 
     pub fn parent_space_bounds(&self) -> Bounds {
@@ -143,14 +147,6 @@ impl Object {
             Shape::None => false,
             _ => true,
         }
-    }
-
-    pub fn world_to_object(&self, world_point: &Point) -> Point {
-        self.transformation_inverse * *world_point
-    }
-
-    pub fn normal_to_world(&self, normal: &Vector) -> Vector {
-        (self.transformation_inverse_transpose * normal).normalize()
     }
 
     pub fn divide(self, threshold: usize) -> Self {
@@ -185,8 +181,8 @@ impl Object {
                 group_builder.build()
             }
             _other_shape => {
-                let new_transformation = *new_transformation * self.transform;
-                self.with_transformation(new_transformation)
+                let new_t = new_transformation * self.transform;
+                self.with_transformation(new_t)
             }
         }
     }

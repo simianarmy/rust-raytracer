@@ -30,7 +30,7 @@ impl Plane {
         }
     }
 
-    pub fn local_normal_at(_point: Point) -> Vector {
+    pub fn local_normal_at(_point: &Point) -> Vector {
         point_y()
     }
 
@@ -48,8 +48,8 @@ mod tests {
 
     #[test]
     fn normal_is_constant_everywhere() {
-        let n1 = Plane::local_normal_at(point_zero());
-        let n2 = Plane::local_normal_at(point(10.0, 0.0, -10.0));
+        let n1 = Plane::local_normal_at(&point_zero());
+        let n2 = Plane::local_normal_at(&point(10.0, 0.0, -10.0));
         assert_eq!(n1, point_y());
         assert_eq!(n2, point_y());
     }

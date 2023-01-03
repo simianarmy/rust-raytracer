@@ -103,7 +103,7 @@ impl Cone {
         xs
     }
 
-    pub fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(&self, point: &Point) -> Vector {
         let dist = point.x.powi(2) + point.z.powi(2);
         if dist < 1.0 && point.y >= self.maximum - math::EPSILON {
             vector_y()
@@ -215,7 +215,7 @@ mod tests {
         ] {
             println!("test: {:?}", t);
             let n = match c.shape {
-                Shape::Cone(ref c) => c.local_normal_at(t.0),
+                Shape::Cone(ref c) => c.local_normal_at(&t.0),
                 _ => vector_zero(),
             };
             assert_eq!(n, t.1);

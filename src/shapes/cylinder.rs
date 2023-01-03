@@ -99,7 +99,7 @@ impl Cylinder {
         xs
     }
 
-    pub fn local_normal_at(&self, point: Point) -> Vector {
+    pub fn local_normal_at(&self, point: &Point) -> Vector {
         let dist = point.x.powi(2) + point.z.powi(2);
         if dist < 1.0 && point.y >= self.maximum - math::EPSILON {
             vector_y()
