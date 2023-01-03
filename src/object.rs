@@ -6,8 +6,7 @@ use crate::intersection::*;
 use crate::materials::Material;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
-use crate::shapes::group::*;
-use crate::shapes::shape::*;
+use crate::shapes::{group::*, shape::*, sphere::*};
 use crate::tuple::*;
 use glm::*;
 use std::fmt;
@@ -41,6 +40,15 @@ impl Object {
         Object::new(Some(String::from("dummy")))
     }
 
+    // TODO: Add remaining shape constructors here
+    pub fn new_sphere() -> Self {
+        Object {
+            shape: Shape::Sphere(),
+            bounds: Sphere::bounds(),
+            ..Object::default()
+        }
+    }
+
     pub fn new_group(children: Vec<Object>) -> Self {
         let children_group_builders = children
             .iter()
@@ -65,8 +73,6 @@ impl Object {
         }
     }
 
-    // TODO: Add remaining shape constructors here
-    //
     pub fn with_shape(mut self, shape: Shape) -> Self {
         self.shape = shape;
         self.bounds = self.shape.bounds();
@@ -122,10 +128,6 @@ impl Object {
     pub fn normal_at(&self, world_point: Point) -> Vector {
         let local_point = self.world_to_object(&world_point);
         let local_normal = self.shape().normal_at(&local_point);
-        println!(
-            "world_point {}\nlocal_point {}\nlocal_normal {}",
-            world_point, local_point, local_normal
-        );
         self.normal_to_world(&local_normal)
     }
 
@@ -134,7 +136,9 @@ impl Object {
     }
 
     pub fn normal_to_world(&self, normal: &Vector) -> Vector {
-        glm::normalize(&(self.transformation_inverse_transpose * normal))
+        let mut n = self.transformation_inverse_transpose * normal;
+        n.w = 0.0; // crucial
+        n.normalize()
     }
 
     pub fn parent_space_bounds(&self) -> Bounds {

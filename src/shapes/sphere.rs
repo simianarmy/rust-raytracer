@@ -136,7 +136,6 @@ mod tests {
     fn computing_normal_on_translated_sphere() {
         let mut s = sphere();
         s.set_transform(&make_translation(0.0, 1.0, 0.0));
-        println!("sphere {:?}", s);
         let n = s.normal_at(point(0.0, 1.70711, -0.70711));
         assert_eq_eps!(&n, &vector(0.0, 0.70711, -0.70711));
     }

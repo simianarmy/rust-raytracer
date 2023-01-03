@@ -41,7 +41,8 @@ impl Group {
                 xs.extend(&child.intersect(ray));
             }
         }
-        xs
+        // sort results here
+        xs.sort_intersections()
     }
 
     pub fn normal_at(&self, _object_point: &Point) -> Vector {
@@ -174,125 +175,86 @@ impl GroupBuilder {
 
 /* ---------------------------------------------------------------------------------------------- */
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        primitive::{Point, Tuple, Vector},
-        rtc::{IntersectionPusher, Intersections},
-    };
-
-    struct Push<'a> {
-        pub xs: Vec<f64>,
-        pub object: &'a Object,
-    }
-
-    impl<'a> Push<'a> {
-        pub fn new(object: &'a Object) -> Self {
-            Self { xs: vec![], object }
-        }
-    }
-
-    impl<'a> IntersectionPusher<'a> for Push<'a> {
-        fn t(&mut self, t: f64) {
-            self.xs.push(t);
-        }
-        fn t_u_v(&mut self, _t: f64, _u: f64, _v: f64) {
-            panic!();
-        }
-        fn set_object(&mut self, object: &'a Object) {
-            self.object = object
-        }
-    }
+    use crate::{intersection::*, shapes::sphere::*, transformation::*, tuple::*};
 
     #[test]
     fn intersecting_a_ray_with_an_empty_group() {
         let group = Object::new_group(vec![]);
-        let ray = Ray {
-            origin: Point::new(0.0, 0.0, 0.0),
-            direction: Vector::new(0.0, 0.0, 1.0),
-        };
+        let ray = Ray::new(point_zero(), vector_z());
 
-        let object = Object::new_dummy();
-        let mut push = Push::new(&object);
+        let xs = group.intersect(&ray);
 
-        group.intersects(&ray, &mut push);
-
-        assert_eq!(push.xs.len(), 0);
+        assert_eq!(xs.len(), 0);
     }
 
     #[test]
     fn intersecting_a_ray_with_an_non_empty_group() {
-        let s1 = Object::new_sphere();
-        let s2 = Object::new_sphere().translate(0.0, 0.0, -3.0).transform();
-        let s3 = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+        let s1 = sphere();
+        let mut s2 = sphere();
+        s2.set_transform(&make_translation(0.0, 0.0, -3.0));
+        let mut s3 = sphere();
+        s3.set_transform(&make_translation(5.0, 0.0, 0.0));
 
         let group = Object::new_group(vec![s1.clone(), s2.clone(), s3]);
+        let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
 
-        let ray = Ray {
-            origin: Point::new(0.0, 0.0, -5.0),
-            direction: Vector::new(0.0, 0.0, 1.0),
-        };
-
-        let objects = vec![group];
-        let xs = ray.intersects(&objects[..], Intersections::new());
+        let xs = group.intersect(&ray);
 
         assert_eq!(xs.len(), 4);
-        assert_eq!(*xs[0].object(), s2.clone());
-        assert_eq!(*xs[1].object(), s2);
-        assert_eq!(*xs[2].object(), s1.clone());
-        assert_eq!(*xs[3].object(), s1);
+        assert_eq!(*xs[0].object, s2);
+        assert_eq!(*xs[1].object, s2);
+        assert_eq!(*xs[2].object, s1);
+        assert_eq!(*xs[3].object, s1);
     }
 
     #[test]
     fn intersecting_a_ray_with_a_nested_non_empty_group() {
         {
             let s1 = Object::new_sphere();
-            let s2 = Object::new_sphere().translate(0.0, 0.0, -3.0).transform();
-            let s3 = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let mut s2 = Object::new_sphere();
+            s2.set_transform(&make_translation(0.0, 0.0, -3.0));
+            let mut s3 = Object::new_sphere();
+            s3.set_transform(&make_translation(5.0, 0.0, 0.0));
 
             let group_1 = Object::new_group(vec![s1.clone(), s2.clone(), s3.clone()]);
             let group_2 = Object::new_group(vec![group_1]);
 
-            let ray = Ray {
-                origin: Point::new(0.0, 0.0, -5.0),
-                direction: Vector::new(0.0, 0.0, 1.0),
-            };
+            let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
 
-            let objects = vec![group_2];
-            let xs = ray.intersects(&objects[..], Intersections::new());
+            let xs = group_2.intersect(&ray);
 
             assert_eq!(xs.len(), 4);
-            assert_eq!(*xs[0].object(), s2);
-            assert_eq!(*xs[1].object(), s2);
-            assert_eq!(*xs[2].object(), s1);
-            assert_eq!(*xs[3].object(), s1);
+            assert_eq!(*xs[0].object, s2);
+            assert_eq!(*xs[1].object, s2);
+            assert_eq!(*xs[2].object, s1);
+            assert_eq!(*xs[3].object, s1);
         }
         {
             let s1 = Object::new_sphere();
-            let s2 = Object::new_sphere().translate(0.0, 0.0, -3.0).transform();
-            let s3 = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let mut s2 = Object::new_sphere();
+            s2.set_transform(&make_translation(0.0, 0.0, -3.0));
+            let mut s3 = Object::new_sphere();
+            s3.set_transform(&make_translation(5.0, 0.0, 0.0));
 
             let group_1 = Object::new_group(vec![s1.clone(), s3]);
             let group_2 = Object::new_group(vec![group_1, s2.clone()]);
 
-            let ray = Ray {
-                origin: Point::new(0.0, 0.0, -5.0),
-                direction: Vector::new(0.0, 0.0, 1.0),
-            };
+            let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
 
-            let objects = vec![group_2];
-            let xs = ray.intersects(&objects[..], Intersections::new());
+            let xs = group_2.intersect(&ray);
 
             assert_eq!(xs.len(), 4);
-            assert_eq!(*xs[0].object(), s2);
-            assert_eq!(*xs[1].object(), s2);
-            assert_eq!(*xs[2].object(), s1);
-            assert_eq!(*xs[3].object(), s1);
+            assert_eq!(*xs[0].object, s2);
+            assert_eq!(*xs[1].object, s2);
+            assert_eq!(*xs[2].object, s1);
+            assert_eq!(*xs[3].object, s1);
         }
     }
 
+    /*
     #[test]
     fn intersecting_a_transformed_group() {
         let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
@@ -498,5 +460,5 @@ mod tests {
         // right child
         assert_eq!(g_children[2].shape().as_group().unwrap().children()[0], s2);
     }
+    */
 }
-*/
