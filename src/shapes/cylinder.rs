@@ -1,7 +1,7 @@
 use crate::bounds::*;
 use crate::intersection::Intersection;
 use crate::math;
-use crate::object::Object;
+use crate::object::*;
 use crate::ray::Ray;
 use crate::shapes::shape::*;
 use crate::tuple::*;
@@ -27,13 +27,9 @@ pub fn cylinder_with_id(
     max: math::F3D,
     closed: bool,
 ) -> Object {
-    let mut o = Object::new(id);
-    o.shape = Shape::Cylinder(Cylinder {
-        minimum: min,
-        maximum: max,
-        closed,
-    });
-    o
+    let mut c = Object::new_cylinder(min, max, closed);
+    c.id = id.unwrap_or(get_unique_id().to_string());
+    c
 }
 
 pub fn cylinder(min: math::F3D, max: math::F3D, closed: bool) -> Object {

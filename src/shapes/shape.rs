@@ -6,6 +6,7 @@ use crate::ray::Ray;
 use crate::shapes::{cone, cube, cylinder, group, plane, sphere};
 use crate::tuple::*;
 use glm::*;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
 pub enum Shape {
@@ -67,7 +68,7 @@ impl Shape {
             Shape::Plane() => plane::Plane::bounds(),
             Shape::Sphere() => sphere::Sphere::bounds(),
             Shape::TestShape(c) => c.bounds(),
-            Shape::Group(g) => g.bounding_box(),
+            Shape::Group(g) => g.bounds(),
             Shape::None => Bounds::default(),
         }
     }
@@ -80,11 +81,15 @@ impl Shape {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct TestShape {}
+#[derive(Clone, Debug)]
+pub struct TestShape {
+    // seems to be the only way to save
+    ray: Arc<Mutex<Option<Ray>>>,
+}
 impl TestShape {
-    pub fn local_intersect(&self, _ray: &Ray) -> Vec<F3D> {
-        //self.saved_ray = ray;
+    pub fn local_intersect<'a>(&'a self, ray: &Ray) -> Vec<F3D> {
+        let mut reference = self.ray.lock().unwrap();
+        *reference = Some(*ray);
         vec![]
     }
 
@@ -95,10 +100,16 @@ impl TestShape {
     pub fn bounds(&self) -> Bounds {
         Bounds::new(point(-1.0, -1.0, -1.0), point(1.0, 1.0, 1.0))
     }
+
+    pub fn ray(&self) -> Option<Ray> {
+        *self.ray.lock().unwrap()
+    }
 }
 
 pub fn test_shape() -> Object {
     let mut o = Object::new(None);
-    o.shape = Shape::TestShape(TestShape {});
+    o.shape = Shape::TestShape(TestShape {
+        ray: Arc::new(Mutex::new(None)),
+    });
     o
 }

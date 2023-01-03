@@ -4,9 +4,10 @@
 use crate::bounds::*;
 use crate::intersection::*;
 use crate::materials::Material;
+use crate::math;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
-use crate::shapes::{group::*, shape::*, sphere::*};
+use crate::shapes::{cylinder::*, group::*, shape::*, sphere::*};
 use crate::tuple::*;
 use glm::*;
 use std::fmt;
@@ -47,6 +48,19 @@ impl Object {
             bounds: Sphere::bounds(),
             ..Object::default()
         }
+    }
+
+    pub fn new_cylinder(min: math::F3D, max: math::F3D, closed: bool) -> Object {
+        let mut o = Object {
+            shape: Shape::Cylinder(Cylinder {
+                minimum: min,
+                maximum: max,
+                closed,
+            }),
+            ..Object::default()
+        };
+        o.bounds = o.shape.bounds();
+        o
     }
 
     pub fn new_group(children: Vec<Object>) -> Self {
@@ -141,10 +155,6 @@ impl Object {
         n.normalize()
     }
 
-    pub fn parent_space_bounds(&self) -> Bounds {
-        self.bounds.transform(self.get_transform())
-    }
-
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
@@ -156,6 +166,10 @@ impl Object {
         }
     }
 
+    pub fn bounds(&self) -> Bounds {
+        self.bounds
+    }
+
     pub fn divide(self, threshold: usize) -> Self {
         Self {
             shape: self.shape.divide(threshold),
@@ -164,7 +178,7 @@ impl Object {
     }
 
     /**
-     * For GroupBuilder
+     * Need to call this manually on group objects for transformations
      */
     pub fn transform(self, new_transformation: &Matrix4) -> Self {
         match self.shape() {
@@ -282,7 +296,7 @@ mod tests {
     fn querying_shapes_bounding_box_in_its_parents_space() {
         let mut s = sphere();
         s.set_transform(&(make_translation(1.0, -3.0, 5.0) * make_scaling(0.5, 2.0, 4.0)));
-        let b = s.parent_space_bounds();
+        let b = s.bounds();
         assert_eq!(b.min, point(0.5, -5.0, 1.0));
         assert_eq!(b.max, point(1.5, -1.0, 9.0));
     }

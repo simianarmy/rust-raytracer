@@ -11,7 +11,6 @@ use crate::{
     object::Object,
     ray::Ray,
     shapes::shape::Shape,
-    //rtc::{BoundingBox, IntersectionPusher, Object, Ray, Shape, Transform},
     tuple::{Point, Vector},
 };
 //use serde::{Deserialize, Serialize};
@@ -35,7 +34,7 @@ impl Group {
 
     pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         let mut xs = Intersections::new();
-        if self.bounding_box().intersects(ray) {
+        if self.bounds().intersects(ray) {
             for child in &self.children {
                 //push.set_object(child);
                 xs.extend(&child.intersect(ray));
@@ -53,7 +52,7 @@ impl Group {
         &self.children
     }
 
-    pub fn bounding_box(&self) -> Bounds {
+    pub fn bounds(&self) -> Bounds {
         self.bounds
     }
 
@@ -173,12 +172,21 @@ impl GroupBuilder {
     }
 }
 
+pub fn from_shape(s: &Shape) -> Option<&Group> {
+    match s {
+        Shape::Group(g) => Some(g),
+        _ => None,
+    }
+}
+
 /* ---------------------------------------------------------------------------------------------- */
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{intersection::*, shapes::sphere::*, transformation::*, tuple::*};
+    use crate::{
+        shapes::cylinder::*, shapes::shape, shapes::sphere::*, transformation::*, tuple::*,
+    };
 
     #[test]
     fn intersecting_a_ray_with_an_empty_group() {
@@ -269,40 +277,39 @@ mod tests {
         assert_eq!(xs.len(), 2);
     }
 
-    /*
     #[test]
     fn intersecting_a_nested_transformed_group() {
         {
-            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let mut s = Object::new_sphere();
+            s.set_transform(&make_translation(5.0, 0.0, 0.0));
 
             let group_1 = Object::new_group(vec![s]);
-            let group_2 = Object::new_group(vec![group_1])
-                .scale(2.0, 2.0, 2.0)
-                .transform();
+            let mut group_2 = Object::new_group(vec![group_1]);
+            group_2.set_transform(&make_scaling(2.0, 2.0, 2.0));
 
             let ray = Ray {
-                origin: Point::new(10.0, 0.0, -10.0),
-                direction: Vector::new(0.0, 0.0, 1.0),
+                origin: point(10.0, 0.0, -10.0),
+                direction: vector_z(),
             };
 
-            let objects = vec![group_2];
-            let xs = ray.intersects(&objects[..], Intersections::new());
+            let xs = group_2.intersect(&ray);
 
             assert_eq!(xs.len(), 2);
         }
         {
-            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let mut s = Object::new_sphere();
+            s.set_transform(&make_translation(5.0, 0.0, 0.0));
 
-            let group_1 = Object::new_group(vec![s]).scale(2.0, 2.0, 2.0).transform();
+            let mut group_1 = Object::new_group(vec![s]);
+            group_1.set_transform(&make_scaling(2.0, 2.0, 2.0));
             let group_2 = Object::new_group(vec![group_1]);
 
             let ray = Ray {
-                origin: Point::new(10.0, 0.0, -10.0),
-                direction: Vector::new(0.0, 0.0, 1.0),
+                origin: point(10.0, 0.0, -10.0),
+                direction: vector_z(),
             };
 
-            let objects = vec![group_2];
-            let xs = ray.intersects(&objects[..], Intersections::new());
+            let xs = group_2.intersect(&ray);
 
             assert_eq!(xs.len(), 2);
         }
@@ -310,153 +317,146 @@ mod tests {
 
     #[test]
     fn transformations_are_propagated() {
-        let s = Object::new_sphere()
-            .translate(5.0, 0.0, 0.0)
-            .scale(2.0, 2.0, 2.0)
-            .rotate_y(std::f64::consts::PI / 2.0)
-            .transform();
+        let mut s = Object::new_sphere();
+        s.set_transform(
+            &(make_rotation_y(glm::half_pi())
+                * make_scaling(2.0, 2.0, 2.0)
+                * make_translation(5.0, 0.0, 0.0)),
+        );
 
-        let expected_transformation = s.transformation();
+        let expected_transformation = s.get_transform();
 
         // With one group
         {
-            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
-            let g2 = Object::new_group(vec![s])
-                .scale(2.0, 2.0, 2.0)
-                .rotate_y(std::f64::consts::PI / 2.0)
-                .transform();
+            let mut s = Object::new_sphere();
+            s.set_transform(&make_translation(5.0, 0.0, 0.0));
+            let t = make_scaling(2.0, 2.0, 2.0) * make_rotation_y(glm::half_pi());
+            let g2t = Object::new_group(vec![s]).transform(&t);
 
             // Retrieve the s with the baked-in group transform.
-            let group_s = g2.shape().as_group().unwrap().children[0].clone();
+            let group_s = from_shape(g2t.shape()).unwrap().children[0].clone();
 
-            assert_eq!(group_s.transformation(), expected_transformation);
+            assert_eq!(group_s.get_transform(), expected_transformation);
         }
         {
-            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let mut s = Object::new_sphere();
+            s.set_transform(&make_translation(5.0, 0.0, 0.0));
             let g2 = Object::new_group(vec![s])
-                .rotate_y(std::f64::consts::PI / 2.0)
-                .scale(2.0, 2.0, 2.0)
-                .transform();
+                .transform(&(make_scaling(2.0, 2.0, 2.0) * make_rotation_y(glm::half_pi())));
             let g1 = Object::new_group(vec![g2]);
 
             // Retrieve the s with the baked-in group transform.
-            let group_g2 = g1.shape().as_group().unwrap().children[0].clone();
-            let group_s = group_g2.shape().as_group().unwrap().children[0].clone();
+            let group_g2 = from_shape(g1.shape()).unwrap().children[0].clone();
+            let group_s = from_shape(group_g2.shape()).unwrap().children[0].clone();
 
-            assert_eq!(group_s.transformation(), expected_transformation);
+            assert_eq!(group_s.get_transform(), expected_transformation);
         }
         // With three nested groups, only one being transformed
         {
-            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
-            let g2 = Object::new_group(vec![s])
-                .rotate_y(std::f64::consts::PI / 2.0)
-                .scale(2.0, 2.0, 2.0)
-                .transform();
+            let mut s = Object::new_sphere();
+            s.set_transform(&make_translation(5.0, 0.0, 0.0));
+            let mut g2 = Object::new_group(vec![s]);
+            g2.set_transform(
+                &(make_rotation_y(std::f64::consts::PI / 2.0) * make_scaling(2.0, 2.0, 2.0)),
+            );
             let g1 = Object::new_group(vec![g2]);
             let g0 = Object::new_group(vec![g1]);
 
             // Retrieve the s with the baked-in group transform.
-            let group_g1 = g0.shape().as_group().unwrap().children[0].clone();
-            let group_g2 = group_g1.shape().as_group().unwrap().children[0].clone();
-            let group_s = group_g2.shape().as_group().unwrap().children[0].clone();
+            let group_g1 = from_shape(g0.shape()).unwrap().children[0].clone();
+            let group_g2 = from_shape(group_g1.shape()).unwrap().children[0].clone();
+            let group_s = from_shape(group_g2.shape()).unwrap().children[0].clone();
 
-            assert_eq!(group_s.transformation(), expected_transformation);
+            assert_eq!(group_s.get_transform(), expected_transformation);
         }
         // With two nested groups with transformations in both
         {
-            let s = Object::new_sphere().translate(5.0, 0.0, 0.0).transform();
+            let mut s = Object::new_sphere();
+            s.set_transform(&make_translation(5.0, 0.0, 0.0));
             let g2 = Object::new_group(vec![s])
-                .rotate_y(std::f64::consts::PI / 2.0)
-                .transform();
-            let g1 = Object::new_group(vec![g2]).scale(2.0, 2.0, 2.0).transform();
+                .transform(&(make_rotation_y(std::f64::consts::PI / 2.0)));
+            let g1 = Object::new_group(vec![g2]).transform(&make_scaling(2.0, 2.0, 2.0));
 
             // Retrieve the s with the baked-in group transform.
-            let group_g2 = g1.shape().as_group().unwrap().children[0].clone();
-            let group_s = group_g2.shape().as_group().unwrap().children[0].clone();
+            let group_g2 = from_shape(g1.shape()).unwrap().children[0].clone();
+            let group_s = from_shape(group_g2.shape()).unwrap().children[0].clone();
 
-            assert_eq!(group_s.transformation(), expected_transformation);
+            assert_eq!(group_s.get_transform(), expected_transformation);
         }
     }
 
     #[test]
     fn a_group_has_a_bounding_box_that_contains_its_children() {
-        let s = Object::new_sphere()
-            .scale(2.0, 2.0, 2.0)
-            .translate(2.0, 5.0, -3.0)
-            .transform();
-        let c = Object::new_cylinder(-2.0, 2.0, true)
-            .scale(0.5, 1.0, 0.5)
-            .translate(-4.0, -1.0, 4.0)
-            .transform();
+        let mut s = Object::new_sphere();
+        s.set_transform(&(make_translation(2.0, 5.0, -3.0) * make_scaling(2.0, 2.0, 2.0)));
+        let mut c = cylinder(-2.0, 2.0, true);
+        c.set_transform(&(make_translation(-4.0, -1.0, 4.0) * make_scaling(0.5, 1.0, 0.5)));
 
         let g = Object::new_group(vec![s, c]);
 
-        assert_eq!(g.bounding_box().min(), Point::new(-4.5, -3.0, -5.0));
-        assert_eq!(g.bounding_box().max(), Point::new(4.0, 7.0, 4.5));
+        assert_eq!(g.bounds().min, point(-4.5, -3.0, -5.0));
+        assert_eq!(g.bounds().max, point(4.0, 7.0, 4.5));
     }
 
     #[test]
     fn intersecting_a_ray_with_doesnt_test_children_if_bbox_is_missed() {
-        let ts = Object::new_test_shape();
+        let ts = shape::test_shape();
 
         let g = Object::new_group(vec![ts]);
 
         let ray = Ray {
-            origin: Point::new(0.0, 0.0, -5.0),
-            direction: Vector::new(0.0, 1.0, 0.0),
+            origin: point(0.0, 0.0, -5.0),
+            direction: vector_y(),
         };
 
-        let object = Object::new_dummy();
-        let mut push = Push::new(&object);
-        g.intersects(&ray, &mut push);
+        g.intersect(&ray);
 
-        let ts = g.shape().as_group().unwrap().children()[0]
-            .shape()
-            .as_test_shape()
-            .unwrap();
+        let s = from_shape(g.shape()).unwrap().children()[0].clone();
+        let ts = match s.shape() {
+            Shape::TestShape(testshape) => Some(testshape),
+            _ => None,
+        };
 
-        assert!(ts.ray().is_none());
+        assert!(ts.unwrap().ray().is_none());
     }
 
     #[test]
     fn intersecting_a_ray_with_tests_children_if_bbox_is_hit() {
-        let ts = Object::new_test_shape();
+        let ts = shape::test_shape();
 
         let g = Object::new_group(vec![ts]);
 
         let ray = Ray {
-            origin: Point::new(0.0, 0.0, -5.0),
-            direction: Vector::new(0.0, 0.0, 1.0),
+            origin: point(0.0, 0.0, -5.0),
+            direction: vector_z(),
         };
 
-        let object = Object::new_dummy();
-        let mut push = Push::new(&object);
-        g.intersects(&ray, &mut push);
+        g.intersect(&ray);
 
-        let ts = g.shape().as_group().unwrap().children()[0]
-            .shape()
-            .as_test_shape()
-            .unwrap();
+        let s = from_shape(g.shape()).unwrap().children()[0].clone();
+        let ts = match s.shape() {
+            Shape::TestShape(testshape) => Some(testshape),
+            _ => None,
+        };
 
-        assert!(ts.ray().is_some());
+        assert!(ts.unwrap().ray().is_some());
     }
 
     #[test]
     fn partitioning_a_group_s_children() {
-        let s1 = Object::new_sphere().translate(-2.0, 0.0, 0.0).transform();
-        let s2 = Object::new_sphere().translate(2.0, 0.0, 0.0).transform();
+        let s1 = Object::new_sphere().with_transformation(make_translation(-2.0, 0.0, 0.0));
+        let s2 = Object::new_sphere().with_transformation(make_translation(2.0, 0.0, 0.0));
         let s3 = Object::new_sphere();
 
         let g = Object::new_group(vec![s1.clone(), s2.clone(), s3.clone()]);
 
-        let g = g.shape().as_group().unwrap().clone().partition();
+        let g = from_shape(g.shape()).unwrap().clone().partition();
         let g_children = g.children();
 
         assert_eq!(g_children[0], s3);
         // left child
-        assert_eq!(g_children[1].shape().as_group().unwrap().children()[0], s1);
+        assert_eq!(from_shape(g_children[1].shape()).unwrap().children()[0], s1);
         // right child
-        assert_eq!(g_children[2].shape().as_group().unwrap().children()[0], s2);
+        assert_eq!(from_shape(g_children[2].shape()).unwrap().children()[0], s2);
     }
-    */
 }
