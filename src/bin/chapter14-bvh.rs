@@ -72,18 +72,19 @@ fn main() {
             rng.gen::<f64>() * 1.0 * (zmod as F3D),
         ) * make_scaling(scale, scale, scale);
         glass_ball.set_transform(&transform);
+
         let mut m = Material::default();
-        m.color = Color::new(0.5, 0.0, 0.0);
+        m.color = Color::new(rng.gen::<f64>(), rng.gen::<f64>(), rng.gen::<f64>());
         glass_ball.set_material(m);
+
         balls.push(glass_ball);
     }
-    let group = Object::new_group(balls);
-    group.divide(40);
+    let group = Object::new_group(balls).divide(40);
 
     world.add_shape(group);
 
-    //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
-    let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
+    let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
+    //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
@@ -97,8 +98,8 @@ fn main() {
             println!("Error writing file! {}", err);
         }
     }
-    println!(
-        "bounding box opts: {}",
-        NUM_BOUNDING_OPTS.load(Ordering::SeqCst)
-    );
+    //println!(
+    //"bounding box opts: {}",
+    //NUM_BOUNDING_OPTS.load(Ordering::SeqCst)
+    //);
 }

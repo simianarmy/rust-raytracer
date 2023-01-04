@@ -35,8 +35,7 @@ impl Group {
     pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
         let mut xs = Intersections::new();
         if self.bounds().intersects(ray) {
-            for child in &self.children {
-                //push.set_object(child);
+            for child in self.children() {
                 xs.extend(&child.intersect(ray));
             }
         }
@@ -267,8 +266,7 @@ mod tests {
         let mut s = Object::new_sphere();
         s.set_transform(&make_translation(5.0, 0.0, 0.0));
 
-        let mut group = Object::new_group(vec![s]);
-        group.set_transform(&make_scaling(2.0, 2.0, 2.0));
+        let group = Object::new_group(vec![s]).transform(&make_scaling(2.0, 2.0, 2.0));
 
         let ray = Ray::new(point(10.0, 0.0, -10.0), vector_z());
 
@@ -284,8 +282,7 @@ mod tests {
             s.set_transform(&make_translation(5.0, 0.0, 0.0));
 
             let group_1 = Object::new_group(vec![s]);
-            let mut group_2 = Object::new_group(vec![group_1]);
-            group_2.set_transform(&make_scaling(2.0, 2.0, 2.0));
+            let group_2 = Object::new_group(vec![group_1]).transform(&make_scaling(2.0, 2.0, 2.0));
 
             let ray = Ray {
                 origin: point(10.0, 0.0, -10.0),

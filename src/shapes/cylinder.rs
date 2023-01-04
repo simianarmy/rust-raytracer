@@ -65,6 +65,7 @@ impl Cylinder {
         }
         xs
     }
+
     pub fn local_intersect(&self, ray: &Ray) -> Vec<math::F3D> {
         let mut xs = vec![];
         let a = ray.direction.x.powi(2) + ray.direction.z.powi(2);
@@ -98,9 +99,9 @@ impl Cylinder {
 
     pub fn local_normal_at(&self, point: &Point) -> Vector {
         let dist = point.x.powi(2) + point.z.powi(2);
-        if dist < 1.0 && point.y >= self.maximum - math::EPSILON {
+        if dist < 1.0 && point.y >= (self.maximum - math::EPSILON) {
             vector_y()
-        } else if dist < 1.0 && point.y <= self.maximum + math::EPSILON {
+        } else if dist < 1.0 && point.y <= (self.minimum + math::EPSILON) {
             vector(0.0, -1.0, 0.0)
         } else {
             vector(point.x, 0.0, point.z)
