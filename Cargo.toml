@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 nalgebra-glm = "0.17.0"
 rand = "0.8"
+tobj = "3.2.3"
 
 [[bin]]
 name = "raytracer_bin"

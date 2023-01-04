@@ -10,9 +10,9 @@ use crate::tuple::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
-    p1: Point,
-    p2: Point,
-    p3: Point,
+    pub p1: Point,
+    pub p2: Point,
+    pub p3: Point,
     e1: Vector,
     e2: Vector,
     normal: Vector,
@@ -70,7 +70,14 @@ impl Triangle {
     }
 
     pub fn bounds(&self) -> Bounds {
-        Bounds::default()
+        let minx = glm::min3_scalar(self.p1.x, self.p2.x, self.p3.x);
+        let miny = glm::min3_scalar(self.p1.y, self.p2.y, self.p3.y);
+        let minz = glm::min3_scalar(self.p1.z, self.p2.z, self.p3.z);
+        let maxx = glm::max3_scalar(self.p1.x, self.p2.x, self.p3.x);
+        let maxy = glm::max3_scalar(self.p1.y, self.p2.y, self.p3.y);
+        let maxz = glm::max3_scalar(self.p1.z, self.p2.z, self.p3.z);
+
+        Bounds::new(point(minx, miny, minz), point(maxx, maxy, maxz))
     }
 }
 
