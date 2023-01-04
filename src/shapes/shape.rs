@@ -2,7 +2,7 @@ use crate::bounds::*;
 use crate::math::F3D;
 use crate::object::Object;
 use crate::ray::Ray;
-use crate::shapes::{cone, cube, cylinder, group, plane, sphere};
+use crate::shapes::{cone, cube, cylinder, group, plane, sphere, triangle};
 use crate::tuple::*;
 use std::sync::{Arc, Mutex};
 
@@ -15,6 +15,7 @@ pub enum Shape {
     Group(group::Group),
     Plane(),
     Sphere(),
+    Triangle(triangle::Triangle),
     TestShape(TestShape),
 }
 
@@ -27,6 +28,7 @@ impl Shape {
             Shape::Group(_) => "group",
             Shape::Plane() => "plane",
             Shape::Sphere() => "sphere",
+            Shape::Triangle(_) => "triangle",
             Shape::TestShape(_) => "test_shape",
             Shape::None => "none",
         }
@@ -39,6 +41,7 @@ impl Shape {
             Shape::Cylinder(c) => c.local_intersect(ray),
             Shape::Plane() => plane::Plane::local_intersect(ray),
             Shape::Sphere() => sphere::Sphere::local_intersect(ray),
+            Shape::Triangle(t) => t.local_intersect(ray),
             Shape::TestShape(c) => c.local_intersect(ray),
             Shape::Group(_) => unreachable!("Group::intersect from Shape"),
             Shape::None => unreachable!("Shape::None::intersect"),
@@ -52,6 +55,7 @@ impl Shape {
             Shape::Cylinder(c) => c.local_normal_at(point),
             Shape::Plane() => plane::Plane::local_normal_at(point),
             Shape::Sphere() => sphere::Sphere::local_normal_at(point),
+            Shape::Triangle(t) => t.local_normal_at(point),
             Shape::TestShape(c) => c.local_normal_at(point),
             Shape::Group(g) => g.normal_at(point),
             Shape::None => unreachable!("Shape::None::normal_at"),
@@ -65,6 +69,7 @@ impl Shape {
             Shape::Cylinder(c) => c.bounds(),
             Shape::Plane() => plane::Plane::bounds(),
             Shape::Sphere() => sphere::Sphere::bounds(),
+            Shape::Triangle(t) => t.bounds(),
             Shape::TestShape(c) => c.bounds(),
             Shape::Group(g) => g.bounds(),
             Shape::None => Bounds::default(),
