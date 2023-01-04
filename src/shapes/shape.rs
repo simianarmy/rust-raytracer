@@ -1,11 +1,9 @@
 use crate::bounds::*;
-use crate::intersection::Intersection;
 use crate::math::F3D;
 use crate::object::Object;
 use crate::ray::Ray;
 use crate::shapes::{cone, cube, cylinder, group, plane, sphere};
 use crate::tuple::*;
-use glm::*;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
@@ -83,7 +81,7 @@ impl Shape {
 
 #[derive(Clone, Debug)]
 pub struct TestShape {
-    // seems to be the only way to save
+    // seems to be the only way to save this property?
     ray: Arc<Mutex<Option<Ray>>>,
 }
 impl TestShape {

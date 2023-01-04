@@ -6,7 +6,6 @@ use crate::materials::lighting;
 use crate::materials::Material;
 use crate::object::*;
 use crate::ray::Ray;
-use crate::shapes::group::*;
 use crate::shapes::sphere::sphere_with_id;
 use crate::transformation::make_scaling;
 use crate::tuple::*;
@@ -37,20 +36,6 @@ impl World {
     pub fn set_shape(&mut self, shape: Object, i: usize) {
         self.objects[i] = shape;
     }
-
-    /*
-    pub fn add_group(&mut self, g: &GroupRef) {
-        self.objects.push(g.clone());
-    }
-
-    pub fn get_group(&mut self, i: usize) -> &GroupRef {
-        &self.objects[i]
-    }
-
-    pub fn set_group(&mut self, g: &GroupRef, i: usize) {
-        self.objects[i] = g.clone();
-    }
-    */
 
     // returns all ray/shape intersections sorted by t
     pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
@@ -228,9 +213,8 @@ mod tests {
     fn shading_an_intersection() {
         let world = World::default();
         let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let shape = &world.objects[0];
-        let group = GroupBuilder::from_object(&shape).build();
-        let i = Intersection::new(&group, 4.0);
+        let object = &world.objects[0];
+        let i = Intersection::new(&object, 4.0);
         let comps = prepare_computations(
             &i,
             &ray,
@@ -245,9 +229,8 @@ mod tests {
         let mut world = World::default();
         world.light = point_light(point(0.0, 0.25, 0.0), Color::white());
         let ray = Ray::new(point_zero(), vector_z());
-        let shape = &world.objects[1];
-        let group = GroupBuilder::from_object(&shape).build();
-        let i = Intersection::new(&group, 0.5);
+        let object = &world.objects[1];
+        let i = Intersection::new(&object, 0.5);
         let comps = prepare_computations(
             &i,
             &ray,

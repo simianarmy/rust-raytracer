@@ -1,6 +1,6 @@
 /**
  * Simple scene
- * Testing Bounding Box Optimization
+ * Testing no optimizations
  */
 extern crate nalgebra_glm as glm;
 extern crate raytracer;
@@ -8,19 +8,16 @@ extern crate raytracer;
 use rand::Rng;
 use raytracer::camera::Camera;
 use raytracer::color::Color;
-use raytracer::group::*;
 use raytracer::lights::*;
 use raytracer::materials::Material;
 use raytracer::math::F3D;
 use raytracer::ppm::*;
 use raytracer::shapes::plane::plane;
-use raytracer::shapes::shape::*;
 use raytracer::shapes::sphere::*;
 use raytracer::transformation::*;
 use raytracer::tuple::*;
 use raytracer::world::World;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+//use std::sync::atomic::{AtomicUsize, Ordering};
 
 const CHAPTER: u8 = 14;
 
@@ -51,18 +48,13 @@ fn main() {
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
 
     let mut floor = plane(); // unit sphere
-    floor.props.material.color = Color::new(0.8, 0.7, 0.8);
-    floor.props.material.specular = 0.0;
-    floor.props.material.transparency = 0.3;
-    floor.props.material.reflective = 0.8;
+    floor.material.color = Color::new(0.8, 0.7, 0.8);
+    floor.material.specular = 0.0;
+    floor.material.transparency = 0.3;
+    floor.material.reflective = 0.8;
     floor.set_transform(&make_rotation_z(0.01));
 
-    world.add_shape(Box::new(floor));
-    let mut groups = Vec::new();
-    groups.push(default_group());
-    groups.push(default_group());
-    groups.push(default_group());
-    groups.push(default_group());
+    world.add_shape(floor);
 
     let mut rng = rand::thread_rng();
     for _i in 0..280 {
@@ -82,25 +74,15 @@ fn main() {
         glass_ball.set_material(m);
 
         // add shape to the proper quadrant
-        let gidx = get_quadrant(xmod, ymod, zmod);
-        add_child_shape(&mut groups[gidx], Box::new(glass_ball));
+        world.add_shape(glass_ball);
     }
-    println!("group 0 size: {}", groups[0].shapes.borrow().len());
-    println!("group 1 size: {}", groups[1].shapes.borrow().len());
-    println!("group 2 size: {}", groups[2].shapes.borrow().len());
-    println!("group 3 size: {}", groups[3].shapes.borrow().len());
-    world.add_group(&groups[0]);
-    world.add_group(&groups[1]);
-    world.add_group(&groups[2]);
-    world.add_group(&groups[3]);
-
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
 
-    let filename = format!("./ppms/chapter{}-bb.ppm", CHAPTER);
+    let filename = format!("./ppms/chapter{}.ppm", CHAPTER);
     match create_file_from_data(&filename, &canvas.to_ppm()) {
         Ok(_) => {
             println!("file created ({})!", filename);
@@ -109,8 +91,8 @@ fn main() {
             println!("Error writing file! {}", err);
         }
     }
-    println!(
-        "bounding box opts: {}",
-        NUM_BOUNDING_OPTS.load(Ordering::SeqCst)
-    );
+    //println!(
+    //"bounding box opts: {}",
+    //NUM_BOUNDING_OPTS.load(Ordering::SeqCst)
+    //);
 }

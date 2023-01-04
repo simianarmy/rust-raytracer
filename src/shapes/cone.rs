@@ -1,5 +1,4 @@
 use crate::bounds::*;
-use crate::intersection::Intersection;
 use crate::math;
 use crate::object::Object;
 use crate::ray::Ray;
@@ -48,13 +47,11 @@ pub fn check_cap(ray: &Ray, t: math::F3D, y: math::F3D) -> bool {
 
 // constructor utilities
 pub fn cone_with_id(id: Option<String>, min: math::F3D, max: math::F3D, closed: bool) -> Object {
-    let mut o = Object::new(id);
-    o.shape = Shape::Cone(Cone {
+    Object::new(id).with_shape(Shape::Cone(Cone {
         minimum: min,
         maximum: max,
         closed,
-    });
-    o
+    }))
 }
 
 pub fn cone(min: math::F3D, max: math::F3D, closed: bool) -> Object {

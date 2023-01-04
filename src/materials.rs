@@ -3,7 +3,6 @@ use crate::lights::*;
 use crate::math::F3D;
 use crate::object::Object;
 use crate::pattern::*;
-use crate::shapes::group::*;
 use crate::tuple::*;
 use glm::*;
 

@@ -1,7 +1,6 @@
 use crate::computations::Computations;
 use crate::math::*;
 use crate::object::*;
-use crate::shapes::group::*;
 use std::clone::Clone;
 use std::fmt;
 
@@ -15,28 +14,7 @@ impl<'a> Intersection<'a> {
     pub fn new(object: &'a Object, t: F3D) -> Self {
         Self { t, object }
     }
-
-    //pub fn from_group(g: &GroupRef, t: F3D) -> Intersection {
-    //Intersection { t, object: &g.val }
-    //}
 }
-
-//impl<'a> PartialEq for Intersection<'a> {
-//fn eq(&self, other: &Self) -> bool {
-//f_equals(self.t, other.t) // todo: object comparison
-//}
-//}
-
-//impl<'a> fmt::Debug for Intersection<'a> {
-//fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-//write!(
-//f,
-//"intersection t = {}, object = {}",
-//self.t,
-//self.object.get_id()
-//)
-//}
-//}
 
 impl<'a> fmt::Display for Intersection<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

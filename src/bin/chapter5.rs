@@ -6,13 +6,13 @@ extern crate raytracer;
 
 use raytracer::canvas::Canvas;
 use raytracer::color::Color;
-use raytracer::group;
-use raytracer::intersection::hit;
+use raytracer::intersection::*;
 use raytracer::lights::*;
 use raytracer::materials::lighting;
 use raytracer::math::F3D;
 use raytracer::ppm::*;
 use raytracer::ray::Ray;
+use raytracer::shapes::group;
 use raytracer::shapes::shape::*;
 use raytracer::shapes::sphere::sphere;
 use raytracer::tuple::*;
@@ -20,7 +20,7 @@ use std::sync::Arc;
 
 fn main() {
     let mut sphere = sphere(); // unit sphere
-    sphere.props.material.color = Color::new(1.0, 0.2, 1.0);
+    sphere.material.color = Color::new(1.0, 0.2, 1.0);
     let light_pos = point(-10.0, 10.0, -10.0);
     let color = Color::white();
     let light = point_light(light_pos, color);
@@ -44,14 +44,14 @@ fn main() {
             let ray = Ray::new(eye, glm::normalize(&eye_to_wall));
             let xs = sphere.intersect(&ray);
 
-            match hit(&xs) {
+            match xs.hit() {
                 Some(is) => {
                     let p = ray.position(is.t);
-                    let normal = group::normal_at(&is.group, &p);
+                    let normal = is.object.normal_at(p);
                     let eye = -ray.direction;
                     let color = lighting(
-                        &is.group.get_material(),
-                        Arc::clone(&is.group),
+                        &is.object.get_material(),
+                        &is.object,
                         &light,
                         &p,
                         &eye,

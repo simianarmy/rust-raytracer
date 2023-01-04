@@ -25,10 +25,10 @@ const CHAPTER: u8 = 12;
 
 fn main() {
     let mut floor = plane(); // unit sphere
-    floor.props.material.color = Color::new(0.8, 0.7, 0.8);
-    floor.props.material.specular = 0.0;
-    floor.props.material.transparency = 0.3;
-    floor.props.material.reflective = 0.8;
+    floor.material.color = Color::new(0.8, 0.7, 0.8);
+    floor.material.specular = 0.0;
+    floor.material.transparency = 0.3;
+    floor.material.reflective = 0.8;
     floor.set_transform(&make_rotation_z(0.01));
     //floor
     //.props
@@ -54,11 +54,10 @@ fn main() {
     let mut checker_ball = sphere();
     let rt = make_translation(0.0, 1.0, 1.0) * make_scaling(0.5, 0.5, 0.5);
     checker_ball.set_transform(&rt);
-    checker_ball.props.material.color = Color::new(0.5, 1.0, 0.1);
-    //checker_ball.props.material.diffuse = 0.4;
-    //checker_ball.props.material.specular = 0.3;
+    checker_ball.material.color = Color::new(0.5, 1.0, 0.1);
+    //checker_ball.material.diffuse = 0.4;
+    //checker_ball.material.specular = 0.3;
     checker_ball
-        .props
         .material
         .set_pattern(Some(pattern::TPattern::Checkers(
             pattern::checkers::checkers_pattern(Color::white(), Color::new(0.5, 0.8, 0.3)),
@@ -69,20 +68,18 @@ fn main() {
         * make_rotation_y(glm::quarter_pi())
         * make_scaling(2.13, 0.13, 0.13);
     lcube.set_transform(&st);
-    lcube.props.material.color = Color::new(0.5, 0.8, 0.8);
-    lcube.props.material.reflective = 0.9;
-    lcube.props.material.transparency = 0.7;
-    lcube.props.material.shininess = 300.0;
+    lcube.material.color = Color::new(0.5, 0.8, 0.8);
+    lcube.material.reflective = 0.9;
+    lcube.material.transparency = 0.7;
+    lcube.material.shininess = 300.0;
 
-    let mut cone1 = cone();
-    cone1.set_bounds(0.0, 2.0);
-    cone1.closed = true;
-    cone1.props.material.color = Color::new(0.4, 0.4, 1.0);
-    cone1.props.material.diffuse = 0.1;
-    cone1.props.material.ambient = 0.1;
-    cone1.props.material.specular = 0.9;
-    cone1.props.material.shininess = 300.0;
-    cone1.props.material.reflective = 0.9;
+    let mut cone1 = cone(0.0, 2.0, true);
+    cone1.material.color = Color::new(0.4, 0.4, 1.0);
+    cone1.material.diffuse = 0.1;
+    cone1.material.ambient = 0.1;
+    cone1.material.specular = 0.9;
+    cone1.material.shininess = 300.0;
+    cone1.material.reflective = 0.9;
     let st = make_translation(0.5, 0.8, -1.75)
         * make_rotation_x(glm::quarter_pi())
         * make_rotation_y(glm::half_pi())
@@ -90,11 +87,11 @@ fn main() {
     cone1.set_transform(&st);
 
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
-    world.add_shape(Box::new(floor));
-    world.add_shape(Box::new(glass_ball));
-    world.add_shape(Box::new(checker_ball));
-    world.add_shape(Box::new(lcube));
-    world.add_shape(Box::new(cone1));
+    world.add_shape(floor);
+    world.add_shape(glass_ball);
+    world.add_shape(checker_ball);
+    world.add_shape(lcube);
+    world.add_shape(cone1);
 
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);

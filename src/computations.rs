@@ -2,8 +2,6 @@ use crate::intersection::*;
 use crate::math::*;
 use crate::object::Object;
 use crate::ray::Ray;
-use crate::shapes::group;
-use crate::shapes::shape::*;
 use crate::tuple::*;
 
 #[derive(Debug)]

@@ -1,5 +1,4 @@
 use crate::bounds::*;
-use crate::intersection::Intersection;
 use crate::math;
 use crate::object::*;
 use crate::ray::Ray;
@@ -23,13 +22,15 @@ pub fn check_cap(ray: &Ray, t: math::F3D) -> bool {
 // constructor utilities
 pub fn cylinder_with_id(
     id: Option<String>,
-    min: math::F3D,
-    max: math::F3D,
+    minimum: math::F3D,
+    maximum: math::F3D,
     closed: bool,
 ) -> Object {
-    let mut c = Object::new_cylinder(min, max, closed);
-    c.id = id.unwrap_or(get_unique_id().to_string());
-    c
+    Object::new(id).with_shape(Shape::Cylinder(Cylinder {
+        minimum,
+        maximum,
+        closed,
+    }))
 }
 
 pub fn cylinder(min: math::F3D, max: math::F3D, closed: bool) -> Object {

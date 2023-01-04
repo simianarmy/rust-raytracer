@@ -8,13 +8,12 @@ extern crate raytracer;
 use rand::Rng;
 use raytracer::camera::Camera;
 use raytracer::color::Color;
-use raytracer::group::*;
 use raytracer::lights::*;
 use raytracer::materials::Material;
 use raytracer::math::F3D;
+use raytracer::object::*;
 use raytracer::ppm::*;
 use raytracer::shapes::plane::plane;
-use raytracer::shapes::shape::*;
 use raytracer::shapes::sphere::*;
 use raytracer::transformation::*;
 use raytracer::tuple::*;
@@ -50,14 +49,15 @@ fn main() {
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
 
     let mut floor = plane(); // unit sphere
-    floor.props.material.color = Color::new(0.8, 0.7, 0.8);
-    floor.props.material.specular = 0.0;
-    floor.props.material.transparency = 0.3;
-    floor.props.material.reflective = 0.8;
+    floor.material.color = Color::new(0.8, 0.7, 0.8);
+    floor.material.specular = 0.0;
+    floor.material.transparency = 0.3;
+    floor.material.reflective = 0.8;
     floor.set_transform(&make_rotation_z(0.01));
 
-    world.add_shape(Box::new(floor));
-    let mut group = Group::new();
+    world.add_shape(floor);
+
+    let mut balls = Vec::new();
 
     let mut rng = rand::thread_rng();
     for _i in 0..280 {
@@ -75,12 +75,12 @@ fn main() {
         let mut m = Material::default();
         m.color = Color::new(0.5, 0.0, 0.0);
         glass_ball.set_material(m);
-        add_child_shape(&mut group, Box::new(glass_ball));
+        balls.push(glass_ball);
     }
-    println!("group size: {}", group.num_children());
-    divide(&mut group, 40);
+    let group = Object::new_group(balls);
+    group.divide(40);
 
-    world.add_group(&group);
+    world.add_shape(group);
 
     //let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);

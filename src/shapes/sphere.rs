@@ -1,5 +1,4 @@
 use crate::bounds::Bounds;
-use crate::intersection::*;
 use crate::math;
 use crate::object::Object;
 use crate::ray::Ray;
@@ -11,9 +10,7 @@ pub struct Sphere {}
 
 // constructor utilities
 pub fn sphere_with_id(id: Option<String>) -> Object {
-    let mut s = Object::new(id);
-    s.shape = Shape::Sphere();
-    s
+    Object::new(id).with_shape(Shape::Sphere())
 }
 
 pub fn sphere() -> Object {

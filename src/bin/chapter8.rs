@@ -18,8 +18,8 @@ use raytracer::world::World;
 
 fn main() {
     let mut floor = sphere(); // unit sphere
-    floor.props.material.color = Color::new(1.0, 0.9, 0.9);
-    floor.props.material.specular = 0.0;
+    floor.material.color = Color::new(1.0, 0.9, 0.9);
+    floor.material.specular = 0.0;
     floor.set_transform(&make_scaling(10.0, 0.01, 10.0));
 
     let mut lwall = sphere();
@@ -49,25 +49,31 @@ fn main() {
     let mut rsphere = sphere();
     let rt = make_translation(1.5, 0.5, -0.5) * make_scaling(0.5, 0.5, 0.5);
     rsphere.set_transform(&rt);
-    rsphere.props.material.color = Color::new(0.5, 1.0, 0.1);
-    rsphere.props.material.diffuse = 0.7;
-    rsphere.props.material.specular = 0.3;
+    rsphere.material.color = Color::new(0.5, 1.0, 0.1);
+    rsphere.material.diffuse = 0.7;
+    rsphere.material.specular = 0.3;
 
-    //println!("lwall material: {}", lwall.props.transform);
-    //println!("rwall material: {}", rwall.props.transform);
+    let mut lsphere = sphere();
+    let st = make_translation(-1.5, 0.33, -0.75) * make_scaling(0.33, 0.33, 0.33);
+    lsphere.set_transform(&st);
+    lsphere.material.color = Color::new(1.0, 0.8, 0.1);
+    lsphere.material.diffuse = 0.7;
+    lsphere.material.specular = 0.3;
+
     let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
-    world.add_shape(Box::new(floor));
-    world.add_shape(Box::new(lwall));
-    world.add_shape(Box::new(rwall));
-    world.add_shape(Box::new(msphere));
-    world.add_shape(Box::new(rsphere));
+    world.add_shape(floor);
+    world.add_shape(lwall);
+    world.add_shape(rwall);
+    world.add_shape(msphere);
+    world.add_shape(rsphere);
+    world.add_shape(lsphere);
 
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 1.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
 
-    let filename = "./ppms/chapter7.ppm";
+    let filename = "./ppms/chapter8.ppm";
     match create_file_from_data(filename, &canvas.to_ppm()) {
         Ok(_) => {
             println!("file created ({})!", filename);

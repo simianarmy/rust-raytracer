@@ -6,7 +6,7 @@ use crate::tuple::*;
 use crate::world::World;
 use glm;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Camera {
     hsize: usize,
     vsize: usize,

@@ -1,5 +1,4 @@
 use crate::bounds::*;
-use crate::intersection::*;
 use crate::math;
 use crate::object::Object;
 use crate::ray::Ray;
@@ -11,9 +10,7 @@ pub struct Cube {}
 
 // constructor utilities
 pub fn cube_with_id(id: Option<String>) -> Object {
-    let mut o = Object::new(id);
-    o.shape = Shape::Cube();
-    o
+    Object::new(id).with_shape(Shape::Cube())
 }
 
 pub fn cube() -> Object {
@@ -30,16 +27,14 @@ impl Cube {
         let tmin_numerator = min - origin;
         let tmax_numerator = max - origin;
 
-        let mut tmin = 0.0;
-        let mut tmax = 0.0;
-
-        if direction.abs() >= math::EPSILON {
-            tmin = tmin_numerator / direction;
-            tmax = tmax_numerator / direction;
+        let (mut tmin, mut tmax) = if direction.abs() >= math::EPSILON {
+            (tmin_numerator / direction, tmax_numerator / direction)
         } else {
-            tmin = tmin_numerator * math::INFINITY;
-            tmax = tmax_numerator * math::INFINITY;
-        }
+            (
+                tmin_numerator * math::INFINITY,
+                tmax_numerator * math::INFINITY,
+            )
+        };
         if tmin > tmax {
             let tmp = tmin;
             tmin = tmax;

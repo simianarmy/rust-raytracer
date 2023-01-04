@@ -1,5 +1,4 @@
 use crate::bounds::*;
-use crate::intersection::*;
 use crate::math;
 use crate::object::Object;
 use crate::ray::Ray;
@@ -11,9 +10,7 @@ pub struct Plane {}
 
 // constructor utilities
 pub fn plane_with_id(id: Option<String>) -> Object {
-    let mut o = Object::new(id);
-    o.shape = Shape::Plane();
-    o
+    Object::new(id).with_shape(Shape::Plane())
 }
 
 pub fn plane() -> Object {
