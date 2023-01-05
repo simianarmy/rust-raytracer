@@ -2,25 +2,24 @@
  * Simple scene
  */
 extern crate nalgebra_glm as glm;
-extern crate raytracer;
 
-use raytracer::camera::Camera;
-use raytracer::color::Color;
-use raytracer::lights::*;
-use raytracer::materials::Material;
-use raytracer::math::F3D;
-use raytracer::pattern;
-use raytracer::ppm::*;
-use raytracer::shapes::plane::plane;
-use raytracer::shapes::shape::*;
-use raytracer::shapes::sphere::*;
-use raytracer::transformation::*;
-use raytracer::tuple::*;
-use raytracer::world::World;
+use crate::camera::Camera;
+use crate::color::Color;
+use crate::lights::*;
+use crate::materials::Material;
+use crate::math::F3D;
+use crate::pattern;
+use crate::ppm::*;
+use crate::shapes::plane::plane;
+use crate::shapes::shape::*;
+use crate::shapes::sphere::*;
+use crate::transformation::*;
+use crate::tuple::*;
+use crate::world::World;
 
 const CHAPTER: u8 = 11;
 
-fn main() {
+pub fn run() {
     let mut floor = plane(); // unit sphere
     floor.material.color = Color::white();
     floor.material.specular = 0.0;

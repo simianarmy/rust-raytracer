@@ -3,21 +3,20 @@
  * Testing BVH Optimization
  */
 extern crate nalgebra_glm as glm;
-extern crate raytracer;
 
+use crate::camera::Camera;
+use crate::color::Color;
+use crate::lights::*;
+use crate::materials::Material;
+use crate::math::F3D;
+use crate::object::*;
+use crate::ppm::*;
+use crate::shapes::plane::plane;
+use crate::shapes::sphere::*;
+use crate::transformation::*;
+use crate::tuple::*;
+use crate::world::World;
 use rand::Rng;
-use raytracer::camera::Camera;
-use raytracer::color::Color;
-use raytracer::lights::*;
-use raytracer::materials::Material;
-use raytracer::math::F3D;
-use raytracer::object::*;
-use raytracer::ppm::*;
-use raytracer::shapes::plane::plane;
-use raytracer::shapes::sphere::*;
-use raytracer::transformation::*;
-use raytracer::tuple::*;
-use raytracer::world::World;
 use std::sync::atomic::Ordering;
 
 const CHAPTER: u8 = 14;

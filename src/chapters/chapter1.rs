@@ -1,7 +1,5 @@
-extern crate raytracer;
-
-use raytracer::math::F3D;
-use raytracer::tuple::*;
+use crate::math::F3D;
+use crate::tuple::*;
 use std::io;
 
 struct Projectile {
@@ -40,7 +38,7 @@ fn simulate(init_vel: F3D) {
 }
 
 // Chpt 1
-fn main() {
+pub fn run() {
     println!("Running chapter1");
 
     loop {

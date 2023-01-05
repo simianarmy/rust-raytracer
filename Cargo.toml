@@ -9,6 +9,7 @@ edition = "2021"
 nalgebra-glm = "0.17.0"
 rand = "0.8"
 tobj = "3.2.3"
+clap = { version = "4.0", features = ["derive"] }
 
 [[bin]]
 name = "raytracer_bin"

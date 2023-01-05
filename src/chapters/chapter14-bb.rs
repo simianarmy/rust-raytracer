@@ -1,23 +1,24 @@
 /**
  * Simple scene
- * Testing no optimizations
+ * Testing Bounding Box Optimization
  */
 extern crate nalgebra_glm as glm;
-extern crate raytracer;
 
+use crate::camera::Camera;
+use crate::color::Color;
+use crate::lights::*;
+use crate::materials::Material;
+use crate::math::F3D;
+use crate::object::*;
+use crate::ppm::*;
+use crate::shapes::plane::plane;
+use crate::shapes::sphere::*;
+use crate::transformation::*;
+use crate::tuple::*;
+use crate::world::World;
 use rand::Rng;
-use raytracer::camera::Camera;
-use raytracer::color::Color;
-use raytracer::lights::*;
-use raytracer::materials::Material;
-use raytracer::math::F3D;
-use raytracer::ppm::*;
-use raytracer::shapes::plane::plane;
-use raytracer::shapes::sphere::*;
-use raytracer::transformation::*;
-use raytracer::tuple::*;
-use raytracer::world::World;
-//use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 const CHAPTER: u8 = 14;
 
@@ -56,6 +57,12 @@ fn main() {
 
     world.add_shape(floor);
 
+    let mut g1 = Vec::new();
+    let mut g2 = Vec::new();
+    let mut g3 = Vec::new();
+    let mut g4 = Vec::new();
+    let mut groups = vec![g1, g2, g3, g4];
+
     let mut rng = rand::thread_rng();
     for _i in 0..280 {
         let mut glass_ball = sphere();
@@ -74,15 +81,26 @@ fn main() {
         glass_ball.set_material(m);
 
         // add shape to the proper quadrant
-        world.add_shape(glass_ball);
+        let gidx = get_quadrant(xmod, ymod, zmod);
+        groups[gidx].push(glass_ball);
     }
+    println!("group 0 size: {}", groups[0].len());
+    println!("group 1 size: {}", groups[1].len());
+    println!("group 2 size: {}", groups[2].len());
+    println!("group 3 size: {}", groups[3].len());
+
+    world.add_shape(Object::new_group(groups[0].clone()));
+    world.add_shape(Object::new_group(groups[1].clone()));
+    world.add_shape(Object::new_group(groups[2].clone()));
+    world.add_shape(Object::new_group(groups[3].clone()));
+
     let mut camera = Camera::new(500, 250, glm::pi::<F3D>() / 3.0);
     //let mut camera = Camera::new(100, 50, glm::pi::<F3D>() / 3.0);
     camera.transform = view_transform(&point(0.0, 3.5, -5.0), &point_y(), &vector_y());
 
     let canvas = camera.render(&world);
 
-    let filename = format!("./ppms/chapter{}.ppm", CHAPTER);
+    let filename = format!("./ppms/chapter{}-bb.ppm", CHAPTER);
     match create_file_from_data(&filename, &canvas.to_ppm()) {
         Ok(_) => {
             println!("file created ({})!", filename);

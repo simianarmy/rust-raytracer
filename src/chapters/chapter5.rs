@@ -2,23 +2,22 @@
  * Cast rays to draw a sphere
  */
 extern crate nalgebra_glm as glm;
-extern crate raytracer;
 
-use raytracer::canvas::Canvas;
-use raytracer::color::Color;
-use raytracer::intersection::*;
-use raytracer::lights::*;
-use raytracer::materials::lighting;
-use raytracer::math::F3D;
-use raytracer::ppm::*;
-use raytracer::ray::Ray;
-use raytracer::shapes::group;
-use raytracer::shapes::shape::*;
-use raytracer::shapes::sphere::sphere;
-use raytracer::tuple::*;
+use crate::canvas::Canvas;
+use crate::color::Color;
+use crate::intersection::*;
+use crate::lights::*;
+use crate::materials::lighting;
+use crate::math::F3D;
+use crate::ppm::*;
+use crate::ray::Ray;
+use crate::shapes::group;
+use crate::shapes::shape::*;
+use crate::shapes::sphere::sphere;
+use crate::tuple::*;
 use std::sync::Arc;
 
-fn main() {
+pub fn run() {
     let mut sphere = sphere(); // unit sphere
     sphere.material.color = Color::new(1.0, 0.2, 1.0);
     let light_pos = point(-10.0, 10.0, -10.0);

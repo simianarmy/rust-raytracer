@@ -1,10 +1,8 @@
-extern crate raytracer;
-
-use raytracer::canvas::Canvas;
-use raytracer::color::Color;
-use raytracer::math::F3D;
-use raytracer::ppm::*;
-use raytracer::tuple::*;
+use crate::canvas::Canvas;
+use crate::color::Color;
+use crate::math::F3D;
+use crate::ppm::*;
+use crate::tuple::*;
 
 struct Projectile {
     pos: Tuple,
@@ -49,7 +47,7 @@ fn simulate(init_vel: F3D, c: &mut Canvas) {
 }
 
 // Chpt 1
-fn main() {
+pub fn run() {
     println!("Running chapter2");
 
     let mut c = Canvas::new(900, 550, None);

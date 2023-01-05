@@ -1,10 +1,9 @@
 extern crate nalgebra_glm as glm;
-extern crate raytracer;
 
+use crate::matrix::Matrix4;
 use glm::*;
-use raytracer::matrix::Matrix4;
 
-fn main() {
+pub fn run() {
     // Invert an identity matrix
     let identity: Matrix4 = identity();
     println!("identity matrix: {}", identity);
