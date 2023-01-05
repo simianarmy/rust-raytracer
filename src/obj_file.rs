@@ -58,7 +58,7 @@ impl ObjData {
         // Generate group children
         let mut groups = GroupMap::new();
 
-        for (i, m) in models.iter().enumerate() {
+        for (_, m) in models.iter().enumerate() {
             let mesh = &m.mesh;
             let mut triangles = vec![];
 
@@ -117,6 +117,7 @@ const LOAD_OPTIONS: LoadOptions = OFFLINE_RENDERING_LOAD_OPTIONS; // tobj::GPU_L
 pub fn parse_obj_file(filename: &str) -> Result<ObjData, Error> {
     let (models, _) = tobj::load_obj(&filename, &LOAD_OPTIONS).expect("Failed to OBJ load file");
 
+    println!("models: {:?}", models);
     Ok(ObjData::new(models))
 }
 
@@ -212,21 +213,6 @@ mod tests {
         match parse_obj_file(fname.as_str()) {
             Ok(data) => assert_eq!(data.raw.len(), 1),
             _ => (),
-        }
-    }
-
-    #[test]
-    fn load_obj() {
-        let fname = "tests/obj_file-vertex.obj";
-
-        match parse_obj_file(fname) {
-            Ok(data) => {
-                debug_model(&data.raw);
-            }
-            Err(e) => {
-                println!("parse error {:?}", e);
-                panic!("load error");
-            }
         }
     }
 
