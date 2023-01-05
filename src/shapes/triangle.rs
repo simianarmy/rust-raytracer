@@ -106,8 +106,8 @@ mod tests {
         let t = triangle(point_y(), point(-1.0, 0.0, 0.0), point_x());
         match t.shape() {
             Shape::Triangle(tr) => {
-                let n1 = t.normal_at(point(0.0, 0.5, 0.0));
-                let n2 = t.normal_at(point(0.0, 0.0, -666.69));
+                let n1 = t.normal_at(point(0.0, 0.5, 0.0), None);
+                let n2 = t.normal_at(point(0.0, 0.0, -666.69), None);
                 assert_eq!(n1, tr.normal);
                 assert_eq!(n2, tr.normal);
             }

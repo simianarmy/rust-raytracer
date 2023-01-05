@@ -4,6 +4,7 @@
 use crate::math::*;
 use crate::object::*;
 use crate::shapes::shape::*;
+use crate::shapes::smooth_triangle::*;
 use crate::shapes::triangle::*;
 use crate::tuple::*;
 use std::collections::HashMap;
@@ -30,7 +31,15 @@ impl ObjData {
         )
     }
 
-    fn make_triangle(positions: &[f32], indices: &[u32], i: usize) -> Object {
+    fn make_normal(normals: &[f32], idx: usize) -> Vector {
+        vector(
+            normals[idx] as F3D,
+            normals[idx + 1] as F3D,
+            normals[idx + 2] as F3D,
+        )
+    }
+
+    fn make_triangle(positions: &[f32], indices: &[u32], normals: &[f32], i: usize) -> Object {
         let mut idx: usize = 3 * indices[i] as usize;
         let p1 = ObjData::make_vertex(positions, idx);
 
@@ -40,18 +49,20 @@ impl ObjData {
         idx = 3 * indices[i + 2] as usize;
         let p3 = ObjData::make_vertex(positions, idx);
 
-        triangle(p1, p2, p3)
-    }
+        if normals.len() > 0 {
+            idx = 3 * indices[i] as usize;
+            let n1 = ObjData::make_normal(normals, idx);
 
-    fn fan_triangulation(positions: &[f32], indices: &[u32]) -> Vec<Object> {
-        let mut triangles = vec![];
-        for idx in 1..(indices.len() - 1) {
-            let p1 = ObjData::make_vertex(positions, 3 * indices[0] as usize);
-            let p2 = ObjData::make_vertex(positions, 3 * indices[idx] as usize);
-            let p3 = ObjData::make_vertex(positions, 3 * indices[idx + 1] as usize);
-            triangles.push(triangle(p1, p2, p3));
+            idx = 3 * indices[i + 1] as usize;
+            let n2 = ObjData::make_normal(normals, idx);
+
+            idx = 3 * indices[i + 2] as usize;
+            let n3 = ObjData::make_normal(normals, idx);
+
+            smooth_triangle(p1, p2, p3, n1, n2, n3)
+        } else {
+            triangle(p1, p2, p3)
         }
-        triangles
     }
 
     pub fn new(models: Vec<Model>) -> Self {
@@ -62,20 +73,14 @@ impl ObjData {
             let mesh = &m.mesh;
             let mut triangles = vec![];
 
-            if mesh.face_arities.len() > 0 {
-                let mut next_face = 0;
-                for face in 0..mesh.face_arities.len() {
-                    let end = next_face + mesh.face_arities[face] as usize;
-                    let face_indices = &mesh.indices[next_face..end];
-                    // apply fan triangulation to the polygon vertices indexed by face_indices
-                    triangles.extend(ObjData::fan_triangulation(&mesh.positions, &face_indices));
-                    next_face = end;
-                }
-            } else {
-                for j in 0..(mesh.indices.len() / 3) {
-                    let idx = j * 3;
-                    triangles.push(ObjData::make_triangle(&mesh.positions, &mesh.indices, idx));
-                }
+            for j in 0..(mesh.indices.len() / 3) {
+                let idx = j * 3;
+                triangles.push(ObjData::make_triangle(
+                    &mesh.positions,
+                    &mesh.indices,
+                    &mesh.normals,
+                    idx,
+                ));
             }
             let hash_key = if m.name != "unnamed_object" {
                 m.name.as_str()
@@ -112,12 +117,12 @@ impl ObjData {
     }
 }
 
-const LOAD_OPTIONS: LoadOptions = OFFLINE_RENDERING_LOAD_OPTIONS; // tobj::GPU_LOAD_OPTIONS; // &tobj::LoadOptions::default()
+// We get free fan triangulation with this
+const LOAD_OPTIONS: LoadOptions = tobj::GPU_LOAD_OPTIONS; // &tobj::LoadOptions::default()
 
 pub fn parse_obj_file(filename: &str) -> Result<ObjData, Error> {
     let (models, _) = tobj::load_obj(&filename, &LOAD_OPTIONS).expect("Failed to OBJ load file");
 
-    println!("models: {:?}", models);
     Ok(ObjData::new(models))
 }
 
@@ -231,33 +236,30 @@ f 1 3 4
         write_obj_file(fname.as_str(), filedata).unwrap();
 
         match parse_obj_file(fname.as_str()) {
-            Ok(data) => {
-                debug_model(&data.raw);
-                match data.default_group().unwrap().shape() {
-                    Shape::Group(g) => {
-                        assert_eq!(g.children().len(), 2);
-                        let t1 = g.children()[0].clone();
-                        let t2 = g.children()[1].clone();
-                        match t1.shape() {
-                            Shape::Triangle(t) => {
-                                assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
-                                assert_eq!(t.p2, point(-1.0, 0.0, 0.0));
-                                assert_eq!(t.p3, point(1.0, 0.0, 0.0));
-                            }
-                            _ => panic!(),
+            Ok(data) => match data.default_group().unwrap().shape() {
+                Shape::Group(g) => {
+                    assert_eq!(g.children().len(), 2);
+                    let t1 = g.children()[0].clone();
+                    let t2 = g.children()[1].clone();
+                    match t1.shape() {
+                        Shape::Triangle(t) => {
+                            assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
+                            assert_eq!(t.p2, point(-1.0, 0.0, 0.0));
+                            assert_eq!(t.p3, point(1.0, 0.0, 0.0));
                         }
-                        match t2.shape() {
-                            Shape::Triangle(t) => {
-                                assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
-                                assert_eq!(t.p2, point(1.0, 0.0, 0.0));
-                                assert_eq!(t.p3, point(1.0, 1.0, 0.0));
-                            }
-                            _ => panic!(),
-                        }
+                        _ => panic!(),
                     }
-                    _ => panic!(),
+                    match t2.shape() {
+                        Shape::Triangle(t) => {
+                            assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
+                            assert_eq!(t.p2, point(1.0, 0.0, 0.0));
+                            assert_eq!(t.p3, point(1.0, 1.0, 0.0));
+                        }
+                        _ => panic!(),
+                    }
                 }
-            }
+                _ => panic!(),
+            },
             Err(e) => {
                 println!("parse error {:?}", e);
                 panic!("load error");
@@ -280,42 +282,39 @@ f 1 2 3 4 5
         write_obj_file(fname.as_str(), filedata).unwrap();
 
         match parse_obj_file(fname.as_str()) {
-            Ok(data) => {
-                debug_model(&data.raw);
-                match data.default_group().unwrap().shape() {
-                    Shape::Group(g) => {
-                        assert_eq!(g.children().len(), 3);
-                        let t1 = g.children()[0].clone();
-                        let t2 = g.children()[1].clone();
-                        let t3 = g.children()[2].clone();
-                        match t1.shape() {
-                            Shape::Triangle(t) => {
-                                assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
-                                assert_eq!(t.p2, point(-1.0, 0.0, 0.0));
-                                assert_eq!(t.p3, point(1.0, 0.0, 0.0));
-                            }
-                            _ => panic!(),
+            Ok(data) => match data.default_group().unwrap().shape() {
+                Shape::Group(g) => {
+                    assert_eq!(g.children().len(), 3);
+                    let t1 = g.children()[0].clone();
+                    let t2 = g.children()[1].clone();
+                    let t3 = g.children()[2].clone();
+                    match t1.shape() {
+                        Shape::Triangle(t) => {
+                            assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
+                            assert_eq!(t.p2, point(-1.0, 0.0, 0.0));
+                            assert_eq!(t.p3, point(1.0, 0.0, 0.0));
                         }
-                        match t2.shape() {
-                            Shape::Triangle(t) => {
-                                assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
-                                assert_eq!(t.p2, point(1.0, 0.0, 0.0));
-                                assert_eq!(t.p3, point(1.0, 1.0, 0.0));
-                            }
-                            _ => panic!(),
-                        }
-                        match t3.shape() {
-                            Shape::Triangle(t) => {
-                                assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
-                                assert_eq!(t.p2, point(1.0, 1.0, 0.0));
-                                assert_eq!(t.p3, point(0.0, 2.0, 0.0));
-                            }
-                            _ => panic!(),
-                        }
+                        _ => panic!(),
                     }
-                    _ => panic!(),
+                    match t2.shape() {
+                        Shape::Triangle(t) => {
+                            assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
+                            assert_eq!(t.p2, point(1.0, 0.0, 0.0));
+                            assert_eq!(t.p3, point(1.0, 1.0, 0.0));
+                        }
+                        _ => panic!(),
+                    }
+                    match t3.shape() {
+                        Shape::Triangle(t) => {
+                            assert_eq!(t.p1, point(-1.0, 1.0, 0.0));
+                            assert_eq!(t.p2, point(1.0, 1.0, 0.0));
+                            assert_eq!(t.p3, point(0.0, 2.0, 0.0));
+                        }
+                        _ => panic!(),
+                    }
                 }
-            }
+                _ => panic!(),
+            },
             Err(e) => {
                 println!("parse error {:?}", e);
                 panic!("load error");
@@ -369,6 +368,39 @@ f 1 3 4
                                 assert_eq!(t.p3, point(1.0, 1.0, 0.0));
                             }
                             _ => panic!(),
+                        }
+                    }
+                    _ => panic!(),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn faces_with_normals() {
+        let filedata = "
+v 0 1 0
+v -1 0 0
+v 1 0 0
+vn -1 0 0
+vn 1 0 0
+vn 0 1 0
+f 1//3 2//1 3//2
+f 1/0/3 2/102/1 3/14/2
+";
+        let fname = test_filename("faces_normals");
+        write_obj_file(fname.as_str(), filedata).unwrap();
+
+        match parse_obj_file(fname.as_str()) {
+            Ok(data) => {
+                let g = data.default_group().unwrap();
+                match g.shape() {
+                    Shape::Group(g) => {
+                        let t = g.children()[0].clone();
+                        match t.shape() {
+                            Shape::SmoothTriangle(t) => assert!(true),
+                            _ => assert!(false),
                         }
                     }
                     _ => panic!(),

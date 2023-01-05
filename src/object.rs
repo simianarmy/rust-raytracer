@@ -133,15 +133,15 @@ impl Object {
                 self.shape
                     .intersect(&t_ray)
                     .into_iter()
-                    .map(|t| Intersection::new(self, t))
+                    .map(|t| Intersection::with_uv(self, t.0, t.1, t.2))
                     .collect(),
             ),
         }
     }
 
-    pub fn normal_at(&self, world_point: Point) -> Vector {
+    pub fn normal_at(&self, world_point: Point, is: Option<&Intersection>) -> Vector {
         let local_point = self.world_to_object(&world_point);
-        let local_normal = self.shape().normal_at(&local_point);
+        let local_normal = self.shape().normal_at(&local_point, is);
         self.normal_to_world(&local_normal)
     }
 

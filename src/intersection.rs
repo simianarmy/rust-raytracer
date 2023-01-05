@@ -8,11 +8,17 @@ use std::fmt;
 pub struct Intersection<'a> {
     pub t: F3D,
     pub object: &'a Object,
+    pub u: F3D,
+    pub v: F3D,
 }
 
 impl<'a> Intersection<'a> {
     pub fn new(object: &'a Object, t: F3D) -> Self {
-        Self { t, object }
+        Self::with_uv(object, t, 0.0, 0.0)
+    }
+
+    pub fn with_uv(object: &'a Object, t: F3D, u: F3D, v: F3D) -> Self {
+        Self { object, t, u, v }
     }
 }
 
@@ -116,6 +122,7 @@ mod tests {
     use crate::computations::prepare_computations;
     use crate::ray::Ray;
     use crate::shapes::sphere::*;
+    use crate::shapes::triangle::*;
     use crate::transformation::*;
     use crate::tuple::*;
     use std::clone::Clone;
@@ -219,5 +226,13 @@ mod tests {
         let comps = prepare_computations(&xs[0], &ray, &xs);
         let reflectance = schlick(&comps);
         assert_eq_feps!(reflectance, 0.48873);
+    }
+
+    #[test]
+    fn can_encapsulate_u_v() {
+        let s = triangle(point_y(), point(-1.0, 0.0, 0.0), point_x());
+        let i = Intersection::with_uv(&s, 3.5, 0.2, 0.4);
+        assert_eq!(i.u, 0.2);
+        assert_eq!(i.v, 0.4);
     }
 }

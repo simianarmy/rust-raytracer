@@ -56,6 +56,7 @@ pub fn glass_sphere() -> Object {
 mod tests {
     use super::*;
     use crate::assert_eq_eps;
+    use crate::intersection::Intersection;
     use crate::transformation::*;
 
     #[test]
@@ -109,7 +110,7 @@ mod tests {
     #[test]
     fn normal_at_point_on_x_axis() {
         let s = sphere();
-        let n = s.normal_at(point(1.0, 0.0, 0.0));
+        let n = s.normal_at(point(1.0, 0.0, 0.0), None);
         assert_eq!(n, vector(1.0, 0.0, 0.0));
     }
 
@@ -125,7 +126,7 @@ mod tests {
     fn normal_at_is_normalized() {
         let s = sphere();
         let val = 3_f64.sqrt() / 3.0;
-        let n = s.normal_at(point(val, val, val));
+        let n = s.normal_at(point(val, val, val), None);
         assert_eq_eps!(&n, &glm::normalize(&n));
     }
 
@@ -133,7 +134,7 @@ mod tests {
     fn computing_normal_on_translated_sphere() {
         let mut s = sphere();
         s.set_transform(&make_translation(0.0, 1.0, 0.0));
-        let n = s.normal_at(point(0.0, 1.70711, -0.70711));
+        let n = s.normal_at(point(0.0, 1.70711, -0.70711), None);
         assert_eq_eps!(&n, &vector(0.0, 0.70711, -0.70711));
     }
 
@@ -142,7 +143,7 @@ mod tests {
         let mut s = sphere();
         let m = make_scaling(1.0, 0.5, 1.0) * make_rotation_z(glm::pi::<crate::math::F3D>() / 5.0);
         s.set_transform(&m);
-        let n = s.normal_at(point(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0));
+        let n = s.normal_at(point(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0), None);
         assert_eq_eps!(&n, &vector(0.0, 0.97014, -0.24254));
     }
 }

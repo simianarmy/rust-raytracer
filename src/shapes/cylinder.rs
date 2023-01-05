@@ -168,7 +168,7 @@ mod tests {
             (point(0.0, -2.0, 1.0), vector_z()),
             (point(-1.0, 1.0, 0.0), vector_x() * -1.0),
         ] {
-            let n = c.normal_at(t.0);
+            let n = c.normal_at(t.0, None);
             assert_eq!(n, t.1);
         }
     }
@@ -232,7 +232,7 @@ mod tests {
             (point(0.0, 2.0, 0.0), vector_y()),
             (point(0.0, 2.0, 0.5), vector_y()),
         ] {
-            let n = c.normal_at(t.0);
+            let n = c.normal_at(t.0, None);
             assert_eq!(n, t.1);
         }
     }

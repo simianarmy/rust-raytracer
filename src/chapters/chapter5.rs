@@ -46,7 +46,7 @@ pub fn run() {
             match xs.hit() {
                 Some(is) => {
                     let p = ray.position(is.t);
-                    let normal = is.object.normal_at(p);
+                    let normal = is.object.normal_at(p, Some(is));
                     let eye = -ray.direction;
                     let color = lighting(
                         &is.object.get_material(),

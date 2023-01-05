@@ -59,7 +59,7 @@ fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
 
 pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Intersections) -> Computations {
     let p = ray.position(i.t);
-    let normal = i.object.normal_at(p);
+    let normal = i.object.normal_at(p, Some(i));
     let eyev = -ray.direction;
     let inside = normal.dot(&eyev) < 0.0;
     let normalv = if inside { -normal } else { normal };

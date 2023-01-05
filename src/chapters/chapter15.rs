@@ -25,7 +25,10 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
 
     world.add_shape(
         obj.to_group()
-            .transform(&(make_translation(0.0, 5.0, 0.0) * make_rotation_y(-1.74)))
+            // teddy
+            //.transform(&(make_translation(0.0, 10.0, 0.0) * make_rotation_y(3.14)))
+            // teapot
+            .transform(&(make_rotation_x(-1.8)))
             .divide(40),
     );
 
@@ -43,8 +46,4 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
             println!("Error writing file! {}", err);
         }
     }
-    //println!(
-    //"bounding box opts: {}",
-    //NUM_BOUNDING_OPTS.load(Ordering::SeqCst)
-    //);
 }
