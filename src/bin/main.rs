@@ -18,41 +18,37 @@ use raytracer::chapters::chapter9;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// Book chapter
+    /// program name: exs: chapter11, appendix1
     #[arg(short, long)]
-    chapter: u8,
+    name: String,
 
     /// obj file path
     #[arg(short, long, default_value_t = String::from(""))]
     fixture: String,
 
-    /// output resolution: 1 = low, 2 = medium, 3/4 = high
-    #[arg(short, long, default_value_t = 1)]
-    res: u8,
+    /// output resolution
+    #[arg(long, default_value_t = 100)]
+    hres: usize,
+    #[arg(long, default_value_t = 100)]
+    vres: usize,
 }
 
 fn main() {
     let args = Args::parse();
-    let (hsize, vsize) = match args.res {
-        1 => (100, 50),
-        2 => (300, 150),
-        3 => (500, 250),
-        _ => (500, 500),
-    };
 
-    match args.chapter {
-        1 => chapter1::run(),
-        2 => chapter2::run(),
-        3 => chapter3::run(),
-        5 => chapter5::run(),
-        7 => chapter7::run(),
-        8 => chapter8::run(),
-        9 => chapter9::run(),
-        11 => chapter11::run(),
-        12 => chapter12::run(),
-        14 => chapter14::run(hsize, vsize),
-        15 => chapter15::run(&args.fixture, hsize, vsize),
-        16 => appendix1::run(hsize, vsize),
-        _ => println!("No such chapter: {}", args.chapter),
+    match args.name.as_str() {
+        "chapter1" => chapter1::run(),
+        "chapter2" => chapter2::run(),
+        "chapter3" => chapter3::run(),
+        "chapter5" => chapter5::run(),
+        "chapter7" => chapter7::run(),
+        "chapter8" => chapter8::run(),
+        "chapter9" => chapter9::run(),
+        "chapter11" => chapter11::run(),
+        "chapter12" => chapter12::run(),
+        "chapter14" => chapter14::run(args.hres, args.vres),
+        "chapter15" => chapter15::run(&args.fixture, args.hres, args.vres),
+        "appendix1" => appendix1::run(args.hres, args.vres),
+        _ => println!("No such program: {}", args.name),
     }
 }

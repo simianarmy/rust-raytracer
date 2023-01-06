@@ -23,7 +23,6 @@ pub mod computations;
 pub mod bounds;
 //pub mod group;
 pub mod chapters;
-pub mod cli;
 pub mod obj_file;
 pub mod pattern;
 pub mod world;

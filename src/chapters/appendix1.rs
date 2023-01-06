@@ -132,7 +132,7 @@ pub fn run(hsize: usize, vsize: usize) {
 
     let mut camera = Camera::new(hsize, vsize, 0.785);
     camera.transform = view_transform(
-        &point(-6.0, 6.0, -10.0),
+        &point(-6.0, 6.0, -20.0),
         &point(6.0, 0.0, 6.0),
         &vector(-0.45, 1.0, 0.0),
     );

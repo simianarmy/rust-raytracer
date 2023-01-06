@@ -14,7 +14,7 @@ use crate::world::World;
 const CHAPTER: u8 = 15;
 
 pub fn run(fixture: &String, hsize: usize, vsize: usize) {
-    let mut world = World::new(point_light(point(-10.0, 20.0, -10.0), Color::white()));
+    let mut world = World::new(point_light(point(30.0, 20.0, -35.0), Color::white()));
     let mut floor = plane();
     floor.material.color = Color::new(0.8, 0.7, 0.8);
     floor.set_transform(&(make_translation(0.0, -10.0, 0.0) * make_rotation_z(0.01)));
@@ -30,20 +30,27 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
             // teddy
             //.transform(&(make_scaling(0.5, 0.5, 0.5) * make_rotation_y(glm::pi())))
             // cat
-            //.transform(
-            //&(
-            //(make_rotation_y(1.7) * make_rotation_x(-glm::half_pi::<F3D>()))
-            //* make_translation(0.0, -20.0, 0.0)
-            //// Translation doesn't work right
-            ////with this model
-            //),
-            //)
+            .transform(
+                &(
+                    make_translation(0.0, -10.0, 0.0)
+                        * (make_rotation_y(1.7) * make_rotation_x(-glm::half_pi::<F3D>()))
+                    //with this model
+                ),
+            )
             // cow
             .divide(40),
     );
 
     let mut camera = Camera::new(hsize, vsize, glm::pi::<F3D>() / 3.0);
-    camera.transform = view_transform(&point(00.0, 5.0, -20.0), &point(0.0, 0.0, 0.0), &vector_y());
+
+    // cat
+    camera.transform = view_transform(
+        &point(30.0, 20.0, -100.0),
+        &point(0.0, 10.0, 0.0),
+        &vector_y(),
+    );
+    // cow
+    //camera.transform = view_transform(&point(00.0, 5.0, -20.0), &point(0.0, 0.0, 0.0), &vector_y());
 
     let canvas = camera.render(&world);
 
