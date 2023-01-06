@@ -13,6 +13,7 @@ use raytracer::chapters::chapter5;
 use raytracer::chapters::chapter7;
 use raytracer::chapters::chapter8;
 use raytracer::chapters::chapter9;
+use raytracer::chapters::dragons;
 
 /// Run a chapter program
 #[derive(Parser, Debug)]
@@ -49,6 +50,7 @@ fn main() {
         "chapter14" => chapter14::run(args.hres, args.vres),
         "chapter15" => chapter15::run(&args.fixture, args.hres, args.vres),
         "appendix1" => appendix1::run(args.hres, args.vres),
+        "dragons" => dragons::run(&args.fixture, args.hres, args.vres),
         _ => println!("No such program: {}", args.name),
     }
 }
