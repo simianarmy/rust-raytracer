@@ -1,3 +1,4 @@
+use crate::bounds::*;
 /**
  * Wavefront OBJ file parser
  */
@@ -21,6 +22,35 @@ pub struct ObjData {
 }
 
 const DEFAULT_GROUP_KEY: &str = "default";
+
+// Get min/max extents from list of shapes
+fn extents(triangles: &Vec<Object>) -> String {
+    let bounds: Vec<Bounds> = triangles.into_iter().map(|t| t.bounds()).collect();
+    let mut minx = vec![];
+    let mut miny = vec![];
+    let mut minz = vec![];
+    let mut maxx = vec![];
+    let mut maxy = vec![];
+    let mut maxz = vec![];
+    for b in bounds.iter() {
+        minx.push(b.min.x);
+        miny.push(b.min.y);
+        minz.push(b.min.z);
+        maxx.push(b.max.x);
+        maxy.push(b.max.y);
+        maxz.push(b.max.z);
+    }
+    format!(
+        "min : {}, {}, {}
+        max: {}, {}, {}",
+        minx.iter().min_by(|a, b| a.total_cmp(b)).unwrap(),
+        miny.iter().min_by(|a, b| a.total_cmp(b)).unwrap(),
+        minz.iter().min_by(|a, b| a.total_cmp(b)).unwrap(),
+        maxx.iter().max_by(|a, b| a.total_cmp(b)).unwrap(),
+        maxy.iter().max_by(|a, b| a.total_cmp(b)).unwrap(),
+        maxz.iter().max_by(|a, b| a.total_cmp(b)).unwrap(),
+    )
+}
 
 impl ObjData {
     fn make_vertex(positions: &[f32], idx: usize) -> Point {
@@ -87,7 +117,12 @@ impl ObjData {
             } else {
                 DEFAULT_GROUP_KEY
             };
-            groups.insert(hash_key.to_string(), Object::new_group(triangles));
+            groups.insert(hash_key.to_string(), Object::new_group(triangles.clone()));
+            println!(
+                "Added group {}\nExtents: {:?}",
+                hash_key,
+                extents(&triangles)
+            );
         }
 
         Self {

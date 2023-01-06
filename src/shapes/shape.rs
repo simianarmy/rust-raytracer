@@ -3,7 +3,7 @@ use crate::intersection::*;
 use crate::math::F3D;
 use crate::object::Object;
 use crate::ray::Ray;
-use crate::shapes::{cone, cube, cylinder, group, plane, smooth_triangle, sphere, triangle};
+use crate::shapes::{cone, csg, cube, cylinder, group, plane, smooth_triangle, sphere, triangle};
 use crate::tuple::*;
 use std::sync::{Arc, Mutex};
 
@@ -12,6 +12,7 @@ pub enum Shape {
     None,
     Cube(),
     Cone(cone::Cone),
+    Csg(csg::Csg),
     Cylinder(cylinder::Cylinder),
     Group(group::Group),
     Plane(),
@@ -30,6 +31,7 @@ impl Shape {
         match self {
             Shape::Cube() => "cube",
             Shape::Cone(_) => "cone",
+            Shape::Csg(_) => "cone",
             Shape::Cylinder(_) => "cylinder",
             Shape::Group(_) => "group",
             Shape::Plane() => "plane",
@@ -45,6 +47,7 @@ impl Shape {
         match self {
             Shape::Cube() => add_uvs_to_ts(&cube::Cube::local_intersect(ray)),
             Shape::Cone(c) => add_uvs_to_ts(&c.local_intersect(ray)),
+            Shape::Csg(c) => add_uvs_to_ts(&c.local_intersect(ray)),
             Shape::Cylinder(c) => add_uvs_to_ts(&c.local_intersect(ray)),
             Shape::Plane() => add_uvs_to_ts(&plane::Plane::local_intersect(ray)),
             Shape::Sphere() => add_uvs_to_ts(&sphere::Sphere::local_intersect(ray)),
@@ -60,6 +63,7 @@ impl Shape {
         match self {
             Shape::Cube() => cube::Cube::local_normal_at(point),
             Shape::Cone(c) => c.local_normal_at(point),
+            Shape::Csg(c) => c.local_normal_at(point),
             Shape::Cylinder(c) => c.local_normal_at(point),
             Shape::Plane() => plane::Plane::local_normal_at(point),
             Shape::Sphere() => sphere::Sphere::local_normal_at(point),
@@ -76,6 +80,7 @@ impl Shape {
             Shape::Cube() => cube::Cube::bounds(),
             Shape::Cone(c) => c.bounds(),
             Shape::Cylinder(c) => c.bounds(),
+            Shape::Csg(c) => c.bounds(),
             Shape::Plane() => plane::Plane::bounds(),
             Shape::Sphere() => sphere::Sphere::bounds(),
             Shape::Triangle(t) => t.bounds(),

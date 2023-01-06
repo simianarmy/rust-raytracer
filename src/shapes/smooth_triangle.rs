@@ -11,9 +11,9 @@ use crate::tuple::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SmoothTriangle {
-    p1: Point,
-    p2: Point,
-    p3: Point,
+    pub p1: Point,
+    pub p2: Point,
+    pub p3: Point,
     n1: Vector,
     n2: Vector,
     n3: Vector,
