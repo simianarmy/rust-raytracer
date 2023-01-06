@@ -1,3 +1,4 @@
+pub mod appendix1;
 pub mod chapter1;
 pub mod chapter11;
 pub mod chapter12;

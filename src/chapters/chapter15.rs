@@ -32,15 +32,21 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
             // cat
             .transform(
                 &(
-                    make_translation(0.0, -5.0, 0.0) * make_rotation_x(-glm::half_pi::<F3D>())
-                    //* make_rotation_y(1.8)),
+                    (make_rotation_y(1.7) * make_rotation_x(-glm::half_pi::<F3D>()))
+                        * make_translation(0.0, -20.0, 0.0)
+                    // Translation doesn't work right
+                    //with this model
                 ),
             )
             .divide(40),
     );
 
     let mut camera = Camera::new(hsize, vsize, glm::pi::<F3D>() / 3.0);
-    camera.transform = view_transform(&point(0.0, 0.0, -80.0), &point_zero(), &vector_y());
+    camera.transform = view_transform(
+        &point(30.0, 20.0, -100.0),
+        &point(0.0, 10.0, 0.0),
+        &vector_y(),
+    );
 
     let canvas = camera.render(&world);
 

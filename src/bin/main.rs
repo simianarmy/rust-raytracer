@@ -1,6 +1,7 @@
 extern crate raytracer;
 use clap::Parser;
 
+use raytracer::chapters::appendix1;
 use raytracer::chapters::chapter1;
 use raytracer::chapters::chapter11;
 use raytracer::chapters::chapter12;
@@ -50,6 +51,7 @@ fn main() {
         12 => chapter12::run(),
         14 => chapter14::run(hsize, vsize),
         15 => chapter15::run(&args.fixture, hsize, vsize),
+        16 => appendix1::run(hsize, vsize),
         _ => println!("No such chapter: {}", args.chapter),
     }
 }
