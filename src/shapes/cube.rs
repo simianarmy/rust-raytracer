@@ -45,8 +45,8 @@ impl Cube {
 
     pub fn local_normal_at(point: &Point) -> Vector {
         match point.abs().max() {
-            x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
-            y if y == point.y.abs() => vector(0.0, point.y, 0.0),
+            x if math::f_equals(x, point.x.abs()) => vector(point.x, 0.0, 0.0),
+            y if math::f_equals(y, point.y.abs()) => vector(0.0, point.y, 0.0),
             _ => vector(0.0, 0.0, point.z),
         }
     }

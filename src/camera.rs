@@ -61,6 +61,7 @@ impl Camera {
     pub fn render(&self, world: &World) -> Canvas {
         let mut image = Canvas::new(self.hsize, self.vsize, None);
 
+        // TODO: use threads for perf?
         for y in 0..self.vsize {
             for x in 0..self.hsize {
                 let r = self.ray_for_pixel(x, y);

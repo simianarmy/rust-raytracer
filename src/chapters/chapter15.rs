@@ -30,23 +30,20 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
             // teddy
             //.transform(&(make_scaling(0.5, 0.5, 0.5) * make_rotation_y(glm::pi())))
             // cat
-            .transform(
-                &(
-                    (make_rotation_y(1.7) * make_rotation_x(-glm::half_pi::<F3D>()))
-                        * make_translation(0.0, -20.0, 0.0)
-                    // Translation doesn't work right
-                    //with this model
-                ),
-            )
+            //.transform(
+            //&(
+            //(make_rotation_y(1.7) * make_rotation_x(-glm::half_pi::<F3D>()))
+            //* make_translation(0.0, -20.0, 0.0)
+            //// Translation doesn't work right
+            ////with this model
+            //),
+            //)
+            // cow
             .divide(40),
     );
 
     let mut camera = Camera::new(hsize, vsize, glm::pi::<F3D>() / 3.0);
-    camera.transform = view_transform(
-        &point(30.0, 20.0, -100.0),
-        &point(0.0, 10.0, 0.0),
-        &vector_y(),
-    );
+    camera.transform = view_transform(&point(00.0, 5.0, -20.0), &point(0.0, 0.0, 0.0), &vector_y());
 
     let canvas = camera.render(&world);
 

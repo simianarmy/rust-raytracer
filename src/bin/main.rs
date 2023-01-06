@@ -26,7 +26,7 @@ pub struct Args {
     #[arg(short, long, default_value_t = String::from(""))]
     fixture: String,
 
-    /// output resolution: 1 = low, 2 = medium, 3 = high
+    /// output resolution: 1 = low, 2 = medium, 3/4 = high
     #[arg(short, long, default_value_t = 1)]
     res: u8,
 }
@@ -36,7 +36,8 @@ fn main() {
     let (hsize, vsize) = match args.res {
         1 => (100, 50),
         2 => (300, 150),
-        _ => (500, 250),
+        3 => (500, 250),
+        _ => (500, 500),
     };
 
     match args.chapter {
