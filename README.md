@@ -20,8 +20,6 @@ Had to give up after some point and just reused the cleaner groups code from [th
 
 - Material on groups apply to children
 
-- Parallelize renderer
-
 - Area lights, Spot lights
 
 ## Results
