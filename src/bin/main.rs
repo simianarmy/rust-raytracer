@@ -45,7 +45,7 @@ fn main() {
         "chapter7" => chapter7::run(),
         "chapter8" => chapter8::run(),
         "chapter9" => chapter9::run(),
-        "chapter11" => chapter11::run(),
+        "chapter11" => chapter11::run(args.hres, args.vres),
         "chapter12" => chapter12::run(),
         "chapter14" => chapter14::run(args.hres, args.vres),
         "chapter15" => chapter15::run(&args.fixture, args.hres, args.vres),

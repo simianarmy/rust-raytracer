@@ -52,7 +52,7 @@ pub struct TextureMapPattern {
 }
 
 impl TextureMapPattern {
-    fn new(uv_pattern: UVPattern, uv_map: UVMap) -> Self {
+    pub fn new(uv_pattern: UVPattern, uv_map: UVMap) -> Self {
         TextureMapPattern {
             uv_pattern,
             uv_map,
