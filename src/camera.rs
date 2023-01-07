@@ -1,10 +1,14 @@
 use crate::canvas::Canvas;
+use crate::color::*;
 use crate::math::*;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::tuple::*;
 use crate::world::World;
 use glm;
+use rayon::prelude::*;
+
+const OPT_PARALLEL: bool = true;
 
 #[derive(Clone, Debug)]
 pub struct Camera {
@@ -61,12 +65,25 @@ impl Camera {
     pub fn render(&self, world: &World) -> Canvas {
         let mut image = Canvas::new(self.hsize, self.vsize, None);
 
-        // TODO: use threads for perf?
         for y in 0..self.vsize {
-            for x in 0..self.hsize {
-                let r = self.ray_for_pixel(x, y);
-                let c = world.color_at(&r, crate::world::MAX_RAY_DEPTH);
-                image.write_pixel(x, y, c);
+            let x_colors: Vec<Color> = if OPT_PARALLEL {
+                (0..self.hsize)
+                    .into_par_iter()
+                    .map(|x| {
+                        let r = self.ray_for_pixel(x, y);
+                        world.color_at(&r, crate::world::MAX_RAY_DEPTH)
+                    })
+                    .collect()
+            } else {
+                (0..self.hsize)
+                    .map(|x| {
+                        let r = self.ray_for_pixel(x, y);
+                        world.color_at(&r, crate::world::MAX_RAY_DEPTH)
+                    })
+                    .collect()
+            };
+            for x in 0..x_colors.len() {
+                image.write_pixel(x, y, x_colors[x]);
             }
         }
         image

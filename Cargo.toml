@@ -10,6 +10,7 @@ nalgebra-glm = "0.17.0"
 rand = "0.8"
 tobj = "3.2.3"
 clap = { version = "4.0", features = ["derive"] }
+rayon = "1.6"
 
 [[bin]]
 name = "raytracer_bin"

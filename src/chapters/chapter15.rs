@@ -33,7 +33,7 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
             .transform(
                 &(
                     make_translation(0.0, -10.0, 0.0)
-                        * (make_rotation_y(1.7) * make_rotation_x(-glm::half_pi::<F3D>()))
+                        * (make_rotation_y(2.0) * make_rotation_x(-glm::half_pi::<F3D>()))
                     //with this model
                 ),
             )
