@@ -8,6 +8,7 @@ pub mod checkers;
 pub mod gradient;
 pub mod ring;
 pub mod stripe;
+pub mod texture_map;
 
 pub trait Pattern {
     fn get_transform(&self) -> Matrix4;
@@ -30,6 +31,7 @@ pub enum TPattern {
     Gradient(gradient::GradientPattern),
     Ring(ring::RingPattern),
     Stripe(stripe::StripePattern),
+    TextureMap(texture_map::TextureMapPattern),
 }
 
 impl TPattern {
@@ -44,6 +46,7 @@ impl TPattern {
             TPattern::Gradient(gp) => Box::new(gp),
             TPattern::Ring(rp) => Box::new(rp),
             TPattern::Stripe(sp) => Box::new(sp),
+            TPattern::TextureMap(tm) => Box::new(tm),
         }
     }
 }

@@ -1,21 +1,28 @@
 # rust-raytracer
-Raytracer book project in Rust
+
+Using the excellent [The Ray Tracer Challenge](http://www.raytracerchallenge.com) book to get my hands dirty with Rust (fwiw)!
 
 ## Notes
 
 - Uses glm library for primitive data types and matrix operations
 
-- Started out implementing shape functionality with Traits but didn't like the results.  Switched to composition + enums
+- Started out implementing shape functionality with traits but didn't like the results.  Switched to composition + enums
 for cleaner &amp; more performant code.
 
-- Spent way too long trying to implement Groups with bidirectional trees.  Not an easy thing in Rust.
-Had to give up after some point and just reused code from [this repo](https://github.com/ahamez/ray-trace) for my own sanity.
+- Spent waaaay too long trying to implement Groups with bidirectional trees.  Not an easy thing in Rust without tons of Arc/RefCell/Weak/blah.
+Had to give up after some point and just reused the cleaner groups code from [this repo](https://github.com/ahamez/ray-trace) for my own sanity.
 
-- Implemented all but CSGs (requires tree?)
+- Implemented all chapters but CSGs (requires trees again)
 
 - Performance difference between the dev and release builds is insane
 
-## Samples
+## TODO
+
+- Material on groups apply to children
+
+- Area lights, Spot lights
+
+## Results
 
 ![Cover](/demos/cover.png?raw=true "Cover")
 

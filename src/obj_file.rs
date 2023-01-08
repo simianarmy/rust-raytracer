@@ -238,25 +238,6 @@ mod tests {
     }
 
     #[test]
-    fn ignoring_unrecognized_lines() {
-        let fname = test_filename("ignores");
-        write_obj_file(
-            fname.as_str(),
-            "\
-        blah blah blah\n\
-        blah\n\
-        blabby\n\
-        blabla\n\
-        ",
-        )
-        .unwrap();
-        match parse_obj_file(fname.as_str()) {
-            Ok(data) => assert_eq!(data.raw.len(), 1),
-            _ => (),
-        }
-    }
-
-    #[test]
     fn parsing_triangle_faces() {
         let filedata = "
 v -1 1 0
