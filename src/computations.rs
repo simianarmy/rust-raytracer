@@ -5,9 +5,9 @@ use crate::ray::Ray;
 use crate::tuple::*;
 
 #[derive(Debug)]
-pub struct Computations {
+pub struct Computations<'a> {
     pub t: F3D,
-    pub object: Object,
+    pub object: &'a Object,
     pub point: Point,
     pub over_point: Point,
     pub under_point: Point,
@@ -20,7 +20,7 @@ pub struct Computations {
 }
 
 fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
-    let mut containers: Vec<Object> = Vec::new();
+    let mut containers: Vec<&Object> = Vec::new();
     let mut n1 = 0.0;
     let mut n2 = 0.0;
 
@@ -42,7 +42,7 @@ fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
         {
             containers.swap_remove(pos);
         } else {
-            containers.push(is.object.clone());
+            containers.push(&is.object);
         }
 
         if is_hit {
@@ -57,7 +57,11 @@ fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
     (n1, n2)
 }
 
-pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Intersections) -> Computations {
+pub fn prepare_computations<'a>(
+    i: &Intersection<'a>,
+    ray: &Ray,
+    xs: &Intersections,
+) -> Computations<'a> {
     let p = ray.position(i.t);
     let normal = i.object.normal_at(p, Some(i));
     let eyev = -ray.direction;
@@ -68,7 +72,7 @@ pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Intersections) -> 
 
     Computations {
         t: i.t,
-        object: i.object.clone(),
+        object: &i.object,
         point: p,
         over_point: p + normalv * EPSILON,
         under_point: p - normalv * EPSILON,

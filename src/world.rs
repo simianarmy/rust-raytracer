@@ -81,9 +81,10 @@ impl World {
         match xs.hit() {
             Some(is) => {
                 let comps = prepare_computations(
-                    is,
-                    ray,
-                    &Intersections::from_intersections(vec![is.clone()]),
+                    is, ray,
+                    // optimization: just pass ref to xs
+                    &xs,
+                    //&Intersections::from_intersections(vec![is.clone()]),
                 );
                 self.shade_hit(&comps, remaining)
             }
