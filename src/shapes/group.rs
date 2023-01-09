@@ -7,6 +7,7 @@
 use crate::{
     bounds::Bounds,
     intersection::Intersections,
+    materials::Material,
     matrix::Matrix4,
     object::Object,
     ray::Ray,
@@ -123,18 +124,26 @@ pub enum GroupBuilder {
 }
 
 impl GroupBuilder {
-    pub fn build(self) -> Object {
-        GroupBuilder::rec(self, &glm::identity())
+    pub fn build(self, propagate_material: bool, material: &Material) -> Object {
+        GroupBuilder::rec(self, &glm::identity(), propagate_material, material)
     }
 
-    fn rec(gb: Self, transform: &Matrix4) -> Object {
+    fn rec(gb: Self, transform: &Matrix4, propagate_material: bool, material: &Material) -> Object {
         match gb {
-            GroupBuilder::Leaf(o) => o.transform(transform),
+            GroupBuilder::Leaf(o) => {
+                if propagate_material {
+                    o.with_material(material.clone()).transform(transform)
+                } else {
+                    o.transform(transform)
+                }
+            }
             GroupBuilder::Node(group, children) => {
                 let child_transform = transform * group.get_transform();
                 let new_children = children
                     .into_iter()
-                    .map(|child| GroupBuilder::rec(child, &child_transform))
+                    .map(|child| {
+                        GroupBuilder::rec(child, &child_transform, propagate_material, material)
+                    })
                     .collect();
 
                 group
@@ -183,9 +192,13 @@ pub fn from_shape(s: &Shape) -> Option<&Group> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        shapes::cylinder::*, shapes::shape, shapes::sphere::*, transformation::*, tuple::*,
-    };
+    use crate::assert_eq_eps;
+    use crate::color::Color;
+    use crate::lights::point_light;
+    use crate::materials::Material;
+    use crate::transformation::*;
+    use crate::world::*;
+    use crate::{shapes::cylinder::*, shapes::shape, shapes::sphere::*, tuple::*};
 
     #[test]
     fn intersecting_a_ray_with_an_empty_group() {
@@ -455,5 +468,37 @@ mod tests {
         assert_eq!(from_shape(g_children[1].shape()).unwrap().children()[0], s1);
         // right child
         assert_eq!(from_shape(g_children[2].shape()).unwrap().children()[0], s2);
+    }
+
+    #[test]
+    fn group_material_propagates_to_children() {
+        let s = sphere_with_id(Some("s1".to_string()));
+
+        let mut m = Material::default();
+        m.color = Color::new(0.8, 1.0, 0.6);
+        m.diffuse = 0.7;
+        m.specular = 0.2;
+
+        let g = Object::new_group(vec![Object::new_group(vec![s])]).set_group_material(m);
+        let gg = from_shape(g.shape()).unwrap().children()[0].clone();
+        let s = from_shape(gg.shape()).unwrap().children()[0].clone();
+        assert_eq!(s.get_material().color, Color::new(0.8, 1.0, 0.6));
+    }
+
+    #[test]
+    fn group_material_should_not_clobber_children_materials() {
+        let s = sphere_with_id(Some("s1".to_string()));
+
+        let mut m = Material::default();
+        m.color = Color::new(0.8, 1.0, 0.6);
+        m.diffuse = 0.7;
+        m.specular = 0.2;
+
+        let g = Object::new_group(vec![s]).set_group_material(m);
+        let parent = Object::new_group(vec![g]);
+
+        let pg = from_shape(parent.shape()).unwrap().children()[0].clone();
+        let s = from_shape(pg.shape()).unwrap().children()[0].clone();
+        assert_eq!(s.get_material().color, Color::new(0.8, 1.0, 0.6));
     }
 }

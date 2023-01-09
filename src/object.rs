@@ -79,7 +79,7 @@ impl Object {
             })
             .collect();
         let group_builder = GroupBuilder::Node(Object::new_dummy(), children_group_builders);
-        let object = group_builder.build();
+        let object = group_builder.build(false, &Material::default());
 
         Object {
             bounds: object.shape.bounds(),
@@ -118,10 +118,18 @@ impl Object {
         self
     }
 
+    pub fn with_material(mut self, material: Material) -> Self {
+        self.set_material(material);
+
+        self
+    }
+
     pub fn get_material(&self) -> &Material {
         &self.material
     }
+
     pub fn set_material(&mut self, t: Material) {
+        // If I am a group, use set_group_material for now
         self.material = t;
     }
 
@@ -181,30 +189,46 @@ impl Object {
      * Need to call this manually on group objects for transformations
      */
     pub fn transform(self, new_transformation: &Matrix4) -> Self {
-        match self.shape() {
-            Shape::Group(g) => {
-                // Each time a Group is transformed, we convert it back to a GroupBuilder,
-                // which is easier to manipulate. It's not the most efficient, but as this
-                // is only peformed when constructing objects of a world, it has no impact on
-                // the rendering itself.
-                let children_group_builders =
-                    g.children().iter().map(GroupBuilder::from_object).collect();
+        if let Shape::Group(g) = self.shape() {
+            // Each time a Group is transformed, we convert it back to a GroupBuilder,
+            // which is easier to manipulate. It's not the most efficient, but as this
+            // is only peformed when constructing objects of a world, it has no impact on
+            // the rendering itself.
+            let children_group_builders =
+                g.children().iter().map(GroupBuilder::from_object).collect();
 
-                // We then create a new top GroupBuilder Node from which the new transformation is
-                // applied.
-                let group_builder = GroupBuilder::Node(
-                    Object::new(Some(String::from("dummy")))
-                        .with_transformation(*new_transformation),
-                    children_group_builders,
-                );
+            // We then create a new top GroupBuilder Node from which the new transformation is
+            // applied.
+            let group_builder = GroupBuilder::Node(
+                Object::new(Some(String::from("dummy"))).with_transformation(*new_transformation),
+                children_group_builders,
+            );
 
-                // Convert back to a Group.
-                group_builder.build()
-            }
-            _other_shape => {
-                let new_t = new_transformation * self.transform;
-                self.with_transformation(new_t)
-            }
+            // Convert back to a Group.
+            group_builder.build(false, self.get_material())
+        } else {
+            let new_t = new_transformation * self.transform;
+            self.with_transformation(new_t)
+        }
+    }
+
+    /**
+     * Extra function for groups to propagate materials to their children
+     */
+    pub fn set_group_material(self, new_material: Material) -> Self {
+        if let Shape::Group(g) = self.shape() {
+            let children_group_builders =
+                g.children().iter().map(GroupBuilder::from_object).collect();
+
+            let group_builder = GroupBuilder::Node(
+                Object::new(Some(String::from("dummy"))),
+                children_group_builders,
+            );
+
+            // Convert back to a Group.
+            group_builder.build(true, &new_material)
+        } else {
+            self
         }
     }
 }

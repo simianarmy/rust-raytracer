@@ -14,7 +14,9 @@ Had to give up after some point and just reused the cleaner groups code from [th
 
 - Implemented all chapters but CSGs (requires trees again)
 
-- Performance difference between the dev and release builds is insane
+- Parallelization using Rayon with minimal code - achieves ~2x speedup on my MBP
+
+- Performance difference between the dev and release builds is significant
 
 ## TODO
 

@@ -82,8 +82,8 @@ impl Camera {
                     })
                     .collect()
             };
-            for x in 0..x_colors.len() {
-                image.write_pixel(x, y, x_colors[x]);
+            for (x, &color) in x_colors.iter().enumerate() {
+                image.write_pixel(x, y, color);
             }
         }
         image
