@@ -85,7 +85,7 @@ pub fn run() {
         * make_scaling(0.3, 0.3, 0.3);
     cone1.set_transform(&st);
 
-    let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
+    let mut world = World::new(vec![point_light(point(-10.0, 10.0, -10.0), Color::white())]);
     world.add_shape(floor);
     world.add_shape(glass_ball);
     world.add_shape(checker_ball);

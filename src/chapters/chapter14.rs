@@ -44,7 +44,7 @@ fn get_quadrant(x: i32, y: i32, _z: i32) -> usize {
 }
 
 pub fn run(hsize: usize, vsize: usize) {
-    let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
+    let mut world = World::new(vec![point_light(point(-10.0, 10.0, -10.0), Color::white())]);
 
     let mut floor = plane(); // unit sphere
     floor.material.color = Color::new(0.8, 0.7, 0.8);

@@ -14,7 +14,7 @@ use crate::world::World;
 const CHAPTER: u8 = 15;
 
 pub fn run(fixture: &String, hsize: usize, vsize: usize) {
-    let mut world = World::new(point_light(point(10.0, 20.0, -25.0), Color::white()));
+    let mut world = World::new(vec![point_light(point(10.0, 20.0, -25.0), Color::white())]);
 
     let mut floor = plane();
     floor.material.color = Color::new(0.8, 0.7, 0.8);

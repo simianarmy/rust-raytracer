@@ -13,14 +13,14 @@ use crate::tuple::*;
 pub const MAX_RAY_DEPTH: u8 = 5;
 
 pub struct World {
-    light: PointLight,
+    lights: Vec<PointLight>,
     objects: Vec<Object>,
 }
 
 impl World {
-    pub fn new(light: PointLight) -> World {
+    pub fn new(lights: Vec<PointLight>) -> World {
         World {
-            light,
+            lights,
             objects: vec![],
         }
     }
@@ -51,27 +51,37 @@ impl World {
     }
 
     pub fn shade_hit(&self, comps: &Computations, remaining: u8) -> Color {
-        let shadowed = self.is_shadowed(&comps.over_point);
-        let surface = lighting(
-            comps.object.get_material(),
-            &comps.object,
-            &self.light,
-            &comps.over_point,
-            &comps.eyev,
-            &comps.normalv,
-            shadowed,
-        );
-        let reflected = self.reflected_color(comps, remaining);
-        let refracted = self.refracted_color(comps, remaining);
+        let colors: Vec<Color> = self
+            .lights
+            .iter()
+            .map(|l| {
+                let shadowed = self.is_shadowed(&l, &comps.over_point);
+                let surface = lighting(
+                    comps.object.get_material(),
+                    &comps.object,
+                    &l,
+                    &comps.over_point,
+                    &comps.eyev,
+                    &comps.normalv,
+                    shadowed,
+                );
+                let reflected = self.reflected_color(comps, remaining);
+                let refracted = self.refracted_color(comps, remaining);
 
-        let material = comps.object.get_material();
-        if material.transparency > 0.0 && material.reflective > 0.0 {
-            let reflectance = schlick(comps);
+                let material = comps.object.get_material();
+                if material.transparency > 0.0 && material.reflective > 0.0 {
+                    let reflectance = schlick(comps);
 
-            surface + reflected * reflectance + refracted * (1.0 - reflectance)
-        } else {
-            surface + reflected + refracted
-        }
+                    surface + reflected * reflectance + refracted * (1.0 - reflectance)
+                } else {
+                    surface + reflected + refracted
+                }
+            })
+            .collect();
+        // add up light source colors
+        colors
+            .into_iter()
+            .fold(Color::black(), |acc, curr| acc + curr)
     }
 
     pub fn color_at(&self, ray: &Ray, remaining: u8) -> Color {
@@ -91,8 +101,8 @@ impl World {
         }
     }
 
-    pub fn is_shadowed(&self, p: &Point) -> bool {
-        let v = self.light.position - p;
+    pub fn is_shadowed(&self, light: &PointLight, p: &Point) -> bool {
+        let v = light.position - p;
         let distance = v.magnitude();
         let direction = v.normalize();
         let r = Ray::new(*p, direction);
@@ -155,7 +165,7 @@ impl Default for World {
         s1.set_material(m);
         let mut s2 = sphere_with_id(Some("s2".to_string()));
         s2.set_transform(&make_scaling(0.5, 0.5, 0.5));
-        let mut world = World::new(light);
+        let mut world = World::new(vec![light]);
         world.add_shape(s1); // move operation
         world.add_shape(s2);
         world
@@ -181,7 +191,7 @@ mod tests {
     fn constructor_assigns() {
         let light = point_light(point(-10.0, 10.0, -10.0), Color::white());
         let world = World::default();
-        assert_eq!(world.light, light);
+        assert_eq!(world.lights[0], light);
         let s1 = &world.objects[0];
         let s2 = &world.objects[1];
         assert_eq!(s1.get_id(), "sphere_s1");
@@ -227,7 +237,7 @@ mod tests {
     #[test]
     fn shading_an_intersection_from_the_inside() {
         let mut world = World::default();
-        world.light = point_light(point(0.0, 0.25, 0.0), Color::white());
+        world.lights = vec![point_light(point(0.0, 0.25, 0.0), Color::white())];
         let ray = Ray::new(point_zero(), vector_z());
         let object = &world.objects[1];
         let i = Intersection::new(&object, 0.5);
@@ -285,33 +295,33 @@ mod tests {
     fn no_shadow_when_nothing_is_collinear_with_point_and_light() {
         let world = World::default();
         let p = point(0.0, 10.0, 0.0);
-        assert!(!world.is_shadowed(&p));
+        assert!(!world.is_shadowed(&world.lights[0], &p));
     }
 
     #[test]
     fn shadow_when_object_between_point_and_light() {
         let world = World::default();
         let p = point(10.0, -10.0, 10.0);
-        assert!(world.is_shadowed(&p));
+        assert!(world.is_shadowed(&world.lights[0], &p));
     }
 
     #[test]
     fn no_shadow_when_object_behind_light() {
         let world = World::default();
         let p = point(-20.0, 20.0, -20.0);
-        assert!(!world.is_shadowed(&p));
+        assert!(!world.is_shadowed(&world.lights[0], &p));
     }
 
     #[test]
     fn no_shadow_when_object_behind_point() {
         let world = World::default();
         let p = point(-2.0, 2.0, -2.0);
-        assert!(!world.is_shadowed(&p));
+        assert!(!world.is_shadowed(&world.lights[0], &p));
     }
 
     #[test]
     fn shade_hit_given_intersection_in_shadow() {
-        let mut world = World::new(point_light(point(0.0, 0.0, -10.0), Color::white()));
+        let mut world = World::new(vec![point_light(point(0.0, 0.0, -10.0), Color::white())]);
         world.add_shape(sphere());
 
         let mut s2 = sphere();
@@ -395,7 +405,7 @@ mod tests {
 
     #[test]
     fn color_at_with_mutually_reflective_surfaces() {
-        let mut world = World::new(point_light(point_zero(), Color::white()));
+        let mut world = World::new(vec![point_light(point_zero(), Color::white())]);
         let mut lower = plane();
         lower.material.reflective = 1.0;
         lower.set_transform(&make_translation(0.0, -1.0, 0.0));

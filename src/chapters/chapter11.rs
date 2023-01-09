@@ -71,7 +71,7 @@ pub fn run(hsize: usize, vsize: usize) {
             UVMap::Spherical,
         ))));
 
-    let mut world = World::new(point_light(point(-10.0, 10.0, -10.0), Color::white()));
+    let mut world = World::new(vec![point_light(point(-10.0, 10.0, -10.0), Color::white())]);
     world.add_shape(floor);
     world.add_shape(msphere);
     world.add_shape(rsphere);

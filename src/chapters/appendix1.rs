@@ -18,7 +18,7 @@ use crate::world::World;
 const CHAPTER: u8 = 16;
 
 pub fn run(hsize: usize, vsize: usize) {
-    let mut world = World::new(point_light(point(50.0, 100.0, -50.0), Color::white()));
+    let mut world = World::new(vec![point_light(point(50.0, 100.0, -50.0), Color::white())]);
 
     let mut material_white = Material::new(0.1, 0.7, 0.0, 0.0);
     material_white.reflective = 0.1;

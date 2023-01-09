@@ -16,7 +16,12 @@ use crate::tuple::*;
 use crate::world::World;
 
 pub fn run(fixture: &String, hsize: usize, vsize: usize) {
-    let mut world = World::new(point_light(point(-10.0, 100.0, -100.0), Color::white()));
+    let mut world = World::new(vec![
+        point_light(point(-10.0, 100.0, -100.0), Color::white()),
+        point_light(point(0.0, 100.0, 0.0), color(0.1, 0.1, 0.1)),
+        point_light(point(100.0, 10.0, -25.0), color(0.2, 0.2, 0.2)),
+        point_light(point(-100.0, 10.0, -25.0), color(0.2, 0.2, 0.2)),
+    ]);
 
     // dragon obj
     let obj = parse_obj_file(fixture).unwrap();
@@ -145,11 +150,11 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
     ])
     .with_transformation(make_translation(0.0, 0.5, -4.0));
 
-    world.add_shape(g1);
-    world.add_shape(g2);
-    world.add_shape(g3);
-    world.add_shape(g4);
-    world.add_shape(g5);
+    //world.add_shape(g1);
+    //world.add_shape(g2);
+    //world.add_shape(g3);
+    //world.add_shape(g4);
+    //world.add_shape(g5);
     world.add_shape(g6);
 
     let mut camera = Camera::new(hsize, vsize, 1.2);
