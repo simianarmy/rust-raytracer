@@ -131,6 +131,7 @@ impl GroupBuilder {
     fn rec(gb: Self, transform: &Matrix4, propagate_material: bool, material: &Material) -> Object {
         match gb {
             GroupBuilder::Leaf(o) => {
+                //println!("building leaf {:#?} with transform {}", o, transform);
                 if propagate_material {
                     o.with_material(material.clone()).transform(transform)
                 } else {

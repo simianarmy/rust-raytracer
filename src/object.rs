@@ -26,6 +26,7 @@ pub struct Object {
     pub transformation_inverse_transpose: Matrix4,
     pub material: Material,
     pub bounds: Bounds,
+    pub has_shadow: bool,
     pub shape: Shape,
 }
 
@@ -200,7 +201,7 @@ impl Object {
             // We then create a new top GroupBuilder Node from which the new transformation is
             // applied.
             let group_builder = GroupBuilder::Node(
-                Object::new(Some(String::from("dummy"))).with_transformation(*new_transformation),
+                Object::new_dummy().with_transformation(*new_transformation),
                 children_group_builders,
             );
 
@@ -220,10 +221,7 @@ impl Object {
             let children_group_builders =
                 g.children().iter().map(GroupBuilder::from_object).collect();
 
-            let group_builder = GroupBuilder::Node(
-                Object::new(Some(String::from("dummy"))),
-                children_group_builders,
-            );
+            let group_builder = GroupBuilder::Node(Object::new_dummy(), children_group_builders);
 
             // Convert back to a Group.
             group_builder.build(true, &new_material)
@@ -242,6 +240,7 @@ impl Default for Object {
             transformation_inverse_transpose: glm::identity(),
             material: Material::default(),
             bounds: Bounds::default(),
+            has_shadow: true,
             shape: Shape::None,
         }
     }

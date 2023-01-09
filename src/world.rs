@@ -87,17 +87,16 @@ impl World {
     pub fn color_at(&self, ray: &Ray, remaining: u8) -> Color {
         let xs = self.intersect(ray);
         // find hit from the intersections
-        match xs.hit() {
-            Some(is) => {
-                let comps = prepare_computations(
-                    is, ray,
-                    // optimization: just pass ref to xs
-                    &xs,
-                    //&Intersections::from_intersections(vec![is.clone()]),
-                );
-                self.shade_hit(&comps, remaining)
-            }
-            None => Color::black(),
+        if let Some(is) = xs.hit() {
+            let comps = prepare_computations(
+                is, ray,
+                // optimization: just pass ref to xs
+                &xs,
+                //&Intersections::from_intersections(vec![is.clone()]),
+            );
+            self.shade_hit(&comps, remaining)
+        } else {
+            Color::black()
         }
     }
 
@@ -107,10 +106,11 @@ impl World {
         let direction = v.normalize();
         let r = Ray::new(*p, direction);
         let xs = self.intersect(&r);
-        match xs.hit() {
-            Some(is) if is.t < distance => true,
-            _ => false,
+
+        if let Some(is) = xs.hit() {
+            return is.object.has_shadow && is.t < distance;
         }
+        false
     }
 
     pub fn reflected_color(&self, comps: &Computations, remaining: u8) -> Color {

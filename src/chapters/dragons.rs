@@ -36,17 +36,28 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
         )
         .divide(40);
 
-    let mut raw_bbox = cube();
-    raw_bbox.set_transform(
+    let mut bbox = cube();
+    bbox.has_shadow = false;
+    bbox.set_transform(
         &(make_translation(1.0, 1.0, 1.0)
             * make_scaling(3.73335, 2.5845, 1.6283)
-            * make_translation(-3.9863, -0.1217, -1.1820)),
+            * make_translation(-3.9863, -0.1217, -1.1820)
+            * make_translation(0.0, 0.1217, 0.0)
+            * make_scaling(0.268, 0.268, 0.268)),
     );
 
-    // overwrite other transformations or add to them?
-    let bbox = raw_bbox.clone().with_transformation(
-        make_translation(0.0, 0.1217, 0.0) * make_scaling(0.268, 0.268, 0.268),
-    );
+    /*
+         *  What is the meaning of this???
+         * - define: bbox
+      value:
+        add: raw-bbox
+        transform:
+          - [ translate, 0, 0.1217, 0]
+          - [ scale, 0.268, 0.268, 0.268 ]
+    */
+    //let bbox = Object::new_group(vec![raw_bbox])
+    //.transform(&(make_translation(0.0, 0.1217, 0.0) * make_scaling(0.268, 0.268, 0.268)));
+    println!("bbox: {:#?}", bbox);
 
     let dragon_material = Material {
         ambient: 0.1,
@@ -71,8 +82,7 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
         ..dragon_material.clone()
     });
 
-    let mut box1 = bbox.clone();
-    box1.set_material(Material {
+    let box1 = bbox.clone().set_group_material(Material {
         ambient: 0.0,
         diffuse: 0.4,
         specular: 0.0,
@@ -82,7 +92,7 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
     });
 
     let g1 = Object::new_group(vec![pedestal.clone(), Object::new_group(vec![d1, box1])])
-        .with_transformation(make_translation(0.0, 2.0, 0.0));
+        .transform(&make_translation(0.0, 2.0, 0.0));
 
     let d2 = dragon.clone().set_group_material(Material {
         color: color(1.0, 0.5, 0.1),
@@ -101,10 +111,10 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
 
     let g2 = Object::new_group(vec![
         pedestal.clone(),
-        Object::new_group(vec![d2, box2])
-            .with_transformation(make_scaling(0.75, 0.75, 0.75) * make_rotation_y(4.0)),
+        Object::new_group(vec![d2, box2.clone()])
+            .transform(&(make_scaling(0.75, 0.75, 0.75) * make_rotation_y(4.0))),
     ])
-    .with_transformation(make_translation(2.0, 1.0, -1.0));
+    .transform(&make_translation(2.0, 1.0, -1.0));
 
     let d3 = dragon.clone().set_group_material(Material {
         color: color(0.9, 0.5, 0.1),
@@ -113,22 +123,32 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
 
     let g3 = Object::new_group(vec![
         pedestal.clone(),
-        Object::new_group(vec![d3])
-            .with_transformation(make_rotation_y(-0.4) * make_scaling(0.75, 0.75, 0.75)),
+        Object::new_group(vec![d3, box2.clone()])
+            .transform(&(make_rotation_y(-0.4) * make_scaling(0.75, 0.75, 0.75))),
     ])
-    .with_transformation(make_translation(-2.0, 0.75, -1.0));
+    .transform(&make_translation(-2.0, 0.75, -1.0));
 
     let d4 = dragon.clone().set_group_material(Material {
         color: color(1.0, 0.9, 0.1),
         ..dragon_material.clone()
     });
 
+    let mut box4 = bbox.clone();
+    box4.set_material(Material {
+        ambient: 0.0,
+        diffuse: 0.1,
+        specular: 0.0,
+        transparency: 0.9,
+        refractive_index: 1.0,
+        ..Material::default()
+    });
+
     let g4 = Object::new_group(vec![
         pedestal.clone(),
-        Object::new_group(vec![d4])
-            .with_transformation(make_rotation_y(-0.2) * make_scaling(0.5, 0.5, 0.5)),
+        Object::new_group(vec![d4, box4.clone()])
+            .transform(&(make_rotation_y(-0.2) * make_scaling(0.5, 0.5, 0.5))),
     ])
-    .with_transformation(make_translation(-4.0, 0.0, -2.0));
+    .transform(&make_translation(-4.0, 0.0, -2.0));
 
     let d5 = dragon.clone().set_group_material(Material {
         color: color(0.9, 1.0, 0.1),
@@ -137,24 +157,24 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
 
     let g5 = Object::new_group(vec![
         pedestal.clone(),
-        Object::new_group(vec![d5])
-            .with_transformation(make_rotation_y(3.3) * make_scaling(0.5, 0.5, 0.5)),
+        Object::new_group(vec![d5, box4.clone()])
+            .transform(&(make_rotation_y(3.3) * make_scaling(0.5, 0.5, 0.5))),
     ])
-    .with_transformation(make_translation(4.0, 0.0, -2.0));
+    .transform(&make_translation(4.0, 0.0, -2.0));
 
     let d6 = dragon.clone().set_group_material(dragon_material.clone());
 
     let g6 = Object::new_group(vec![
         pedestal.clone(),
-        Object::new_group(vec![d6]).with_transformation(make_rotation_y(glm::pi())),
+        Object::new_group(vec![d6]).transform(&make_rotation_y(glm::pi())),
     ])
-    .with_transformation(make_translation(0.0, 0.5, -4.0));
+    .transform(&make_translation(0.0, 0.5, -4.0));
 
-    //world.add_shape(g1);
-    //world.add_shape(g2);
-    //world.add_shape(g3);
-    //world.add_shape(g4);
-    //world.add_shape(g5);
+    world.add_shape(g1);
+    world.add_shape(g2);
+    world.add_shape(g3);
+    world.add_shape(g4);
+    world.add_shape(g5);
     world.add_shape(g6);
 
     let mut camera = Camera::new(hsize, vsize, 1.2);
