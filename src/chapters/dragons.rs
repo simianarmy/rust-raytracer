@@ -18,9 +18,9 @@ use crate::world::World;
 pub fn run(fixture: &String, hsize: usize, vsize: usize) {
     let mut world = World::new(vec![
         point_light(point(-10.0, 100.0, -100.0), Color::white()),
-        point_light(point(0.0, 100.0, 0.0), color(0.1, 0.1, 0.1)),
-        point_light(point(100.0, 10.0, -25.0), color(0.2, 0.2, 0.2)),
-        point_light(point(-100.0, 10.0, -25.0), color(0.2, 0.2, 0.2)),
+        //point_light(point(0.0, 100.0, 0.0), color(0.1, 0.1, 0.1)),
+        //point_light(point(100.0, 10.0, -25.0), color(0.2, 0.2, 0.2)),
+        //point_light(point(-100.0, 10.0, -25.0), color(0.2, 0.2, 0.2)),
     ]);
 
     // dragon obj
@@ -82,7 +82,8 @@ pub fn run(fixture: &String, hsize: usize, vsize: usize) {
         ..dragon_material.clone()
     });
 
-    let box1 = bbox.clone().set_group_material(Material {
+    let mut box1 = bbox.clone();
+    box1.set_material(Material {
         ambient: 0.0,
         diffuse: 0.4,
         specular: 0.0,
