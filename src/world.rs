@@ -13,12 +13,12 @@ use crate::tuple::*;
 pub const MAX_RAY_DEPTH: u8 = 5;
 
 pub struct World {
-    lights: Vec<PointLight>,
+    lights: Vec<Light>,
     objects: Vec<Object>,
 }
 
 impl World {
-    pub fn new(lights: Vec<PointLight>) -> World {
+    pub fn new(lights: Vec<Light>) -> World {
         World {
             lights,
             objects: vec![],
@@ -100,8 +100,8 @@ impl World {
         }
     }
 
-    pub fn is_shadowed(&self, light: &PointLight, p: &Point) -> bool {
-        let v = light.position - p;
+    pub fn is_shadowed(&self, light: &Light, p: &Point) -> bool {
+        let v = light.position() - p;
         let distance = v.magnitude();
         let direction = v.normalize();
         let r = Ray::new(*p, direction);

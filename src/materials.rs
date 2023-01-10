@@ -49,7 +49,7 @@ impl Default for Material {
 pub fn lighting(
     material: &Material,
     object: &Object,
-    light: &PointLight,
+    light: &Light,
     point: &Point,
     eyev: &Vector,
     normalv: &Vector,
@@ -65,15 +65,15 @@ pub fn lighting(
         //}
     }
     // combine surface color with lights color/intensity
-    let effective_color: Color = color * light.intensity;
+    let effective_color: Color = color * light.intensity();
 
     // find direction to light source
-    let lightv: Vector = normalize(&(light.position - point));
+    let lightv: Vector = normalize(&(light.position() - point));
 
     // compute ambient contribution
     let ambient: Color = effective_color * material.ambient;
 
-    // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the​​   ​# light is on the other side of the surface.
+    // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the light is on the other side of the surface.
     let light_dot_normal: F3D = lightv.dot(&normalv);
     if in_shadow || light_dot_normal < 0.0 {
         // no light contribution, diffuse and specular are zero
@@ -81,7 +81,7 @@ pub fn lighting(
     } else {
         // compute the diffuse contribution
         let diffuse: Color = effective_color * material.diffuse * light_dot_normal;
-        // reflect_dot_eye represents the cosine of the angle between the​​     ​# reflection vector and the eye vector. A negative number means the​​     ​# light reflects away from the eye.
+        // reflect_dot_eye represents the cosine of the angle between the reflection vector and the eye vector. A negative number means the light reflects away from the eye.
         let reflectv: Vector = crate::tuple::reflect(-lightv, *normalv);
         let reflect_dot_eye: F3D = reflectv.dot(&eyev);
         let mut specular = Color::black();
@@ -89,7 +89,7 @@ pub fn lighting(
         if reflect_dot_eye >= 0.0 {
             // compute the specular contribution
             let factor: F3D = reflect_dot_eye.powf(material.shininess);
-            specular = light.intensity * material.specular * factor;
+            specular = light.intensity() * material.specular * factor;
         }
         ambient + diffuse + specular
     }
@@ -100,7 +100,6 @@ mod tests {
     use super::*;
     use crate::assert_eq_eps;
     use crate::pattern::stripe::stripe_pattern;
-    use crate::shapes::group::Group;
     use crate::shapes::sphere::*;
 
     fn setup() -> (Material, Point, Object) {
