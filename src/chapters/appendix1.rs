@@ -35,10 +35,14 @@ pub fn run(hsize: usize, vsize: usize) {
     material_purple.reflective = 0.1;
     material_purple.color = color(0.373, 0.404, 0.550);
 
-    let standard_transform = make_translation(1.0, -1.0, 1.0) * make_scaling(0.5, 0.5, 0.5);
-    let large_object = standard_transform * make_scaling(3.5, 3.5, 3.5);
-    let medium_object = standard_transform * make_scaling(3.0, 3.0, 3.0);
-    let small_object = standard_transform * make_scaling(2.0, 2.0, 2.0);
+    //let standard_transform = make_translation(1.0, -1.0, 1.0) * make_scaling(0.5, 0.5, 0.5);
+    let standard_transform = make_scaling(0.5, 0.5, 0.5) * make_translation(1.0, -1.0, 1.0);
+    //let large_object = standard_transform * make_scaling(3.5, 3.5, 3.5);
+    //let medium_object = standard_transform * make_scaling(3.0, 3.0, 3.0);
+    //let small_object = standard_transform * make_scaling(2.0, 2.0, 2.0);
+    let large_object = make_scaling(3.5, 3.5, 3.5) * standard_transform;
+    let medium_object = make_scaling(3.0, 3.0, 3.0) * standard_transform;
+    let small_object = make_scaling(2.0, 2.0, 2.0) * standard_transform;
 
     let mut plane = plane();
     let mut mat = Material::default();
@@ -135,7 +139,7 @@ pub fn run(hsize: usize, vsize: usize) {
 
     let mut camera = Camera::new(hsize, vsize, 0.785);
     camera.transform = view_transform(
-        &point(-6.0, 6.0, -20.0),
+        &point(-6.0, 10.0, -10.0),
         &point(6.0, 0.0, 6.0),
         &vector(-0.45, 1.0, 0.0),
     );
