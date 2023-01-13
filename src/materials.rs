@@ -4,6 +4,7 @@ use crate::math;
 use crate::math::F3D;
 use crate::object::Object;
 use crate::pattern::*;
+use crate::tuple;
 use crate::tuple::*;
 use glm::*;
 
@@ -73,7 +74,7 @@ impl Material {
             // compute the diffuse contribution
             let diffuse: Color = effective_color * self.diffuse * light_dot_normal;
             // reflect_dot_eye represents the cosine of the angle between the reflection vector and the eye vector. A negative number means the light reflects away from the eye.
-            let reflectv: Vector = crate::tuple::reflect(-lightv, *normalv);
+            let reflectv: Vector = tuple::reflect(-lightv, *normalv);
             let reflect_dot_eye: F3D = reflectv.dot(&eyev);
             let mut specular = Color::black();
 
