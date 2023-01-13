@@ -1,5 +1,5 @@
 /**
- * Simple scene
+ * Simple scene with area lighting
  */
 extern crate nalgebra_glm as glm;
 
