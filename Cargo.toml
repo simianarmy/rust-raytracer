@@ -12,10 +12,5 @@ tobj = "3.2.3"
 clap = { version = "4.0", features = ["derive"] }
 rayon = "1.6"
 
-[[bin]]
-name = "raytracer_bin"
-path = "src/bin/main.rs"
-
 [lib]
 name = "raytracer"
-path = "src/lib.rs"
