@@ -38,15 +38,15 @@ impl TPattern {
     pub fn default_transform() -> Matrix4 {
         glm::identity()
     }
-    // Used to get the trait object from the enum variant
-    pub fn into_pattern(&self) -> Box<dyn Pattern> {
-        match *self {
-            TPattern::Test(tp) => Box::new(tp),
-            TPattern::Checkers(cp) => Box::new(cp),
-            TPattern::Gradient(gp) => Box::new(gp),
-            TPattern::Ring(rp) => Box::new(rp),
-            TPattern::Stripe(sp) => Box::new(sp),
-            TPattern::TextureMap(tm) => Box::new(tm),
+
+    pub fn pattern_at_shape(&self, object: &Object, point: &Point) -> Color {
+        match self {
+            TPattern::Test(tp) => tp.pattern_at_shape(object, point),
+            TPattern::Checkers(cp) => cp.pattern_at_shape(object, point),
+            TPattern::Gradient(gp) => gp.pattern_at_shape(object, point),
+            TPattern::Ring(rp) => rp.pattern_at_shape(object, point),
+            TPattern::Stripe(sp) => sp.pattern_at_shape(object, point),
+            TPattern::TextureMap(tm) => tm.pattern_at_shape(object, point),
         }
     }
 }

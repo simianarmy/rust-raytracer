@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::ppm::canvas_to_string;
+use crate::ppm;
 
 pub struct Canvas {
     width: usize,
@@ -44,7 +44,18 @@ impl Canvas {
     }
 
     pub fn to_ppm(&self) -> String {
-        canvas_to_string(self)
+        ppm::canvas_to_string(self)
+    }
+
+    pub fn to_file(&self, filename: &str) {
+        match ppm::create_file_from_data(filename, &self.to_ppm()) {
+            Ok(_) => {
+                println!("file created ({})!", filename);
+            }
+            Err(err) => {
+                println!("Error writing file! {}", err);
+            }
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::color::*;
 use crate::lights::*;
+use crate::math;
 use crate::math::F3D;
 use crate::object::Object;
 use crate::pattern::*;
@@ -49,14 +50,11 @@ impl Material {
         light_intensity: F3D,
     ) -> Color {
         // use material pattern for color if it exists
-        let mut color = self.color;
-        if let Some(tpattern) = &self.pattern {
-            //if object.val.is_some() {
-            // I want the concrete pattern from the shape enum variant...
-            let p = tpattern.into_pattern();
-            color = p.pattern_at_shape(object, &point);
-            //}
-        }
+        let color = if let Some(p) = &self.pattern {
+            p.pattern_at_shape(object, &point)
+        } else {
+            self.color
+        };
         // combine surface color with lights color/intensity
         let effective_color: Color = color * light.intensity();
 
@@ -68,7 +66,7 @@ impl Material {
 
         // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the light is on the other side of the surface.
         let light_dot_normal: F3D = lightv.dot(&normalv);
-        if light_dot_normal < 0.0 {
+        if math::f_equals(light_intensity, 0.0) || light_dot_normal < 0.0 {
             // no light contribution, diffuse and specular are zero
             ambient
         } else {

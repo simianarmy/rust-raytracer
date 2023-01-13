@@ -100,8 +100,8 @@ impl World {
         }
     }
 
-    pub fn is_shadowed(&self, light: &Light, p: &Point) -> bool {
-        let v = light.position() - p;
+    pub fn is_shadowed(&self, light_pos: &Point, p: &Point) -> bool {
+        let v = light_pos - p;
         let distance = v.magnitude();
         let direction = v.normalize();
         let r = Ray::new(*p, direction);
@@ -134,17 +134,17 @@ impl World {
             Color::black()
         } else {
             // use snell's law
-            let n_ratio = comps.n1 / comps.n2;
-            let cos_i = comps.eyev.dot(&comps.normalv);
-            let sin2_t = n_ratio.powi(2) * (1.0 - cos_i.powi(2));
+            // glm::refract_vec() should work here but does not
+            let eta = comps.n1 / comps.n2;
+            let ni = comps.eyev.dot(&comps.normalv);
+            let sin2_t = eta.powi(2) * (1.0 - ni.powi(2));
 
             if sin2_t > 1.0 {
                 Color::black()
             } else {
                 // spawn a refracted ray
-                let cos_t = (1.0 - sin2_t).sqrt();
-                let direction =
-                    (comps.normalv * (n_ratio * cos_i - cos_t)) - (comps.eyev * n_ratio);
+                let k = (1.0 - sin2_t).sqrt();
+                let direction = (comps.normalv * (eta * ni - k)) - (comps.eyev * eta);
                 let refract_ray = Ray::new(comps.under_point, direction);
 
                 let c = self.color_at(&refract_ray, remaining - 1);
@@ -295,28 +295,28 @@ mod tests {
     fn no_shadow_when_nothing_is_collinear_with_point_and_light() {
         let world = World::default();
         let p = point(0.0, 10.0, 0.0);
-        assert!(!world.is_shadowed(&world.lights[0], &p));
+        assert!(!world.is_shadowed(&world.lights[0].position(), &p));
     }
 
     #[test]
     fn shadow_when_object_between_point_and_light() {
         let world = World::default();
         let p = point(10.0, -10.0, 10.0);
-        assert!(world.is_shadowed(&world.lights[0], &p));
+        assert!(world.is_shadowed(&world.lights[0].position(), &p));
     }
 
     #[test]
     fn no_shadow_when_object_behind_light() {
         let world = World::default();
         let p = point(-20.0, 20.0, -20.0);
-        assert!(!world.is_shadowed(&world.lights[0], &p));
+        assert!(!world.is_shadowed(&world.lights[0].position(), &p));
     }
 
     #[test]
     fn no_shadow_when_object_behind_point() {
         let world = World::default();
         let p = point(-2.0, 2.0, -2.0);
-        assert!(!world.is_shadowed(&world.lights[0], &p));
+        assert!(!world.is_shadowed(&world.lights[0].position(), &p));
     }
 
     #[test]

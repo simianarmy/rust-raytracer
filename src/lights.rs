@@ -2,6 +2,8 @@ use crate::color::Color;
 use crate::math;
 use crate::tuple::*;
 use crate::world::World;
+use rand::rngs::ThreadRng;
+use rand::Rng;
 
 #[derive(Debug, PartialEq)]
 pub enum Light {
@@ -14,6 +16,8 @@ pub struct PointLight {
     pub position: Point,
     pub intensity: Color,
 }
+
+const NUM_AREA_SAMPLES: u32 = 5;
 
 #[derive(Debug, PartialEq)]
 pub struct AreaLight {
@@ -63,21 +67,52 @@ impl Light {
 
     pub fn intensity_at(&self, world: &World, point: &Point) -> math::F3D {
         match self {
-            Light::Point(p) => {
-                if world.is_shadowed(self, point) {
-                    0.0
-                } else {
-                    1.0
-                }
-            }
-            Light::Area(a) => 0.0,
+            Light::Point(p) => p.intensity_at(world, point),
+            Light::Area(a) => a.intensity_at(world, point),
         }
     }
 }
 
-// backwards compat
+impl PointLight {
+    fn intensity_at(&self, world: &World, point: &Point) -> math::F3D {
+        if world.is_shadowed(&self.position, point) {
+            0.0
+        } else {
+            1.0
+        }
+    }
+}
+
+impl AreaLight {
+    fn intensity_at(&self, world: &World, point: &Point) -> math::F3D {
+        // For # samples, calculate random point within the area
+        // and call is_shadowed to that point.
+        // Return average of non-shadowed rays
+        let mut rng = rand::thread_rng();
+        let mut tot = 0.0;
+
+        for _ in 0..NUM_AREA_SAMPLES {
+            if !world.is_shadowed(&self.rnd_point(&mut rng), point) {
+                tot += 1.0;
+            }
+        }
+        tot / NUM_AREA_SAMPLES as math::F3D
+    }
+
+    fn rnd_point(&self, rng: &mut ThreadRng) -> Point {
+        let x = rng.gen::<f64>() * self.radius;
+        let y = rng.gen::<f64>() * self.radius;
+        self.light.position + vector(x, y, 0.0)
+    }
+}
+
+// backwards compat helpers
 pub fn point_light(position: Point, intensity: Color) -> Light {
     Light::point(position, intensity)
+}
+
+pub fn area_light(position: Point, intensity: Color, radius: math::F3D) -> Light {
+    Light::area(position, intensity, radius)
 }
 
 #[cfg(test)]
