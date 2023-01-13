@@ -5,17 +5,12 @@ extern crate nalgebra_glm as glm;
 
 use crate::canvas::Canvas;
 use crate::color::Color;
-use crate::intersection::*;
 use crate::lights::*;
-use crate::materials::lighting;
 use crate::math::F3D;
 use crate::ppm::*;
 use crate::ray::Ray;
-use crate::shapes::group;
-use crate::shapes::shape::*;
 use crate::shapes::sphere::sphere;
 use crate::tuple::*;
-use std::sync::Arc;
 
 pub fn run() {
     let mut sphere = sphere(); // unit sphere
@@ -48,15 +43,10 @@ pub fn run() {
                     let p = ray.position(is.t);
                     let normal = is.object.normal_at(p, Some(is));
                     let eye = -ray.direction;
-                    let color = lighting(
-                        &is.object.get_material(),
-                        &is.object,
-                        &light,
-                        &p,
-                        &eye,
-                        &normal,
-                        false,
-                    );
+                    let color = is
+                        .object
+                        .get_material()
+                        .lighting(&is.object, &light, &p, &eye, &normal, 0.0);
                     canvas.write_pixel(x, y, color);
                 }
                 _ => canvas.write_pixel(x, y, Color::black()),

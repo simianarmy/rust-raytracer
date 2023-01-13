@@ -1,6 +1,7 @@
 use crate::color::Color;
 use crate::math;
 use crate::tuple::*;
+use crate::world::World;
 
 #[derive(Debug, PartialEq)]
 pub enum Light {
@@ -57,6 +58,19 @@ impl Light {
             a.radius
         } else {
             0.0
+        }
+    }
+
+    pub fn intensity_at(&self, world: &World, point: &Point) -> math::F3D {
+        match self {
+            Light::Point(p) => {
+                if world.is_shadowed(self, point) {
+                    0.0
+                } else {
+                    1.0
+                }
+            }
+            Light::Area(a) => 0.0,
         }
     }
 }

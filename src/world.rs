@@ -2,7 +2,6 @@ use crate::color::Color;
 use crate::computations::*;
 use crate::intersection::*;
 use crate::lights::*;
-use crate::materials::lighting;
 use crate::materials::Material;
 use crate::object::*;
 use crate::ray::Ray;
@@ -55,15 +54,16 @@ impl World {
             .lights
             .iter()
             .map(|l| {
-                let shadowed = self.is_shadowed(&l, &comps.over_point);
-                let surface = lighting(
-                    comps.object.get_material(),
+                // Instead of bool, calculate color intensity from the light source
+                let light_intensity = l.intensity_at(&self, &comps.over_point); // self.is_shadowed(&l, &comps.over_point);
+
+                let surface = comps.object.get_material().lighting(
                     &comps.object,
                     &l,
                     &comps.over_point,
                     &comps.eyev,
                     &comps.normalv,
-                    shadowed,
+                    light_intensity,
                 );
                 let reflected = self.reflected_color(comps, remaining);
                 let refracted = self.refracted_color(comps, remaining);

@@ -37,61 +37,61 @@ impl Material {
     pub fn set_pattern(&mut self, pattern: Option<TPattern>) {
         self.pattern = pattern;
     }
+
+    // Phong lighting
+    pub fn lighting(
+        &self,
+        object: &Object,
+        light: &Light,
+        point: &Point,
+        eyev: &Vector,
+        normalv: &Vector,
+        light_intensity: F3D,
+    ) -> Color {
+        // use material pattern for color if it exists
+        let mut color = self.color;
+        if let Some(tpattern) = &self.pattern {
+            //if object.val.is_some() {
+            // I want the concrete pattern from the shape enum variant...
+            let p = tpattern.into_pattern();
+            color = p.pattern_at_shape(object, &point);
+            //}
+        }
+        // combine surface color with lights color/intensity
+        let effective_color: Color = color * light.intensity();
+
+        // find direction to light source
+        let lightv: Vector = normalize(&(light.position() - point));
+
+        // compute ambient contribution
+        let ambient: Color = effective_color * self.ambient;
+
+        // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the light is on the other side of the surface.
+        let light_dot_normal: F3D = lightv.dot(&normalv);
+        if light_dot_normal < 0.0 {
+            // no light contribution, diffuse and specular are zero
+            ambient
+        } else {
+            // compute the diffuse contribution
+            let diffuse: Color = effective_color * self.diffuse * light_dot_normal;
+            // reflect_dot_eye represents the cosine of the angle between the reflection vector and the eye vector. A negative number means the light reflects away from the eye.
+            let reflectv: Vector = crate::tuple::reflect(-lightv, *normalv);
+            let reflect_dot_eye: F3D = reflectv.dot(&eyev);
+            let mut specular = Color::black();
+
+            if reflect_dot_eye >= 0.0 {
+                // compute the specular contribution
+                let factor: F3D = reflect_dot_eye.powf(self.shininess);
+                specular = light.intensity() * self.specular * factor;
+            }
+            (ambient + diffuse + specular) * light_intensity
+        }
+    }
 }
 
 impl Default for Material {
     fn default() -> Self {
         Self::new(0.1, 0.9, 0.9, 200.0)
-    }
-}
-
-// Phong lighting
-pub fn lighting(
-    material: &Material,
-    object: &Object,
-    light: &Light,
-    point: &Point,
-    eyev: &Vector,
-    normalv: &Vector,
-    in_shadow: bool,
-) -> Color {
-    // use material pattern for color if it exists
-    let mut color = material.color;
-    if let Some(tpattern) = &material.pattern {
-        //if object.val.is_some() {
-        // I want the concrete pattern from the shape enum variant...
-        let p = tpattern.into_pattern();
-        color = p.pattern_at_shape(object, &point);
-        //}
-    }
-    // combine surface color with lights color/intensity
-    let effective_color: Color = color * light.intensity();
-
-    // find direction to light source
-    let lightv: Vector = normalize(&(light.position() - point));
-
-    // compute ambient contribution
-    let ambient: Color = effective_color * material.ambient;
-
-    // light_dot_normal represents the cosine of the angle between the light vector and the normal vector. A negative number means the light is on the other side of the surface.
-    let light_dot_normal: F3D = lightv.dot(&normalv);
-    if in_shadow || light_dot_normal < 0.0 {
-        // no light contribution, diffuse and specular are zero
-        ambient
-    } else {
-        // compute the diffuse contribution
-        let diffuse: Color = effective_color * material.diffuse * light_dot_normal;
-        // reflect_dot_eye represents the cosine of the angle between the reflection vector and the eye vector. A negative number means the light reflects away from the eye.
-        let reflectv: Vector = crate::tuple::reflect(-lightv, *normalv);
-        let reflect_dot_eye: F3D = reflectv.dot(&eyev);
-        let mut specular = Color::black();
-
-        if reflect_dot_eye >= 0.0 {
-            // compute the specular contribution
-            let factor: F3D = reflect_dot_eye.powf(material.shininess);
-            specular = light.intensity() * material.specular * factor;
-        }
-        ambient + diffuse + specular
     }
 }
 
@@ -121,7 +121,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = m.lighting(&object, &light, &position, &eyev, &normalv, 1.0);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
     }
 
@@ -131,7 +131,7 @@ mod tests {
         let eyev = vector(0.0, 2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = m.lighting(&object, &light, &position, &eyev, &normalv, 1.0);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
     }
 
@@ -141,7 +141,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = m.lighting(&object, &light, &position, &eyev, &normalv, 1.0);
         assert_eq_eps!(result.tuple(), Color::new(0.7364, 0.7364, 0.7364).tuple());
     }
 
@@ -151,7 +151,7 @@ mod tests {
         let eyev = vector(0.0, -2_f64.sqrt() / 2.0, -2_f64.sqrt() / 2.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 10.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = m.lighting(&object, &light, &position, &eyev, &normalv, 1.0);
         assert_eq_eps!(result.tuple(), Color::new(1.6364, 1.6364, 1.6364).tuple());
     }
 
@@ -161,7 +161,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, 10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, false);
+        let result = m.lighting(&object, &light, &position, &eyev, &normalv, 1.0);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -171,7 +171,7 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let result = lighting(&m, &object, &light, &position, &eyev, &normalv, true);
+        let result = m.lighting(&object, &light, &position, &eyev, &normalv, 0.0);
         assert_eq_eps!(result.tuple(), Color::new(0.1, 0.1, 0.1).tuple());
     }
 
@@ -190,24 +190,15 @@ mod tests {
         let eyev = vector(0.0, 0.0, -1.0);
         let normalv = vector(0.0, 0.0, -1.0);
         let light = point_light(point(0.0, 0.0, -10.0), Color::white());
-        let c1 = lighting(
-            &m,
+        let c1 = m.lighting(
             &object.clone(),
             &light,
             &point(0.9, 0.0, 0.0),
             &eyev,
             &normalv,
-            false,
+            0.0,
         );
-        let c2 = lighting(
-            &m,
-            &object,
-            &light,
-            &point(1.1, 0.0, 0.0),
-            &eyev,
-            &normalv,
-            false,
-        );
+        let c2 = m.lighting(&object, &light, &point(1.1, 0.0, 0.0), &eyev, &normalv, 1.0);
         assert_eq!(c1, Color::white());
         assert_eq!(c2, Color::black());
     }
