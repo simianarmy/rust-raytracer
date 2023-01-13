@@ -20,7 +20,7 @@ Had to give up after some point and just reused the cleaner groups code from [th
 
 ## TODO
 
-- Area lights, Spot lights
+- Spot lights
 
 ## Results
 
