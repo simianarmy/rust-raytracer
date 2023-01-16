@@ -47,7 +47,6 @@ impl Shape {
         match self {
             Shape::Cube() => add_uvs_to_ts(&cube::Cube::local_intersect(ray)),
             Shape::Cone(c) => add_uvs_to_ts(&c.local_intersect(ray)),
-            Shape::Csg(c) => add_uvs_to_ts(&c.local_intersect(ray)),
             Shape::Cylinder(c) => add_uvs_to_ts(&c.local_intersect(ray)),
             Shape::Plane() => add_uvs_to_ts(&plane::Plane::local_intersect(ray)),
             Shape::Sphere() => add_uvs_to_ts(&sphere::Sphere::local_intersect(ray)),

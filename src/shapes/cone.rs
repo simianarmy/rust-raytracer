@@ -192,7 +192,6 @@ mod tests {
             (point(0.0, 0.0, -0.25), vector_y(), 4),
         ];
         for t in tests {
-            println!("test = {:?}", t);
             let r = Ray::new(t.0, (t.1).normalize());
             let xs = match c.shape {
                 Shape::Cone(ref c) => c.local_intersect(&r),
@@ -210,7 +209,6 @@ mod tests {
             (point_unit(), vector(1.0, -SQRT_2, 1.0)),
             (point(-1.0, -1.0, 0.0), vector(-1.0, 1.0, 0.0)),
         ] {
-            println!("test: {:?}", t);
             let n = match c.shape {
                 Shape::Cone(ref c) => c.local_normal_at(&t.0),
                 _ => vector_zero(),

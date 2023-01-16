@@ -8,7 +8,7 @@ use crate::world::World;
 use glm;
 use rayon::prelude::*;
 
-const OPT_PARALLEL: bool = true;
+const OPT_PARALLEL: bool = false;
 
 #[derive(Clone, Debug)]
 pub struct Camera {

@@ -7,7 +7,7 @@ use crate::materials::Material;
 use crate::math;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
-use crate::shapes::{cylinder::*, group::*, shape::*, sphere::*};
+use crate::shapes::{csg::*, cylinder::*, group::*, shape::*, sphere::*};
 use crate::tuple::*;
 use glm::*;
 use std::fmt;
@@ -88,6 +88,15 @@ impl Object {
         }
     }
 
+    pub fn new_csg(csg_op: CsgOp, left: &Object, right: &Object) -> Object {
+        let mut o = Object {
+            shape: Shape::Csg(Csg::new(csg_op, left, right)),
+            ..Object::default()
+        };
+        o.bounds = o.shape.bounds();
+        o
+    }
+
     pub fn with_shape(mut self, shape: Shape) -> Self {
         self.shape = shape;
         self.bounds = self.shape.bounds();
@@ -138,6 +147,7 @@ impl Object {
         let t_ray = ray.transform(inverse(&self.get_transform()));
         match self.shape() {
             Shape::Group(g) => g.intersects(&t_ray),
+            Shape::Csg(c) => c.intersect(&t_ray),
             _ => Intersections::from_intersections(
                 self.shape
                     .intersect(&t_ray)
