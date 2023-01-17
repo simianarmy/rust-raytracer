@@ -88,7 +88,7 @@ impl Object {
         }
     }
 
-    pub fn new_csg(csg_op: CsgOp, left: &Object, right: &Object) -> Object {
+    pub fn new_csg(csg_op: CsgOp, left: Object, right: Object) -> Object {
         let mut o = Object {
             shape: Shape::Csg(Csg::new(csg_op, left, right)),
             ..Object::default()
