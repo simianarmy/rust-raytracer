@@ -33,7 +33,7 @@ impl Group {
         Self { children, bounds }
     }
 
-    pub fn intersects<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersects(&self, ray: &Ray) -> Intersections {
         let mut xs = Intersections::new();
         if self.bounds().intersects(ray) {
             for child in self.children() {

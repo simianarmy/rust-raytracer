@@ -3,11 +3,12 @@ use crate::math::*;
 use crate::object::Object;
 use crate::ray::Ray;
 use crate::tuple::*;
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug)]
-pub struct Computations<'a> {
+pub struct Computations {
     pub t: F3D,
-    pub object: &'a Object,
+    pub object: Arc<Object>,
     pub point: Point,
     pub over_point: Point,
     pub under_point: Point,
@@ -57,11 +58,7 @@ fn calc_refractive_indices(i: &Intersection, xs: &Intersections) -> (F3D, F3D) {
     (n1, n2)
 }
 
-pub fn prepare_computations<'a>(
-    i: &Intersection<'a>,
-    ray: &Ray,
-    xs: &Intersections,
-) -> Computations<'a> {
+pub fn prepare_computations(i: &Intersection, ray: &Ray, xs: &Intersections) -> Computations {
     let p = ray.position(i.t);
     let normal = i.object.normal_at(p, Some(i));
     let eyev = -ray.direction;
@@ -72,7 +69,7 @@ pub fn prepare_computations<'a>(
 
     Computations {
         t: i.t,
-        object: &i.object,
+        object: Arc::clone(&i.object),
         point: p,
         over_point: p + normalv * EPSILON,
         under_point: p - normalv * EPSILON,

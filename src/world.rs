@@ -37,11 +37,11 @@ impl World {
     }
 
     // returns all ray/shape intersections sorted by t
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersect(&self, ray: &Ray) -> Intersections {
         self.objects
             .iter()
             .fold(Intersections::new(), |mut acc, curr| {
-                for is in curr.intersect(ray).intersections {
+                for is in curr.intersect(ray).vec() {
                     acc.push(is.clone());
                 }
                 acc

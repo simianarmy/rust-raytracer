@@ -7,6 +7,7 @@ use raytracer::chapters::chapter11;
 use raytracer::chapters::chapter12;
 use raytracer::chapters::chapter14;
 use raytracer::chapters::chapter15;
+use raytracer::chapters::chapter16;
 use raytracer::chapters::chapter2;
 use raytracer::chapters::chapter3;
 use raytracer::chapters::chapter5;
@@ -50,6 +51,7 @@ fn main() {
         "chapter12" => chapter12::run(),
         "chapter14" => chapter14::run(args.hres, args.vres),
         "chapter15" => chapter15::run(&args.fixture, args.hres, args.vres),
+        "chapter16" => chapter16::run(args.hres, args.vres),
         "patterns" => patterns::run(args.hres, args.vres),
         "appendix1" => appendix1::run(args.hres, args.vres),
         "dragons" => dragons::run(&args.fixture, args.hres, args.vres),

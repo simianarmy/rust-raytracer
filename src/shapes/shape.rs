@@ -43,7 +43,7 @@ impl Shape {
         }
     }
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Vec<(F3D, F3D, F3D)> {
+    pub fn intersect(&self, ray: &Ray) -> Vec<(F3D, F3D, F3D)> {
         match self {
             Shape::Cube() => add_uvs_to_ts(&cube::Cube::local_intersect(ray)),
             Shape::Cone(c) => add_uvs_to_ts(&c.local_intersect(ray)),
@@ -54,6 +54,7 @@ impl Shape {
             Shape::SmoothTriangle(t) => t.local_intersect(ray),
             Shape::TestShape(c) => add_uvs_to_ts(&c.local_intersect(ray)),
             Shape::Group(_) => unreachable!("Group::intersect from Shape"),
+            Shape::Csg(_) => unreachable!("Csg::intersect from Shape"),
             Shape::None => unreachable!("Shape::None::intersect"),
         }
     }
@@ -104,7 +105,7 @@ pub struct TestShape {
     ray: Arc<Mutex<Option<Ray>>>,
 }
 impl TestShape {
-    pub fn local_intersect<'a>(&'a self, ray: &Ray) -> Vec<F3D> {
+    pub fn local_intersect(&self, ray: &Ray) -> Vec<F3D> {
         let mut reference = self.ray.lock().unwrap();
         *reference = Some(*ray);
         vec![]

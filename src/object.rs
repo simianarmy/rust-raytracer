@@ -88,7 +88,7 @@ impl Object {
         }
     }
 
-    pub fn new_csg(csg_op: CsgOp, left: Object, right: Object) -> Object {
+    pub fn new_csg(csg_op: CsgOp, left: &Object, right: &Object) -> Object {
         let mut o = Object {
             shape: Shape::Csg(Csg::new(csg_op, left, right)),
             ..Object::default()
@@ -143,7 +143,7 @@ impl Object {
         self.material = t;
     }
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersect(&self, ray: &Ray) -> Intersections {
         let t_ray = ray.transform(inverse(&self.get_transform()));
         match self.shape() {
             Shape::Group(g) => g.intersects(&t_ray),

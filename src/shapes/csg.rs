@@ -33,7 +33,7 @@ impl CsgNode {
         }
     }
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersect(&self, ray: &Ray) -> Intersections {
         match self {
             CsgNode::Node(n) => n.intersect(ray),
             CsgNode::Leaf(o) => o.intersect(ray),
@@ -50,9 +50,9 @@ pub struct Csg {
 
 impl Csg {
     // constructor utilities
-    pub fn new(op: CsgOp, s1: Object, s2: Object) -> Csg {
-        let left = CsgNode::Leaf(s1); // should be Object but then how is s1 stored?
-        let right = CsgNode::Leaf(s2);
+    pub fn new(op: CsgOp, s1: &Object, s2: &Object) -> Csg {
+        let left = CsgNode::Leaf(s1.clone()); // should be Object but then how is s1 stored?
+        let right = CsgNode::Leaf(s2.clone());
         Csg {
             op,
             left: Arc::new(RwLock::new(left)),
@@ -69,7 +69,7 @@ impl Csg {
         }
     }
 
-    pub fn filter_intersections<'a>(&self, xs: &'a Intersections) -> Intersections {
+    pub fn filter_intersections(&self, xs: &Intersections) -> Intersections {
         let mut result = Intersections::new();
         let mut inl = false;
         let mut inr = false;
@@ -92,23 +92,19 @@ impl Csg {
         result
     }
 
-    pub fn local_normal_at(&self, point: &Point) -> Vector {
-        match point.abs().max() {
-            x if x == point.x.abs() => vector(point.x, 0.0, 0.0),
-            y if y == point.y.abs() => vector(0.0, point.y, 0.0),
-            _ => vector(0.0, 0.0, point.z),
-        }
+    pub fn local_normal_at(&self, _: &Point) -> Vector {
+        unreachable!()
     }
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Intersections<'a> {
+    pub fn intersect(&self, ray: &Ray) -> Intersections {
         let l = self.left.read().unwrap(); // CsgNode
         let r = self.right.read().unwrap();
 
-        let xs = &mut l.intersect(ray);
+        // combine, sort, & filter
+        let mut xs = l.intersect(ray);
         xs.extend(&r.intersect(ray));
 
-        // combine and sort
-        self.filter_intersections(&xs)
+        self.filter_intersections(&xs.sort_intersections())
     }
 
     pub fn bounds(&self) -> Bounds {
@@ -213,11 +209,14 @@ mod tests {
         s2.set_transform(&make_translation(0.0, 0.0, 0.5));
         let c = Object::new_csg(CsgOp::Union, s1.clone(), s2.clone());
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-        let xs = c.intersect(&r);
+        let xs = match c.shape() {
+            shape::Shape::Csg(c) => c.intersect(&r),
+            _ => panic!(),
+        };
         assert_eq!(xs.len(), 2);
         assert_eq!(xs[0].t, 4.0);
-        assert_eq!(xs[0].object, &s1);
+        assert_eq!(*xs[0].object, s1);
         assert_eq!(xs[1].t, 6.5);
-        assert_eq!(xs[2].object, &s2);
+        assert_eq!(*xs[1].object, s2);
     }
 }

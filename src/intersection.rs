@@ -3,26 +3,32 @@ use crate::math::*;
 use crate::object::*;
 use std::clone::Clone;
 use std::fmt;
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Intersection<'a> {
+pub struct Intersection {
     pub t: F3D,
-    pub object: &'a Object,
+    pub object: Arc<Object>,
     pub u: F3D,
     pub v: F3D,
 }
 
-impl<'a> Intersection<'a> {
-    pub fn new(object: &'a Object, t: F3D) -> Self {
+impl Intersection {
+    pub fn new(object: &Object, t: F3D) -> Self {
         Self::with_uv(object, t, 0.0, 0.0)
     }
 
-    pub fn with_uv(object: &'a Object, t: F3D, u: F3D, v: F3D) -> Self {
-        Self { object, t, u, v }
+    pub fn with_uv(object: &Object, t: F3D, u: F3D, v: F3D) -> Self {
+        Self {
+            object: Arc::new(object.clone()), // sorry lifetimes, you're too annoying
+            t,
+            u,
+            v,
+        }
     }
 }
 
-impl<'a> fmt::Display for Intersection<'a> {
+impl fmt::Display for Intersection {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -34,12 +40,12 @@ impl<'a> fmt::Display for Intersection<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Intersections<'a> {
-    pub intersections: Vec<Intersection<'a>>,
+pub struct Intersections {
+    intersections: Vec<Intersection>,
 }
 
-impl<'a> Intersections<'a> {
-    pub fn from_intersections(intersections: Vec<Intersection<'a>>) -> Self {
+impl Intersections {
+    pub fn from_intersections(intersections: Vec<Intersection>) -> Self {
         let mut is = Self::new();
         is.intersections = intersections;
         is.sort_intersections()
@@ -47,8 +53,12 @@ impl<'a> Intersections<'a> {
 
     pub fn new() -> Self {
         Self {
-            intersections: Vec::<Intersection<'a>>::with_capacity(16),
+            intersections: Vec::<Intersection>::with_capacity(16),
         }
+    }
+
+    pub fn vec(&self) -> &Vec<Intersection> {
+        &self.intersections
     }
 
     pub fn len(&self) -> usize {
@@ -59,7 +69,7 @@ impl<'a> Intersections<'a> {
         self.intersections.is_empty()
     }
 
-    pub fn push(&mut self, is: Intersection<'a>) {
+    pub fn push(&mut self, is: Intersection) {
         self.intersections.push(is);
     }
 
@@ -67,7 +77,7 @@ impl<'a> Intersections<'a> {
         self.intersections.iter()
     }
 
-    pub fn extend(&mut self, is: &Intersections<'a>) {
+    pub fn extend(&mut self, is: &Intersections) {
         for is in is.intersections.iter() {
             self.intersections.push(is.clone());
         }
@@ -82,17 +92,17 @@ impl<'a> Intersections<'a> {
     /**
      * "Closest" intersection in a collection
      */
-    pub fn hit(&self) -> Option<&Intersection<'a>> {
+    pub fn hit(&self) -> Option<&Intersection> {
         // filter out negative t values here
         self.intersections.iter().find(|i| i.t >= 0.0)
     }
 }
 
 // intersections[i]
-impl<'a> std::ops::Index<usize> for Intersections<'a> {
-    type Output = Intersection<'a>;
+impl std::ops::Index<usize> for Intersections {
+    type Output = Intersection;
 
-    fn index(&self, i: usize) -> &Intersection<'a> {
+    fn index(&self, i: usize) -> &Intersection {
         &self.intersections[i]
     }
 }
