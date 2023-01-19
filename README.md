@@ -12,7 +12,7 @@ for cleaner &amp; more performant code.
 - Spent waaaay too long trying to implement Groups with bidirectional trees.  Not an easy thing in Rust without tons of Arc/RefCell/Weak/blah.
 Had to give up after some point and just reused the cleaner groups code from [this repo](https://github.com/ahamez/ray-trace) for my own sanity.
 
-- Implemented all chapters but CSGs (requires trees again)
+- Used tree data structure for CSG shapes
 
 - Parallelization using Rayon with minimal code - achieves ~2x speedup on my MBP
 
