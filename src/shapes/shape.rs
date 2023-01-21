@@ -53,9 +53,7 @@ impl Shape {
             Shape::Triangle(t) => add_uvs_to_ts(&t.local_intersect(ray)),
             Shape::SmoothTriangle(t) => t.local_intersect(ray),
             Shape::TestShape(c) => add_uvs_to_ts(&c.local_intersect(ray)),
-            Shape::Group(_) => unreachable!("Group::intersect from Shape"),
-            Shape::Csg(_) => unreachable!("Csg::intersect from Shape"),
-            Shape::None => unreachable!("Shape::None::intersect"),
+            _ => unreachable!("illegal intersect from Shape"),
         }
     }
 

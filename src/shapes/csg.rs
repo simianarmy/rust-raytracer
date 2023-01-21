@@ -43,9 +43,9 @@ impl CsgNode {
 
 #[derive(Clone, Debug)]
 pub struct Csg {
-    pub op: CsgOp,
-    pub left: ChildNode,
-    pub right: ChildNode,
+    op: CsgOp,
+    left: ChildNode,
+    right: ChildNode,
 }
 
 impl Csg {
@@ -70,26 +70,26 @@ impl Csg {
     }
 
     pub fn filter_intersections(&self, xs: &Intersections) -> Intersections {
-        let mut result = Intersections::new();
         let mut inl = false;
         let mut inr = false;
         let l = self.left.read().unwrap();
 
-        for i in 0..xs.len() {
-            let lhit = l.is_object_in_tree(&xs[i].object);
+        xs.iter()
+            .filter_map(|is| {
+                let lhit = l.is_object_in_tree(&is.object);
 
-            if Csg::is_intersection_allowed(&self.op, lhit, inl, inr) {
-                // Optimization: pass by reference
-                result.push(xs[i].clone());
-            }
-
-            if lhit {
-                inl = !inl;
-            } else {
-                inr = !inr;
-            }
-        }
-        result
+                if lhit {
+                    inl = !inl;
+                } else {
+                    inr = !inr;
+                }
+                if Csg::is_intersection_allowed(&self.op, lhit, inl, inr) {
+                    Some(is.clone())
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn local_normal_at(&self, _: &Point) -> Vector {
@@ -122,7 +122,7 @@ mod tests {
     fn csg_created_with_op_and_two_shapes() {
         let s1 = sphere::sphere();
         let s2 = cube::cube();
-        let o = Object::new_csg(CsgOp::Union, s1.clone(), s2.clone());
+        let o = Object::new_csg(CsgOp::Union, &s1, &s2);
         match o.shape() {
             shape::Shape::Csg(c) => {
                 assert_eq!(c.op, CsgOp::Union);
@@ -173,7 +173,7 @@ mod tests {
             (CsgOp::Intersection, 1, 2),
             (CsgOp::Difference, 0, 1),
         ] {
-            let o = Object::new_csg(t.0, s1.clone(), s2.clone());
+            let o = Object::new_csg(t.0, &s1, &s2);
             let xs = Intersections::from_intersections(vec![
                 Intersection::new(&s1, 1.0),
                 Intersection::new(&s2, 2.0),
@@ -196,7 +196,7 @@ mod tests {
     fn ray_misses() {
         let s1 = sphere::sphere();
         let s2 = cube::cube();
-        let o = Object::new_csg(CsgOp::Union, s1, s2);
+        let o = Object::new_csg(CsgOp::Union, &s1, &s2);
         let r = Ray::new(point(0.0, 2.0, -5.0), vector_z());
         let xs = o.intersect(&r);
         assert!(xs.is_empty());
@@ -207,7 +207,7 @@ mod tests {
         let s1 = sphere::sphere();
         let mut s2 = sphere::sphere();
         s2.set_transform(&make_translation(0.0, 0.0, 0.5));
-        let c = Object::new_csg(CsgOp::Union, s1.clone(), s2.clone());
+        let c = Object::new_csg(CsgOp::Union, &s1, &s2);
         let r = Ray::new(point(0.0, 0.0, -5.0), vector_z());
         let xs = match c.shape() {
             shape::Shape::Csg(c) => c.intersect(&r),

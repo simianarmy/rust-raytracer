@@ -107,6 +107,18 @@ impl std::ops::Index<usize> for Intersections {
     }
 }
 
+impl FromIterator<Intersection> for Intersections {
+    fn from_iter<I: IntoIterator<Item = Intersection>>(iter: I) -> Self {
+        let mut c = Intersections::new();
+
+        for i in iter {
+            c.push(i);
+        }
+
+        c
+    }
+}
+
 // Approximate Fresnel effect
 pub fn schlick(comps: &Computations) -> F3D {
     let mut cos = comps.eyev.dot(&comps.normalv);
