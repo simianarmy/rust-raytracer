@@ -1,10 +1,8 @@
 /**
- * Code from https://github.com/ahamez/ray-tracer
- *
- * After spending way too much time trying to implement a bidirectional tree myself with Arc,
- * Refcell, etc., this looked like a nice clean solution
+ * Attempt at bidirectional tree
  */
 use crate::{
+    arena_tree::ArenaTree,
     bounds::Bounds,
     intersection::Intersections,
     materials::Material,
@@ -14,14 +12,14 @@ use crate::{
     shapes::shape::Shape,
     tuple::{Point, Vector},
 };
-//use serde::{Deserialize, Serialize};
+use std::sync::{Arc, RwLock};
 
 /* ---------------------------------------------------------------------------------------------- */
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Group {
     bounds: Bounds,
-    children: Vec<Object>,
+    tree: ArenaTree<Object>,
 }
 
 /* ---------------------------------------------------------------------------------------------- */
@@ -29,12 +27,21 @@ pub struct Group {
 impl Group {
     pub fn new(children: Vec<Object>) -> Self {
         let bounds = Group::mk_bounding_box(&children);
+        let mut tree: ArenaTree<Object> = ArenaTree::default();
 
-        Self { children, bounds }
+        for o in children {
+            let ni = tree.node(o);
+        }
+        Self { tree, bounds }
+    }
+
+    pub fn add_child(&mut self, object: Object) {
+        self.tree.node(object);
     }
 
     pub fn intersects(&self, ray: &Ray) -> Intersections {
         let mut xs = Intersections::new();
+
         if self.bounds().intersects(ray) {
             for child in self.children() {
                 xs.extend(&child.intersect(ray));
@@ -48,15 +55,34 @@ impl Group {
         unreachable!()
     }
 
-    pub fn children(&self) -> &Vec<Object> {
-        &self.children
+    pub fn children(&self) -> Vec<&Object> {
+        self.tree.nodes().iter().map(|n| n.val()).collect()
     }
 
     pub fn bounds(&self) -> Bounds {
         self.bounds
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.tree.size() == 0
+    }
+
+    pub fn has_object(&self, object: &Object) -> bool {
+        self.tree.in_tree(object)
+    }
+
+    pub fn parent_of(&self, object: &Object) -> Option<&Self> {
+        if self.has_object(&object) {
+            Some(&self)
+        } else {
+            None
+        }
+    }
+
+    pub fn world_to_object(&self, point: &Point) -> Point {}
+
     fn partition(self) -> Self {
+        /*
         let mut left_children = Vec::with_capacity(self.children.len());
         let mut right_children = Vec::with_capacity(self.children.len());
         let mut children = Vec::with_capacity(self.children.len());
@@ -87,9 +113,12 @@ impl Group {
         }
 
         Self { children, ..self }
+        */
+        self
     }
 
     pub fn divide(self, threshold: usize) -> Self {
+        /*
         let g = if self.children.len() <= threshold {
             self
         } else {
@@ -103,6 +132,8 @@ impl Group {
             .collect();
 
         Self { children, ..g }
+        */
+        self
     }
 
     fn mk_bounding_box(children: &[Object]) -> Bounds {
@@ -115,73 +146,14 @@ impl Group {
     }
 }
 
-/* ---------------------------------------------------------------------------------------------- */
-
-#[derive(Clone, Debug)]
-pub enum GroupBuilder {
-    Leaf(Object),
-    Node(Object, Vec<GroupBuilder>),
-}
-
-impl GroupBuilder {
-    pub fn build(self, propagate_material: bool, material: &Material) -> Object {
-        GroupBuilder::rec(self, &glm::identity(), propagate_material, material)
-    }
-
-    fn rec(gb: Self, transform: &Matrix4, propagate_material: bool, material: &Material) -> Object {
-        match gb {
-            GroupBuilder::Leaf(o) => {
-                //println!("building leaf {:#?} with transform {}", o, transform);
-                if propagate_material {
-                    o.with_material(material.clone()).transform(transform)
-                } else {
-                    o.transform(transform)
-                }
-            }
-            GroupBuilder::Node(group, children) => {
-                let child_transform = transform * group.get_transform();
-                let new_children = children
-                    .into_iter()
-                    .map(|child| {
-                        GroupBuilder::rec(child, &child_transform, propagate_material, material)
-                    })
-                    .collect();
-
-                group
-                    .with_shape(Shape::Group(Group::new(new_children)))
-                    // The group transformation has been applied to all children.
-                    // To make sure it's not propagated again in future usages of this
-                    // newly created group, we set it to an Id transformation which is
-                    // "neutral".
-                    .with_transformation(glm::identity())
-            }
-        }
-    }
-
-    pub fn from_object(object: &Object) -> Self {
-        match object.shape() {
-            Shape::Group(g) => GroupBuilder::Node(
-                object.clone(),
-                g.children()
-                    .iter()
-                    .filter_map(|child| match child.shape() {
-                        Shape::Group(g) => {
-                            if g.children().is_empty() {
-                                None
-                            } else {
-                                Some(GroupBuilder::from_object(child))
-                            }
-                        }
-                        _ => Some(GroupBuilder::from_object(child)),
-                    })
-                    .collect(),
-            ),
-            _other => GroupBuilder::Leaf(object.clone()),
-        }
-    }
-}
-
 pub fn from_shape(s: &Shape) -> Option<&Group> {
+    match s {
+        Shape::Group(g) => Some(g),
+        _ => None,
+    }
+}
+
+pub fn mut_from_shape(s: &mut Shape) -> Option<&mut Group> {
     match s {
         Shape::Group(g) => Some(g),
         _ => None,
@@ -200,6 +172,23 @@ mod tests {
     use crate::transformation::*;
     use crate::world::*;
     use crate::{shapes::cylinder::*, shapes::shape, shapes::sphere::*, tuple::*};
+
+    #[test]
+    fn adding_child_to_group() {
+        let mut group = Object::new_group(vec![]);
+        let s = sphere();
+        if let Some(g) = mut_from_shape(group.mut_shape()) {
+            g.add_child(s.clone());
+            assert!(!g.is_empty());
+            assert!(g.has_object(&s));
+            match g.parent_of(&s) {
+                Some(_) => assert!(true),
+                _ => panic!(),
+            }
+        } else {
+            panic!()
+        }
+    }
 
     #[test]
     fn intersecting_a_ray_with_an_empty_group() {
@@ -244,7 +233,6 @@ mod tests {
             let group_2 = Object::new_group(vec![group_1]);
 
             let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-
             let xs = group_2.intersect(&ray);
 
             assert_eq!(xs.len(), 4);
@@ -264,7 +252,6 @@ mod tests {
             let group_2 = Object::new_group(vec![group_1, s2.clone()]);
 
             let ray = Ray::new(point(0.0, 0.0, -5.0), vector_z());
-
             let xs = group_2.intersect(&ray);
 
             assert_eq!(xs.len(), 4);
@@ -283,7 +270,6 @@ mod tests {
         let group = Object::new_group(vec![s]).transform(&make_scaling(2.0, 2.0, 2.0));
 
         let ray = Ray::new(point(10.0, 0.0, -10.0), vector_z());
-
         let xs = group.intersect(&ray);
 
         assert_eq!(xs.len(), 2);
@@ -345,7 +331,7 @@ mod tests {
             let g2t = Object::new_group(vec![s]).transform(&t);
 
             // Retrieve the s with the baked-in group transform.
-            let group_s = from_shape(g2t.shape()).unwrap().children[0].clone();
+            let group_s = from_shape(g2t.shape()).unwrap().children()[0].clone();
 
             assert_eq!(group_s.get_transform(), expected_transformation);
         }
@@ -357,8 +343,8 @@ mod tests {
             let g1 = Object::new_group(vec![g2]);
 
             // Retrieve the s with the baked-in group transform.
-            let group_g2 = from_shape(g1.shape()).unwrap().children[0].clone();
-            let group_s = from_shape(group_g2.shape()).unwrap().children[0].clone();
+            let group_g2 = from_shape(g1.shape()).unwrap().children()[0].clone();
+            let group_s = from_shape(group_g2.shape()).unwrap().children()[0].clone();
 
             assert_eq!(group_s.get_transform(), expected_transformation);
         }
@@ -374,9 +360,9 @@ mod tests {
             let g0 = Object::new_group(vec![g1]);
 
             // Retrieve the s with the baked-in group transform.
-            let group_g1 = from_shape(g0.shape()).unwrap().children[0].clone();
-            let group_g2 = from_shape(group_g1.shape()).unwrap().children[0].clone();
-            let group_s = from_shape(group_g2.shape()).unwrap().children[0].clone();
+            let group_g1 = from_shape(g0.shape()).unwrap().children()[0].clone();
+            let group_g2 = from_shape(group_g1.shape()).unwrap().children()[0].clone();
+            let group_s = from_shape(group_g2.shape()).unwrap().children()[0].clone();
 
             assert_eq!(group_s.get_transform(), expected_transformation);
         }
@@ -389,8 +375,8 @@ mod tests {
             let g1 = Object::new_group(vec![g2]).transform(&make_scaling(2.0, 2.0, 2.0));
 
             // Retrieve the s with the baked-in group transform.
-            let group_g2 = from_shape(g1.shape()).unwrap().children[0].clone();
-            let group_s = from_shape(group_g2.shape()).unwrap().children[0].clone();
+            let group_g2 = from_shape(g1.shape()).unwrap().children()[0].clone();
+            let group_s = from_shape(group_g2.shape()).unwrap().children()[0].clone();
 
             assert_eq!(group_s.get_transform(), expected_transformation);
         }
@@ -464,11 +450,17 @@ mod tests {
         let g = from_shape(g.shape()).unwrap().clone().partition();
         let g_children = g.children();
 
-        assert_eq!(g_children[0], s3);
+        assert_eq!(g_children[0], &s3);
         // left child
-        assert_eq!(from_shape(g_children[1].shape()).unwrap().children()[0], s1);
+        assert_eq!(
+            from_shape(g_children[1].shape()).unwrap().children()[0],
+            &s1
+        );
         // right child
-        assert_eq!(from_shape(g_children[2].shape()).unwrap().children()[0], s2);
+        assert_eq!(
+            from_shape(g_children[2].shape()).unwrap().children()[0],
+            &s2
+        );
     }
 
     #[test]

@@ -22,6 +22,7 @@ pub mod computations;
 //#[macro_use]
 pub mod bounds;
 //pub mod group;
+pub mod arena_tree;
 pub mod chapters;
 pub mod obj_file;
 pub mod pattern;
