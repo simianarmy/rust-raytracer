@@ -149,8 +149,8 @@ impl Object {
         self.normal_to_world(&local_normal)
     }
 
-    pub fn world_to_object(&self, point: &Point) -> Point {
-        self.get_transformation_inverse() * point
+    pub fn world_to_object(&self, world_point: &Point) -> Point {
+        self.get_transformation_inverse() * world_point
     }
 
     pub fn normal_to_world(&self, normal: &Vector) -> Vector {
@@ -161,10 +161,6 @@ impl Object {
 
     pub fn shape(&self) -> &Shape {
         &self.shape
-    }
-
-    pub fn mut_shape(&mut self) -> &mut Shape {
-        &mut self.shape
     }
 
     pub fn is_shape(&self) -> bool {
@@ -190,17 +186,39 @@ impl Object {
      */
     pub fn transform(self, new_transformation: &Matrix4) -> Self {
         if let Shape::Group(g) = self.shape() {
-            // rebuild group shape tree applying the new transformation at each level of the tree
+            let children_group_builders =
+                g.children().iter().map(GroupBuilder::from_object).collect();
+
+            // We then create a new top GroupBuilder Node from which the new transformation is
+            // applied.
+            let group_builder = GroupBuilder::Node(
+                Object::new_dummy().with_transformation(*new_transformation),
+                children_group_builders,
+            );
+
+            // Convert back to a Group.
+            group_builder.build(false, self.get_material())
+        } else {
+            let new_t = new_transformation * self.transform;
+            self.with_transformation(new_t)
         }
-        let new_t = new_transformation * self.transform;
-        self.with_transformation(new_t)
     }
 
     /**
      * Extra function for groups to propagate materials to their children
      */
     pub fn set_group_material(self, new_material: Material) -> Self {
-        self
+        if let Shape::Group(g) = self.shape() {
+            let children_group_builders =
+                g.children().iter().map(GroupBuilder::from_object).collect();
+
+            let group_builder = GroupBuilder::Node(Object::new_dummy(), children_group_builders);
+
+            // Convert back to a Group.
+            group_builder.build(true, &new_material)
+        } else {
+            self
+        }
     }
 }
 
